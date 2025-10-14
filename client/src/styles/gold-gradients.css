@@ -1,0 +1,162 @@
+/* Gold Gradients and Luxury Theme Enhancements */
+
+/* Luxury Gold Gradients */
+.luxury-gold-gradient {
+  background: linear-gradient(135deg, #D2B065 0%, #E6C478 50%, #F4E6B7 100%);
+}
+
+.luxury-gold-gradient-dark {
+  background: linear-gradient(135deg, #B8954A 0%, #D2B065 50%, #E6C478 100%);
+}
+
+.luxury-navy-gradient {
+  background: linear-gradient(135deg, #000012 0%, #1A1A2E 50%, #2A2A3E 100%);
+}
+
+.luxury-navy-gradient-light {
+  background: linear-gradient(135deg, #F8F9FA 0%, #FFFFFF 50%, #FEFEFE 100%);
+}
+
+/* Enhanced Button Gradients */
+.btn-luxury-primary {
+  background: linear-gradient(135deg, #D2B065 0%, #E6C478 100%);
+  color: #000012;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-luxury-primary:hover {
+  background: linear-gradient(135deg, #E6C478 0%, #F4E6B7 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(210, 176, 101, 0.3);
+}
+
+.btn-luxury-secondary {
+  background: linear-gradient(135deg, #1A1A2E 0%, #2A2A3E 100%);
+  color: #D2B065;
+  border: 2px solid #D2B065;
+  transition: all 0.3s ease;
+}
+
+.btn-luxury-secondary:hover {
+  background: linear-gradient(135deg, #D2B065 0%, #E6C478 100%);
+  color: #000012;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(210, 176, 101, 0.3);
+}
+
+/* Card Gradients */
+.card-luxury {
+  background: linear-gradient(145deg, rgba(26, 26, 46, 0.8) 0%, rgba(42, 42, 62, 0.6) 100%);
+  border: 1px solid rgba(210, 176, 101, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.card-luxury-light {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 249, 250, 0.8) 100%);
+  border: 1px solid rgba(210, 176, 101, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+/* Text Gradients */
+.text-luxury-gradient {
+  background: linear-gradient(135deg, #D2B065 0%, #E6C478 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-luxury-gradient-dark {
+  background: linear-gradient(135deg, #B8954A 0%, #D2B065 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glow Effects */
+.glow-luxury {
+  box-shadow: 0 0 20px rgba(210, 176, 101, 0.3);
+}
+
+.glow-luxury-strong {
+  box-shadow: 0 0 30px rgba(210, 176, 101, 0.5);
+}
+
+.glow-luxury-hover:hover {
+  box-shadow: 0 0 25px rgba(210, 176, 101, 0.4);
+  transition: box-shadow 0.3s ease;
+}
+
+/* Border Gradients */
+.border-luxury-gradient {
+  border: 2px solid transparent;
+  background: linear-gradient(135deg, #D2B065, #E6C478) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: exclude;
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+
+/* Animated Gradients */
+.animated-gradient {
+  background: linear-gradient(-45deg, #D2B065, #E6C478, #F4E6B7, #B8954A);
+  background-size: 400% 400%;
+  animation: gradientShift 4s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Luxury Theme Variables */
+:root {
+  --luxury-gold-primary: #D2B065;
+  --luxury-gold-secondary: #E6C478;
+  --luxury-gold-light: #F4E6B7;
+  --luxury-gold-dark: #B8954A;
+  --luxury-navy-primary: #1A1A2E;
+  --luxury-navy-secondary: #2A2A3E;
+  --luxury-navy-dark: #000012;
+  --luxury-navy-light: #F8F9FA;
+}
+
+/* Dark mode adjustments */
+.dark {
+  --luxury-gold-primary: #E6C478;
+  --luxury-gold-secondary: #F4E6B7;
+  --luxury-gold-light: #FFF8E1;
+  --luxury-gold-dark: #D2B065;
+}
+
+/* Utility Classes */
+.bg-luxury-gold {
+  background-color: var(--luxury-gold-primary);
+}
+
+.text-luxury-gold {
+  color: var(--luxury-gold-primary);
+}
+
+.border-luxury-gold {
+  border-color: var(--luxury-gold-primary);
+}
+
+.bg-luxury-navy {
+  background-color: var(--luxury-navy-primary);
+}
+
+.text-luxury-navy {
+  color: var(--luxury-navy-primary);
+}
+
+.border-luxury-navy {
+  border-color: var(--luxury-navy-primary);
+}

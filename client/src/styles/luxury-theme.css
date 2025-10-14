@@ -1,0 +1,417 @@
+/* Luxury Theme Global Styles */
+
+/* Import Google Fonts - Note: Fonts are imported in index.css to avoid duplicates */
+
+/* CSS Variables for Theme */
+:root {
+  /* Dark Mode Colors */
+  --color-dark-bg: #000012;
+  --color-dark-surface: #0A0A1A;
+  --color-dark-surface-elevated: #1A1A2E;
+  --color-dark-text: #FFFFFF;
+  --color-dark-text-secondary: #B8B8CC;
+  --color-dark-text-muted: #8A8A9A;
+  --color-accent: #FFD700;
+  --color-accent-hover: #FFED4E;
+  --color-accent-light: #FFF8CC;
+  --color-success: #00D4AA;
+  --color-error: #FF6B6B;
+  --color-warning: #FFB347;
+  --color-info: #4ECDC4;
+  --color-border: #2A2A3E;
+  --color-border-light: #3A3A4E;
+  --color-shadow: rgba(0, 0, 0, 0.8);
+  --color-shadow-light: rgba(0, 0, 0, 0.4);
+  
+  /* Light Mode Colors */
+  --color-light-bg: #FFFFFF;
+  --color-light-surface: #F8F9FA;
+  --color-light-surface-elevated: #FFFFFF;
+  --color-light-text: #111111;
+  --color-light-text-secondary: #4A4A4A;
+  --color-light-text-muted: #8A8A9A;
+  --color-light-border: #E1E5E9;
+  --color-light-border-light: #F1F3F4;
+  --color-light-shadow: rgba(0, 0, 0, 0.1);
+  --color-light-shadow-light: rgba(0, 0, 0, 0.05);
+  
+  /* Typography */
+  --font-heading: 'Playfair Display', 'Times New Roman', serif;
+  --font-body: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  --spacing-3xl: 4rem;
+  
+  /* Border Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --shadow-glow: 0 0 20px rgba(255, 215, 0, 0.3);
+  --shadow-glow-strong: 0 0 30px rgba(255, 215, 0, 0.5);
+  
+  /* Animations */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  --easing-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --easing-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --easing-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Dark Mode */
+[data-theme="dark"] {
+  --color-bg: var(--color-dark-bg);
+  --color-surface: var(--color-dark-surface);
+  --color-surface-elevated: var(--color-dark-surface-elevated);
+  --color-text: var(--color-dark-text);
+  --color-text-secondary: var(--color-dark-text-secondary);
+  --color-text-muted: var(--color-dark-text-muted);
+  --color-border: var(--color-border);
+  --color-border-light: var(--color-border-light);
+  --color-shadow: var(--color-shadow);
+  --color-shadow-light: var(--color-shadow-light);
+}
+
+/* Light Mode */
+[data-theme="light"] {
+  --color-bg: var(--color-light-bg);
+  --color-surface: var(--color-light-surface);
+  --color-surface-elevated: var(--color-light-surface-elevated);
+  --color-text: var(--color-light-text);
+  --color-text-secondary: var(--color-light-text-secondary);
+  --color-text-muted: var(--color-light-text-muted);
+  --color-border: var(--color-light-border);
+  --color-border-light: var(--color-light-border-light);
+  --color-shadow: var(--color-light-shadow);
+  --color-shadow-light: var(--color-light-shadow-light);
+}
+
+/* Base Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color var(--duration-normal) var(--easing-ease-in-out),
+              color var(--duration-normal) var(--easing-ease-in-out),
+              border-color var(--duration-normal) var(--easing-ease-in-out);
+}
+
+/* Enhanced theme transitions */
+.theme-transition {
+  transition: all var(--duration-normal) var(--easing-ease-in-out) !important;
+}
+
+.theme-transition * {
+  transition: background-color var(--duration-normal) var(--easing-ease-in-out),
+              color var(--duration-normal) var(--easing-ease-in-out),
+              border-color var(--duration-normal) var(--easing-ease-in-out),
+              box-shadow var(--duration-normal) var(--easing-ease-in-out),
+              fill var(--duration-normal) var(--easing-ease-in-out),
+              stroke var(--duration-normal) var(--easing-ease-in-out) !important;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: var(--spacing-md);
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.75rem; }
+h4 { font-size: 1.5rem; }
+h5 { font-size: 1.25rem; }
+h6 { font-size: 1.125rem; }
+
+p {
+  margin-bottom: var(--spacing-md);
+  color: var(--color-text-secondary);
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--easing-ease-in-out);
+}
+
+a:hover {
+  color: var(--color-accent-hover);
+}
+
+/* Form Elements */
+input, textarea, select {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  transition: border-color var(--duration-fast) var(--easing-ease-in-out),
+              box-shadow var(--duration-fast) var(--easing-ease-in-out);
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-glow);
+}
+
+/* Buttons */
+button {
+  font-family: var(--font-body);
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius-lg);
+  transition: all var(--duration-normal) var(--easing-ease-in-out);
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-accent);
+  border-radius: var(--radius-full);
+  transition: background var(--duration-fast) var(--easing-ease-in-out);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent-hover);
+}
+
+/* Selection */
+::selection {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+::-moz-selection {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+/* Animations */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: var(--shadow-glow);
+  }
+  50% {
+    box-shadow: var(--shadow-glow-strong);
+  }
+}
+
+/* Utility Classes */
+.animate-fade-in {
+  animation: fadeIn var(--duration-normal) var(--easing-ease-out);
+}
+
+.animate-slide-in-up {
+  animation: slideInUp var(--duration-normal) var(--easing-ease-out);
+}
+
+.animate-slide-in-down {
+  animation: slideInDown var(--duration-normal) var(--easing-ease-out);
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft var(--duration-normal) var(--easing-ease-out);
+}
+
+.animate-slide-in-right {
+  animation: slideInRight var(--duration-normal) var(--easing-ease-out);
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Glass Effect */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Gradient Text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-text) 0%, var(--color-accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Luxury Card */
+.luxury-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+  transition: all var(--duration-normal) var(--easing-ease-in-out);
+}
+
+.luxury-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-xl);
+}
+
+/* Luxury Button */
+.luxury-button {
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
+  color: var(--color-bg);
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--easing-ease-in-out);
+  box-shadow: var(--shadow-glow);
+}
+
+.luxury-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow-strong);
+}
+
+.luxury-button:active {
+  transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+  
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.75rem; }
+  h3 { font-size: 1.5rem; }
+  h4 { font-size: 1.25rem; }
+  h5 { font-size: 1.125rem; }
+  h6 { font-size: 1rem; }
+}
+
+@media (max-width: 480px) {
+  html {
+    font-size: 12px;
+  }
+  
+  .luxury-card {
+    padding: var(--spacing-md);
+  }
+  
+  .luxury-button {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+}
+
+/* Print Styles */
+@media print {
+  * {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+  
+  .luxury-card {
+    border: 1px solid #ccc;
+    box-shadow: none;
+  }
+}

@@ -1,0 +1,449 @@
+{
+  "testDate": "2025-10-06T16:06:48.777Z",
+  "summary": {
+    "totalCycles": 3,
+    "passed": 3,
+    "failed": 0,
+    "successRate": "100.0%"
+  },
+  "details": [
+    {
+      "cycle": 1,
+      "timestamp": "2025-10-06T16:06:47.858Z",
+      "payload": {
+        "title": "Test Course with Mixed Exam Types",
+        "description": "A comprehensive test course containing both internal exams and a Google Form exam to verify the migration system works correctly.",
+        "subject": "Mathematics",
+        "grade": "10",
+        "instructor": "Test Instructor",
+        "duration": 120,
+        "price": 99.99,
+        "isActive": true,
+        "videos": [
+          {
+            "id": "video_1",
+            "title": "Introduction to Algebra",
+            "url": "https://example.com/video1",
+            "duration": 30,
+            "order": 1,
+            "description": "Basic concepts of algebraic expressions"
+          }
+        ],
+        "exams": [
+          {
+            "id": "exam_1",
+            "title": "Algebra Fundamentals Quiz",
+            "type": "internal_exam",
+            "totalMarks": 50,
+            "duration": 30,
+            "passingScore": 70,
+            "questions": [
+              {
+                "id": "q1",
+                "questionText": "What is the value of x in the equation 2x + 5 = 15?",
+                "type": "multiple_choice",
+                "points": 10,
+                "order": 1,
+                "options": [
+                  {
+                    "id": "opt1",
+                    "text": "x = 5",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "opt2",
+                    "text": "x = 10",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "opt3",
+                    "text": "x = 3",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "opt4",
+                    "text": "x = 7",
+                    "isCorrect": false
+                  }
+                ],
+                "correctAnswer": "x = 5"
+              },
+              {
+                "id": "q2",
+                "questionText": "True or False: The equation x² = 16 has only one solution.",
+                "type": "true_false",
+                "points": 10,
+                "order": 2,
+                "correctAnswer": false,
+                "sampleAnswer": "False, because x² = 16 has two solutions: x = 4 and x = -4"
+              }
+            ]
+          },
+          {
+            "id": "exam_2",
+            "title": "Geometry Practice Test",
+            "type": "internal_exam",
+            "totalMarks": 75,
+            "duration": 45,
+            "passingScore": 60,
+            "questions": [
+              {
+                "id": "q3",
+                "questionText": "Calculate the area of a triangle with base 8 cm and height 6 cm.",
+                "type": "essay",
+                "points": 25,
+                "order": 1,
+                "correctAnswer": "24 cm²",
+                "sampleAnswer": "Area = (1/2) × base × height = (1/2) × 8 × 6 = 24 cm²"
+              },
+              {
+                "id": "q4",
+                "questionText": "What is the sum of interior angles in a pentagon?",
+                "type": "multiple_choice",
+                "points": 25,
+                "order": 2,
+                "options": [
+                  {
+                    "id": "opt1",
+                    "text": "540°",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "opt2",
+                    "text": "360°",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "opt3",
+                    "text": "720°",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "opt4",
+                    "text": "450°",
+                    "isCorrect": false
+                  }
+                ],
+                "correctAnswer": "540°"
+              }
+            ]
+          },
+          {
+            "id": "exam_3",
+            "title": "Advanced Problem Solving (Google Form)",
+            "type": "google_form",
+            "url": "https://forms.gle/example123",
+            "totalMarks": 0,
+            "duration": 0,
+            "passingScore": 0,
+            "questions": [],
+            "migratedFromGoogleForm": false,
+            "migrationNote": ""
+          }
+        ]
+      },
+      "results": {
+        "courseId": "68e3e91711d5d4fef473d167",
+        "courseTitle": "Test Course with Mixed Exam Types",
+        "videosCount": 1,
+        "examsCount": 3,
+        "internalExamsCount": 2,
+        "googleFormExamsCount": 1,
+        "migratedExamsCount": 0,
+        "status": "PASSED"
+      }
+    },
+    {
+      "cycle": 2,
+      "timestamp": "2025-10-06T16:06:48.470Z",
+      "payload": {
+        "title": "Test Course with Mixed Exam Types",
+        "description": "A comprehensive test course containing both internal exams and a Google Form exam to verify the migration system works correctly.",
+        "subject": "Mathematics",
+        "grade": "10",
+        "instructor": "Test Instructor",
+        "duration": 120,
+        "price": 99.99,
+        "isActive": true,
+        "videos": [
+          {
+            "id": "video_1",
+            "title": "Introduction to Algebra",
+            "url": "https://example.com/video1",
+            "duration": 30,
+            "order": 1,
+            "description": "Basic concepts of algebraic expressions"
+          }
+        ],
+        "exams": [
+          {
+            "id": "exam_1",
+            "title": "Algebra Fundamentals Quiz",
+            "type": "internal_exam",
+            "totalMarks": 50,
+            "duration": 30,
+            "passingScore": 70,
+            "questions": [
+              {
+                "id": "q1",
+                "questionText": "What is the value of x in the equation 2x + 5 = 15?",
+                "type": "multiple_choice",
+                "points": 10,
+                "order": 1,
+                "options": [
+                  {
+                    "id": "opt1",
+                    "text": "x = 5",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "opt2",
+                    "text": "x = 10",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "opt3",
+                    "text": "x = 3",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "opt4",
+                    "text": "x = 7",
+                    "isCorrect": false
+                  }
+                ],
+                "correctAnswer": "x = 5"
+              },
+              {
+                "id": "q2",
+                "questionText": "True or False: The equation x² = 16 has only one solution.",
+                "type": "true_false",
+                "points": 10,
+                "order": 2,
+                "correctAnswer": false,
+                "sampleAnswer": "False, because x² = 16 has two solutions: x = 4 and x = -4"
+              }
+            ]
+          },
+          {
+            "id": "exam_2",
+            "title": "Geometry Practice Test",
+            "type": "internal_exam",
+            "totalMarks": 75,
+            "duration": 45,
+            "passingScore": 60,
+            "questions": [
+              {
+                "id": "q3",
+                "questionText": "Calculate the area of a triangle with base 8 cm and height 6 cm.",
+                "type": "essay",
+                "points": 25,
+                "order": 1,
+                "correctAnswer": "24 cm²",
+                "sampleAnswer": "Area = (1/2) × base × height = (1/2) × 8 × 6 = 24 cm²"
+              },
+              {
+                "id": "q4",
+                "questionText": "What is the sum of interior angles in a pentagon?",
+                "type": "multiple_choice",
+                "points": 25,
+                "order": 2,
+                "options": [
+                  {
+                    "id": "opt1",
+                    "text": "540°",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "opt2",
+                    "text": "360°",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "opt3",
+                    "text": "720°",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "opt4",
+                    "text": "450°",
+                    "isCorrect": false
+                  }
+                ],
+                "correctAnswer": "540°"
+              }
+            ]
+          },
+          {
+            "id": "exam_3",
+            "title": "Advanced Problem Solving (Google Form)",
+            "type": "google_form",
+            "url": "https://forms.gle/example123",
+            "totalMarks": 0,
+            "duration": 0,
+            "passingScore": 0,
+            "questions": [],
+            "migratedFromGoogleForm": false,
+            "migrationNote": ""
+          }
+        ]
+      },
+      "results": {
+        "courseId": "68e3e91811d5d4fef473d18f",
+        "courseTitle": "Test Course with Mixed Exam Types",
+        "videosCount": 1,
+        "examsCount": 3,
+        "internalExamsCount": 2,
+        "googleFormExamsCount": 1,
+        "migratedExamsCount": 0,
+        "status": "PASSED"
+      }
+    },
+    {
+      "cycle": 3,
+      "timestamp": "2025-10-06T16:06:48.629Z",
+      "payload": {
+        "title": "Test Course with Mixed Exam Types",
+        "description": "A comprehensive test course containing both internal exams and a Google Form exam to verify the migration system works correctly.",
+        "subject": "Mathematics",
+        "grade": "10",
+        "instructor": "Test Instructor",
+        "duration": 120,
+        "price": 99.99,
+        "isActive": true,
+        "videos": [
+          {
+            "id": "video_1",
+            "title": "Introduction to Algebra",
+            "url": "https://example.com/video1",
+            "duration": 30,
+            "order": 1,
+            "description": "Basic concepts of algebraic expressions"
+          }
+        ],
+        "exams": [
+          {
+            "id": "exam_1",
+            "title": "Algebra Fundamentals Quiz",
+            "type": "internal_exam",
+            "totalMarks": 50,
+            "duration": 30,
+            "passingScore": 70,
+            "questions": [
+              {
+                "id": "q1",
+                "questionText": "What is the value of x in the equation 2x + 5 = 15?",
+                "type": "multiple_choice",
+                "points": 10,
+                "order": 1,
+                "options": [
+                  {
+                    "id": "opt1",
+                    "text": "x = 5",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "opt2",
+                    "text": "x = 10",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "opt3",
+                    "text": "x = 3",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "opt4",
+                    "text": "x = 7",
+                    "isCorrect": false
+                  }
+                ],
+                "correctAnswer": "x = 5"
+              },
+              {
+                "id": "q2",
+                "questionText": "True or False: The equation x² = 16 has only one solution.",
+                "type": "true_false",
+                "points": 10,
+                "order": 2,
+                "correctAnswer": false,
+                "sampleAnswer": "False, because x² = 16 has two solutions: x = 4 and x = -4"
+              }
+            ]
+          },
+          {
+            "id": "exam_2",
+            "title": "Geometry Practice Test",
+            "type": "internal_exam",
+            "totalMarks": 75,
+            "duration": 45,
+            "passingScore": 60,
+            "questions": [
+              {
+                "id": "q3",
+                "questionText": "Calculate the area of a triangle with base 8 cm and height 6 cm.",
+                "type": "essay",
+                "points": 25,
+                "order": 1,
+                "correctAnswer": "24 cm²",
+                "sampleAnswer": "Area = (1/2) × base × height = (1/2) × 8 × 6 = 24 cm²"
+              },
+              {
+                "id": "q4",
+                "questionText": "What is the sum of interior angles in a pentagon?",
+                "type": "multiple_choice",
+                "points": 25,
+                "order": 2,
+                "options": [
+                  {
+                    "id": "opt1",
+                    "text": "540°",
+                    "isCorrect": true
+                  },
+                  {
+                    "id": "opt2",
+                    "text": "360°",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "opt3",
+                    "text": "720°",
+                    "isCorrect": false
+                  },
+                  {
+                    "id": "opt4",
+                    "text": "450°",
+                    "isCorrect": false
+                  }
+                ],
+                "correctAnswer": "540°"
+              }
+            ]
+          },
+          {
+            "id": "exam_3",
+            "title": "Advanced Problem Solving (Google Form)",
+            "type": "google_form",
+            "url": "https://forms.gle/example123",
+            "totalMarks": 0,
+            "duration": 0,
+            "passingScore": 0,
+            "questions": [],
+            "migratedFromGoogleForm": false,
+            "migrationNote": ""
+          }
+        ]
+      },
+      "results": {
+        "courseId": "68e3e91811d5d4fef473d1b2",
+        "courseTitle": "Test Course with Mixed Exam Types",
+        "videosCount": 1,
+        "examsCount": 3,
+        "internalExamsCount": 2,
+        "googleFormExamsCount": 1,
+        "migratedExamsCount": 0,
+        "status": "PASSED"
+      }
+    }
+  ]
+}

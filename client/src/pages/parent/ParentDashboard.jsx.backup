@@ -1,0 +1,840 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
+import { toast } from '../../hooks/use-toast';
+import {
+  Users,
+  BookOpen,
+  TrendingUp,
+  Calendar,
+  Mail,
+  Phone,
+  MapPin,
+  Award,
+  Activity,
+  BarChart3,
+  PieChart,
+  Download,
+  MessageSquare,
+  Bell,
+  Settings,
+  ArrowLeft,
+  User,
+  GraduationCap,
+  Clock,
+  Target,
+  CheckCircle,
+  AlertTriangle,
+  Star,
+  Copy,
+  Edit3,
+  Plus,
+  X,
+  RefreshCw,
+  FileText,
+  Eye,
+  EyeOff
+} from 'lucide-react';
+import axiosInstance from '../../api/axiosInstance';
+import LuxuryCard from '../../components/ui/LuxuryCard';
+import LuxuryButton from '../../components/ui/LuxuryButton';
+import PageWrapper from '../../components/layout/PageWrapper';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Cell, BarChart, Bar } from 'recharts';
+
+const ParentDashboard = () => {
+  const { user } = useAuth();
+  const { colors } = useTheme();
+  const navigate = useNavigate();
+  
+  // State management
+  const [student, setStudent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [stats, setStats] = useState({
+    totalCourses: 0,
+    completedCourses: 0,
+    averageGrade: 0,
+    attendanceRate: 0
+  });
+  
+  // Persistent Student ID management
+  const [savedStudentIds, setSavedStudentIds] = useState([]);
+  const [currentStudentId, setCurrentStudentId] = useState('');
+  const [showStudentIdInput, setShowStudentIdInput] = useState(false);
+  const [newStudentId, setNewStudentId] = useState('');
+  const [isAddingStudent, setIsAddingStudent] = useState(false);
+  
+  // Charts data
+  const [gradeProgression, setGradeProgression] = useState([]);
+  const [subjectDistribution, setSubjectDistribution] = useState([]);
+  const [coursePerformance, setCoursePerformance] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
+
+  useEffect(() => {
+    loadSavedStudentIds();
+  }, []);
+
+  useEffect(() => {
+    if (currentStudentId) {
+      fetchStudentStats(currentStudentId);
+    }
+  }, [currentStudentId]);
+
+  // Load saved Student IDs from localStorage
+  const loadSavedStudentIds = () => {
+    try {
+      const savedIds = localStorage.getItem('parent_student_ids');
+      if (savedIds) {
+        const parsedIds = JSON.parse(savedIds);
+        setSavedStudentIds(parsedIds);
+        if (parsedIds.length > 0) {
+          setCurrentStudentId(parsedIds[0].studentId);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading saved student IDs:', error);
+    }
+  };
+
+  // Save Student ID to localStorage
+  const saveStudentId = (studentId, studentName) => {
+    try {
+      const newStudent = { studentId, studentName, savedAt: new Date().toISOString() };
+      const updatedIds = [...savedStudentIds.filter(s => s.studentId !== studentId), newStudent];
+      setSavedStudentIds(updatedIds);
+      localStorage.setItem('parent_student_ids', JSON.stringify(updatedIds));
+      setCurrentStudentId(studentId);
+      toast({
+        title: "تم الحفظ",
+        description: `تم حفظ معرف الطالب ${studentId}`,
+        variant: "success"
+      });
+    } catch (error) {
+      console.error('Error saving student ID:', error);
+      toast({
+        title: "خطأ",
+        description: "فشل في حفظ معرف الطالب",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Remove Student ID from localStorage
+  const removeStudentId = (studentId) => {
+    try {
+      const updatedIds = savedStudentIds.filter(s => s.studentId !== studentId);
+      setSavedStudentIds(updatedIds);
+      localStorage.setItem('parent_student_ids', JSON.stringify(updatedIds));
+      
+      if (currentStudentId === studentId) {
+        if (updatedIds.length > 0) {
+          setCurrentStudentId(updatedIds[0].studentId);
+        } else {
+          setCurrentStudentId('');
+          setStudent(null);
+        }
+      }
+      
+      toast({
+        title: "تم الحذف",
+        description: "تم حذف معرف الطالب",
+        variant: "success"
+      });
+    } catch (error) {
+      console.error('Error removing student ID:', error);
+    }
+  };
+
+  // Copy Student ID to clipboard
+  const copyStudentId = (studentId) => {
+    navigator.clipboard.writeText(studentId).then(() => {
+      toast({
+        title: "تم النسخ",
+        description: "تم نسخ معرف الطالب إلى الحافظة",
+        variant: "success"
+      });
+    }).catch(() => {
+      toast({
+        title: "خطأ",
+        description: "فشل في نسخ معرف الطالب",
+        variant: "destructive"
+      });
+    });
+  };
+
+  // Fetch student statistics using the new API endpoint
+  const fetchStudentStats = async (studentId) => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get(`/api/parent/student/${studentId}/stats`);
+      
+      if (response.data.success) {
+        const data = response.data.data;
+        setStudent(data.student);
+        setStats(data.statistics);
+        setGradeProgression(data.charts.gradeProgression);
+        setSubjectDistribution(data.charts.subjectDistribution);
+        setCoursePerformance(data.charts.coursePerformance);
+        setRecentActivity(data.recentActivity);
+        
+        // Save student ID if not already saved
+        const isAlreadySaved = savedStudentIds.some(s => s.studentId === studentId);
+        if (!isAlreadySaved) {
+          saveStudentId(studentId, `${data.student.firstName} ${data.student.secondName}`);
+        }
+      } else {
+        toast({
+          title: "خطأ",
+          description: response.data.message || "فشل في تحميل بيانات الطالب",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching student stats:', error);
+      toast({
+        title: "خطأ",
+        description: "فشل في تحميل بيانات الطالب",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add new student ID
+  const addNewStudent = async () => {
+    if (!newStudentId.trim()) {
+      toast({
+        title: "خطأ",
+        description: "يرجى إدخال معرف الطالب",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAddingStudent(true);
+    try {
+      // First search for the student
+      const searchResponse = await axiosInstance.post('/api/parent/search-student', {
+        studentId: newStudentId.trim()
+      });
+
+      if (searchResponse.data.success) {
+        const studentData = searchResponse.data.student;
+        saveStudentId(newStudentId.trim(), `${studentData.firstName} ${studentData.secondName}`);
+        setNewStudentId('');
+        setShowStudentIdInput(false);
+        
+        // Fetch stats for the new student
+        await fetchStudentStats(newStudentId.trim());
+      } else {
+        toast({
+          title: "خطأ",
+          description: searchResponse.data.message || "لم يتم العثور على الطالب",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error adding student:', error);
+      toast({
+        title: "خطأ",
+        description: "فشل في إضافة الطالب",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingStudent(false);
+    }
+  };
+
+  // Export student report as PDF
+  const exportReport = async () => {
+    try {
+      if (!currentStudentId) {
+        toast({
+          title: "خطأ",
+          description: "يرجى اختيار طالب أولاً",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await axiosInstance.get(`/api/parent/student/${currentStudentId}/export-report`, {
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `تقرير_${student?.firstName}_${student?.secondName}_${new Date().getFullYear()}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "تم التصدير",
+        description: "تم تحميل التقرير بنجاح",
+        variant: "success"
+      });
+    } catch (error) {
+      console.error('Export report error:', error);
+      toast({
+        title: "خطأ",
+        description: "فشل في تصدير التقرير",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const tabs = [
+    { id: 'overview', label: 'نظرة عامة', icon: BarChart3 },
+    { id: 'courses', label: 'الكورسات', icon: BookOpen },
+    { id: 'grades', label: 'الدرجات', icon: Award },
+    { id: 'attendance', label: 'الحضور', icon: Calendar },
+    { id: 'messages', label: 'الرسائل', icon: MessageSquare }
+  ];
+
+  if (loading) {
+    return (
+      <PageWrapper>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="p-8 rounded-full bg-white dark:bg-gray-800 shadow-lg"
+          >
+            <Users size={32} className="text-blue-600 dark:text-blue-400" />
+          </motion.div>
+        </div>
+      </PageWrapper>
+    );
+  }
+
+  if (!student && savedStudentIds.length === 0) {
+    return (
+      <PageWrapper>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+          <div className="text-center max-w-md mx-auto p-8">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.5 }}
+              className="w-24 h-24 mx-auto mb-6 rounded-full bg-white dark:bg-gray-800 shadow-lg flex items-center justify-center"
+            >
+              <Users size={48} className="text-blue-600 dark:text-blue-400" />
+            </motion.div>
+            
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+              مرحباً بك في لوحة تحكم ولي الأمر
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-8">
+              أضف معرف الطالب لمتابعة أداء طفلك الأكاديمي
+            </p>
+            
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowStudentIdInput(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 mx-auto"
+            >
+              <Plus size={20} />
+              إضافة طالب
+            </motion.button>
+          </div>
+        </div>
+      </PageWrapper>
+    );
+  }
+
+  return (
+    <PageWrapper>
+      <div className="min-h-screen" style={{ backgroundColor: colors.background }}>
+        {/* Header */}
+        <div className="p-6 border-b" style={{ borderColor: colors.border }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate(-1)}
+                className="p-2 rounded-lg transition-all duration-300"
+                style={{ 
+                  backgroundColor: colors.surface,
+                  color: colors.text 
+                }}
+              >
+                <ArrowLeft size={20} />
+              </motion.button>
+              
+              <div>
+                <h1 className="text-2xl font-bold" style={{ color: colors.text }}>
+                  لوحة تحكم ولي الأمر
+                </h1>
+                <p className="text-sm" style={{ color: colors.textMuted }}>
+                  تابع أداء {student.firstName} {student.secondName}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <LuxuryButton
+                variant="outline"
+                onClick={exportReport}
+                className="flex items-center gap-2"
+              >
+                <Download size={16} />
+                تصدير التقرير
+              </LuxuryButton>
+              
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: colors.surface }}>
+                <User size={16} style={{ color: colors.textMuted }} />
+                <span className="text-sm" style={{ color: colors.text }}>
+                  {user.firstName} {user.secondName}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+  return (
+    <PageWrapper>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+        {/* Header */}
+        <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+          <div className="max-w-7xl mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate(-1)}
+                  className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
+                >
+                  <ArrowLeft size={20} />
+                </motion.button>
+                
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+                    لوحة تحكم ولي الأمر
+                  </h1>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    تابع أداء طفلك الأكاديمي
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <LuxuryButton
+                  variant="outline"
+                  onClick={exportReport}
+                  className="flex items-center gap-2"
+                  disabled={!currentStudentId}
+                >
+                  <FileText size={16} />
+                  تصدير التقرير
+                </LuxuryButton>
+                
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowStudentIdInput(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
+                >
+                  <Plus size={16} />
+                  إضافة طالب
+                </motion.button>
+                
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700">
+                  <User size={16} className="text-gray-600 dark:text-gray-300" />
+                  <span className="text-sm text-gray-800 dark:text-white">
+                    {user.firstName} {user.secondName}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Student ID Management */}
+        {savedStudentIds.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <div className="max-w-7xl mx-auto px-6 py-4">
+              <div className="flex items-center gap-4 flex-wrap">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  الطلاب المحفوظين:
+                </span>
+                {savedStudentIds.map((savedStudent) => (
+                  <motion.div
+                    key={savedStudent.studentId}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 ${
+                      currentStudentId === savedStudent.studentId
+                        ? 'bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700'
+                        : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    <button
+                      onClick={() => setCurrentStudentId(savedStudent.studentId)}
+                      className={`text-sm font-medium transition-colors duration-200 ${
+                        currentStudentId === savedStudent.studentId
+                          ? 'text-blue-800 dark:text-blue-200'
+                          : 'text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400'
+                      }`}
+                    >
+                      {savedStudent.studentName} ({savedStudent.studentId})
+                    </button>
+                    
+                    <button
+                      onClick={() => copyStudentId(savedStudent.studentId)}
+                      className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
+                      title="نسخ معرف الطالب"
+                    >
+                      <Copy size={14} className="text-gray-500 dark:text-gray-400" />
+                    </button>
+                    
+                    <button
+                      onClick={() => removeStudentId(savedStudent.studentId)}
+                      className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900 transition-colors duration-200"
+                      title="حذف الطالب"
+                    >
+                      <X size={14} className="text-red-500 dark:text-red-400" />
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Student ID Modal */}
+        <AnimatePresence>
+          {showStudentIdInput && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                    إضافة طالب جديد
+                  </h3>
+                  <button
+                    onClick={() => setShowStudentIdInput(false)}
+                    className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                  >
+                    <X size={20} className="text-gray-500 dark:text-gray-400" />
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      معرف الطالب
+                    </label>
+                    <input
+                      type="text"
+                      value={newStudentId}
+                      onChange={(e) => setNewStudentId(e.target.value)}
+                      placeholder="مثال: STU12345678"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <LuxuryButton
+                      onClick={addNewStudent}
+                      disabled={isAddingStudent}
+                      className="flex-1"
+                    >
+                      {isAddingStudent ? (
+                        <>
+                          <RefreshCw size={16} className="animate-spin" />
+                          جاري الإضافة...
+                        </>
+                      ) : (
+                        <>
+                          <Plus size={16} />
+                          إضافة الطالب
+                        </>
+                      )}
+                    </LuxuryButton>
+                    
+                    <LuxuryButton
+                      variant="outline"
+                      onClick={() => setShowStudentIdInput(false)}
+                      className="flex-1"
+                    >
+                      إلغاء
+                    </LuxuryButton>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <AnimatePresence mode="wait">
+              {activeTab === 'overview' && (
+                <motion.div
+                  key="overview"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-6"
+                >
+                  {/* Student Info Card */}
+                  <LuxuryCard className="p-6">
+                    <div className="flex items-center gap-6">
+                      <div className="w-20 h-20 rounded-xl flex items-center justify-center" style={{ backgroundColor: colors.accent + '20' }}>
+                        <GraduationCap size={32} style={{ color: colors.accent }} />
+                      </div>
+                      
+                      <div className="flex-1">
+                        <h2 className="text-2xl font-bold mb-2" style={{ color: colors.text }}>
+                          {student.firstName} {student.secondName}
+                        </h2>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Users size={16} style={{ color: colors.textMuted }} />
+                            <span style={{ color: colors.textMuted }}>معرف الطالب:</span>
+                            <span style={{ color: colors.text }} className="font-mono">{student.studentId}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Mail size={16} style={{ color: colors.textMuted }} />
+                            <span style={{ color: colors.textMuted }}>البريد:</span>
+                            <span style={{ color: colors.text }}>{student.userEmail}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Phone size={16} style={{ color: colors.textMuted }} />
+                            <span style={{ color: colors.textMuted }}>الهاتف:</span>
+                            <span style={{ color: colors.text }}>{student.phoneStudent}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <MapPin size={16} style={{ color: colors.textMuted }} />
+                            <span style={{ color: colors.textMuted }}>المحافظة:</span>
+                            <span style={{ color: colors.text }}>{student.governorate}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </LuxuryCard>
+
+                  {/* Stats Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <LuxuryCard className="p-6 text-center">
+                      <div className="w-12 h-12 mx-auto mb-4 rounded-lg flex items-center justify-center" style={{ backgroundColor: colors.accent + '20' }}>
+                        <BookOpen size={24} style={{ color: colors.accent }} />
+                      </div>
+                      <h3 className="text-2xl font-bold mb-1" style={{ color: colors.text }}>
+                        {stats.totalCourses}
+                      </h3>
+                      <p style={{ color: colors.textMuted }}>إجمالي الكورسات</p>
+                    </LuxuryCard>
+
+                    <LuxuryCard className="p-6 text-center">
+                      <div className="w-12 h-12 mx-auto mb-4 rounded-lg flex items-center justify-center" style={{ backgroundColor: colors.success + '20' }}>
+                        <CheckCircle size={24} style={{ color: colors.success }} />
+                      </div>
+                      <h3 className="text-2xl font-bold mb-1" style={{ color: colors.text }}>
+                        {stats.completedCourses}
+                      </h3>
+                      <p style={{ color: colors.textMuted }}>كورسات مكتملة</p>
+                    </LuxuryCard>
+
+                    <LuxuryCard className="p-6 text-center">
+                      <div className="w-12 h-12 mx-auto mb-4 rounded-lg flex items-center justify-center" style={{ backgroundColor: colors.warning + '20' }}>
+                        <Award size={24} style={{ color: colors.warning }} />
+                      </div>
+                      <h3 className="text-2xl font-bold mb-1" style={{ color: colors.text }}>
+                        {stats.averageGrade}%
+                      </h3>
+                      <p style={{ color: colors.textMuted }}>متوسط الدرجات</p>
+                    </LuxuryCard>
+
+                    <LuxuryCard className="p-6 text-center">
+                      <div className="w-12 h-12 mx-auto mb-4 rounded-lg flex items-center justify-center" style={{ backgroundColor: colors.info + '20' }}>
+                        <Calendar size={24} style={{ color: colors.info }} />
+                      </div>
+                      <h3 className="text-2xl font-bold mb-1" style={{ color: colors.text }}>
+                        {stats.attendanceRate}%
+                      </h3>
+                      <p style={{ color: colors.textMuted }}>معدل الحضور</p>
+                    </LuxuryCard>
+                  </div>
+
+                  {/* Charts Section */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Grade Progression Chart */}
+                    <LuxuryCard className="p-6">
+                      <h3 className="text-lg font-bold mb-4" style={{ color: colors.text }}>
+                        تطور الدرجات
+                      </h3>
+                      <div className="h-64 flex items-end justify-between gap-2">
+                        {gradeProgression.map((item, index) => (
+                          <div key={index} className="flex-1 flex flex-col items-center">
+                            <div
+                              className="w-full rounded-t-lg transition-all duration-500 hover:opacity-80"
+                              style={{
+                                height: `${(item.grade / 100) * 200}px`,
+                                backgroundColor: colors.accent,
+                                minHeight: '20px'
+                              }}
+                            />
+                            <span className="text-xs mt-2" style={{ color: colors.textMuted }}>
+                              {item.month}
+                            </span>
+                            <span className="text-xs font-semibold" style={{ color: colors.text }}>
+                              {item.grade}%
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </LuxuryCard>
+
+                    {/* Course Distribution Chart */}
+                    <LuxuryCard className="p-6">
+                      <h3 className="text-lg font-bold mb-4" style={{ color: colors.text }}>
+                        توزيع الكورسات
+                      </h3>
+                      <div className="space-y-4">
+                        {courseDistribution.map((course, index) => (
+                          <div key={index} className="flex items-center gap-3">
+                            <div
+                              className="w-4 h-4 rounded-full"
+                              style={{ backgroundColor: course.color }}
+                            />
+                            <div className="flex-1">
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-sm font-medium" style={{ color: colors.text }}>
+                                  {course.name}
+                                </span>
+                                <span className="text-sm" style={{ color: colors.textMuted }}>
+                                  {course.value}%
+                                </span>
+                              </div>
+                              <div className="w-full h-2 rounded-full" style={{ backgroundColor: colors.surface }}>
+                                <div
+                                  className="h-2 rounded-full transition-all duration-500"
+                                  style={{
+                                    width: `${course.value}%`,
+                                    backgroundColor: course.color
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </LuxuryCard>
+                  </div>
+                </motion.div>
+              )}
+
+              {activeTab === 'courses' && (
+                <motion.div
+                  key="courses"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <LuxuryCard className="p-6">
+                    <h2 className="text-xl font-bold mb-4" style={{ color: colors.text }}>
+                      الكورسات المسجلة
+                    </h2>
+                    <div className="text-center py-12">
+                      <BookOpen size={48} style={{ color: colors.textMuted }} className="mx-auto mb-4" />
+                      <p style={{ color: colors.textMuted }}>
+                        لا توجد كورسات مسجلة حالياً
+                      </p>
+                    </div>
+                  </LuxuryCard>
+                </motion.div>
+              )}
+
+              {activeTab === 'grades' && (
+                <motion.div
+                  key="grades"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <LuxuryCard className="p-6">
+                    <h2 className="text-xl font-bold mb-4" style={{ color: colors.text }}>
+                      الدرجات والتقييمات
+                    </h2>
+                    <div className="text-center py-12">
+                      <Award size={48} style={{ color: colors.textMuted }} className="mx-auto mb-4" />
+                      <p style={{ color: colors.textMuted }}>
+                        لا توجد درجات متاحة حالياً
+                      </p>
+                    </div>
+                  </LuxuryCard>
+                </motion.div>
+              )}
+
+              {activeTab === 'attendance' && (
+                <motion.div
+                  key="attendance"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <LuxuryCard className="p-6">
+                    <h2 className="text-xl font-bold mb-4" style={{ color: colors.text }}>
+                      سجل الحضور
+                    </h2>
+                    <div className="text-center py-12">
+                      <Calendar size={48} style={{ color: colors.textMuted }} className="mx-auto mb-4" />
+                      <p style={{ color: colors.textMuted }}>
+                        لا توجد بيانات حضور متاحة حالياً
+                      </p>
+                    </div>
+                  </LuxuryCard>
+                </motion.div>
+              )}
+
+              {activeTab === 'messages' && (
+                <motion.div
+                  key="messages"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <LuxuryCard className="p-6">
+                    <h2 className="text-xl font-bold mb-4" style={{ color: colors.text }}>
+                      الرسائل والتواصل
+                    </h2>
+                    <div className="text-center py-12">
+                      <MessageSquare size={48} style={{ color: colors.textMuted }} className="mx-auto mb-4" />
+                      <p style={{ color: colors.textMuted }}>
+                        لا توجد رسائل حالياً
+                      </p>
+                    </div>
+                  </LuxuryCard>
+                </motion.div>
+              )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </PageWrapper>
+  );
+};
+
+export default ParentDashboard;

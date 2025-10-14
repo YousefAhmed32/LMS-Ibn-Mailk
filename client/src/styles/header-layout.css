@@ -1,0 +1,43 @@
+/* Global CSS custom properties for header height management */
+
+:root {
+  --header-height: 64px; /* Default mobile height */
+}
+
+/* Responsive header height fallbacks */
+@media (min-width: 640px) {
+  :root {
+    --header-height: 72px; /* Small screens */
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --header-height: 80px; /* Medium screens */
+  }
+}
+
+/* Utility classes for content spacing */
+.content-below-header {
+  padding-top: var(--header-height);
+}
+
+.content-full-height {
+  min-height: calc(100vh - var(--header-height));
+}
+
+/* Ensure smooth transitions when header height changes */
+main {
+  transition: padding-top 0.3s ease;
+}
+
+/* Fix for any potential layout issues */
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure proper scrolling behavior */
+html {
+  scroll-behavior: smooth;
+}
