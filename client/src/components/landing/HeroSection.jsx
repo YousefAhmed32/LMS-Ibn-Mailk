@@ -175,7 +175,7 @@ const HeroSection = () => {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-gray-700 dark:text-gray-200 leading-relaxed max-w-4xl mx-auto mb-10 font-medium"
           >
-           ASFDASDJ;FLKJAS;DFLKAJSDFASLDKF اكتشف عالم المواد العربية الأزهرية بطريقة حديثة ومتطورة
+    9999999999999  اكتشف عالم المواد العربية الأزهرية بطريقة حديثة ومتطورة
             <br />
             <span className="bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 dark:from-cyan-400 dark:via-blue-400 dark:to-purple-400 bg-clip-text text-transparent font-bold drop-shadow-lg">
               مع أفضل المعلمين وأحدث التقنيات التعليمية
