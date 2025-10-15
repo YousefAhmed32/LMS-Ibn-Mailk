@@ -163,7 +163,7 @@ const HeroSection = () => {
                 <Heart size={36} className="sm:w-9 sm:h-9 md:w-10 md:h-10 lg:w-12 lg:h-12" />
               </motion.div>
               <span className=" pb-4 text-2xl sm:text-3xl md:text-4xl lg:text-5xl bg-gradient-to-r from-cyan-600 via-blue-600 via-purple-600 to-pink-600 dark:from-cyan-400 dark:via-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent font-bold tracking-wide drop-shadow-lg">
-                للتعليم الأزهري المتميز
+                للتعليم الأزهري المتميز1111
               </span>
             </div>
           </motion.h1>
