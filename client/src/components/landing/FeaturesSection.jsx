@@ -25,12 +25,12 @@ const FeaturesSection = () => {
       description: "متابعة شخصية لكل طالب مع إجابة على جميع الاستفسارات",
       color: "from-purple-500 to-pink-500"
     },
-    {
-      icon: TrendingUp,
-      title: "تقدم قابل للقياس",
-      description: "متابعة تقدمك الأكاديمي مع إحصائيات مفصلة وتقارير فورية",
-      color: "from-green-500 to-emerald-500"
-    },
+    // {
+    //   icon: TrendingUp,
+    //   title: "تقدم قابل للقياس",
+    //   description: "متابعة تقدمك الأكاديمي مع إحصائيات مفصلة وتقارير فورية",
+    //   color: "from-green-500 to-emerald-500"
+    // },
     {
       icon: Shield,
       title: "آمان وحماية البيانات",
