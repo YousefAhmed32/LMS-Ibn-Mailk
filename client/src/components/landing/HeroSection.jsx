@@ -169,7 +169,7 @@ const HeroSection = () => {
           </motion.h1>
 
           {/* Luxury Subtitle */}
-          <motion.p
+          {/* <motion.p
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
@@ -180,7 +180,7 @@ const HeroSection = () => {
             <span className="bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 dark:from-cyan-400 dark:via-blue-400 dark:to-purple-400 bg-clip-text text-transparent font-bold drop-shadow-lg">
               مع أفضل المعلمين وأحدث التقنيات التعليمية
             </span>
-          </motion.p>
+          </motion.p> */}
 
           {/* Luxury Features List */}
           <motion.div
