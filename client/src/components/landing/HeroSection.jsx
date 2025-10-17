@@ -181,6 +181,7 @@ const HeroSection = () => {
               مع أفضل المعلمين وأحدث التقنيات التعليمية
             </span>
           </motion.p> */}
+          dfasdgasdkjasdhlfkjadf
 
           {/* Luxury Features List */}
           <motion.div
