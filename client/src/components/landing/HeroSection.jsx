@@ -138,7 +138,7 @@ const HeroSection = () => {
                 <BookOpen size={40} className="sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14" />
               </motion.div>
               <span className="p-3 bg-gradient-to-r from-gray-900 via-cyan-600 via-blue-600 to-purple-600 dark:from-white dark:via-cyan-400 dark:via-blue-400 dark:to-purple-400 bg-clip-text text-transparent drop-shadow-lg font-black tracking-wide">
-               555  2222222222  منصة ابن مالك
+               77777777777 منصة ابن مالك
               </span>
               <motion.div
                 animate={{ 
