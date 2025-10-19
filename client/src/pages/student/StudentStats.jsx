@@ -166,7 +166,7 @@ const StudentStats = () => {
 
   // Handle back to dashboard
   const handleBack = () => {
-    navigate('/student/dashboard');
+    navigate('/dashboard');
   };
 
   if (loading) {

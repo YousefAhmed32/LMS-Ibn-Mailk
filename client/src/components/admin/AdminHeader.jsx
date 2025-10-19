@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import ThemeToggle from '../ui/ThemeToggle';
+import logo from '/assets/logo.png'
 import EnhancedNotificationBell from '../notifications/EnhancedNotificationBell';
 import {
   Menu,
@@ -157,7 +158,7 @@ const AdminHeader = () => {
                     : 'bg-gradient-to-br from-white/90 to-gray-50/90 border-gray-200/50'
                 } flex items-center justify-center shadow-2xl group-hover:shadow-3xl transition-all duration-500 group-hover:scale-110 border-2 backdrop-blur-xl`}>
                   <img 
-                    src="/src/assets/images/logo.png" 
+                    src={logo} 
                     alt="ابن مالك Logo" 
                     className="w-8 h-8 md:w-9 md:h-9 object-contain transition-all duration-500 group-hover:scale-125 filter drop-shadow-lg"
                     onError={(e) => {

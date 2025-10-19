@@ -16,6 +16,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import logo from '/assets/logo.png'
 
 const Footer = () => {
   const { isDarkMode } = useTheme();
@@ -213,7 +214,7 @@ const Footer = () => {
                     isDarkMode ? 'bg-luxury-navy-800' : 'bg-white'
                   } flex items-center justify-center`}>
                     <img 
-                      src="/src/assets/images/logo.png" 
+                      src={logo} 
                       alt="YANSY Logo" 
                       className="w-10 h-10 object-contain"
                       onError={(e) => {

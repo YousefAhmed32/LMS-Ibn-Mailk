@@ -69,7 +69,7 @@ import ParentDemo from "./pages/parent/ParentDemo";
 // Student Pages
 import StudentStatisticsPage from "./pages/student/StudentStatisticsPage";
 import StudentStats from "./pages/student/StudentStats";
-import StudentDashboard from "./pages/student/StudentDashboard";
+import LuxuryStudentStats from "./pages/student/LuxuryStudentStats";
 
 // Components
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -79,6 +79,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import CourseVideoPage from './pages/courses/CourseVideoPage';
 import NotificationsPage from './pages/NotificationsPage';
 import SmartDashboardRouter from './components/smart/SmartDashboardRouter';
+import LuxuryErrorPage from './components/error/LuxuryErrorPage';
 
 function App() {
   const { toasts, dismiss } = useToast();
@@ -116,14 +117,6 @@ function App() {
                 />
                 
                 {/* Individual Dashboard Routes */}
-                <Route
-                  path="/student/dashboard"
-                  element={
-                    <ProtectedRoute allowedRoles={['student']}>
-                      <StudentDashboard />
-                    </ProtectedRoute>
-                  }
-                />
 
                 <Route
                   path="/profile"
@@ -476,7 +469,7 @@ function App() {
                   element={
                     <ProtectedRoute allowedRoles={['student']}>
                       <ErrorBoundary>
-                        <StudentStats />
+                        <LuxuryStudentStats />
                       </ErrorBoundary>
                     </ProtectedRoute>
                   }
@@ -492,6 +485,18 @@ function App() {
                     </ProtectedRoute>
                   }
                 /> */}
+
+                {/* 404 Error Page - Catch all route */}
+                <Route
+                  path="*"
+                  element={
+                    <LuxuryErrorPage
+                      errorCode={404}
+                      title="الصفحة غير موجودة"
+                      message="عذراً، الصفحة التي تبحث عنها غير موجودة أو تم نقلها. يرجى التحقق من الرابط أو العودة للصفحة الرئيسية."
+                    />
+                  }
+                />
               </Routes>
 
               {/* Toast Notifications */}

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import NotificationBell from '../NotificationBell';
 import EnhancedNotificationBell from '../notifications/EnhancedNotificationBell';
+import logo from '/assets/logo.png'
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -89,7 +90,7 @@ const Navigation = () => {
                 : 'border-gray-200/50 group-hover:border-luxury-gold-400/50'
             }`}>
               <img 
-                src="/src/assets/images/logo.png" 
+                src={logo} 
                 alt="ابن مالك Logo" 
                 className="w-10 h-10 object-contain transition-all duration-300 group-hover:scale-110"
                 onError={(e) => {

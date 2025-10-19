@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import AccessDeniedPage from '../error/AccessDeniedPage';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading, isInitialized } = useAuth();
@@ -47,11 +48,12 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     if (!normalizedAllowedRoles.includes(userRole)) {
       console.log(`❌ ProtectedRoute: Access denied - User role '${user.role}' not in allowed roles:`, allowedRoles);
       
-      // Redirect to role-specific dashboard instead of generic /dashboard
-      const redirectPath = getRoleBasedRedirectPath(user.role);
-      console.log(`🔄 ProtectedRoute: Redirecting to ${redirectPath}`);
-      
-      return <Navigate to={redirectPath} replace />;
+      return (
+        <AccessDeniedPage
+          title="غير مصرح بالوصول"
+          message={`عذراً، هذه الصفحة متاحة فقط للمستخدمين من نوع: ${allowedRoles.join(', ')}. دورك الحالي: ${user.role}`}
+        />
+      );
     }
   }
 

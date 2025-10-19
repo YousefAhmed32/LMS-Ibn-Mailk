@@ -641,7 +641,7 @@ const StudentProfile = () => {
 
   const handleViewAsStudent = () => {
     // Navigate to student view (if you have a student view route)
-    window.open(`/student/dashboard?viewAs=${id}`, '_blank');
+    window.open(`/dashboard?viewAs=${id}`, '_blank');
   };
 
   // Loading state

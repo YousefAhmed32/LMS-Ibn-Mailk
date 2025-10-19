@@ -15,14 +15,14 @@ const SmartDashboardRouter = () => {
           navigate('/parent/dashboard');
           break;
         case 'student':
-          navigate('/student/dashboard');
+          navigate('/dashboard');
           break;
         case 'admin':
           navigate('/admin/dashboard');
           break;
         default:
-          // Default to student dashboard for unknown roles
-          navigate('/student/dashboard');
+          // Default to dashboard for unknown roles
+          navigate('/dashboard');
           break;
       }
     } else {
@@ -41,7 +41,7 @@ const SmartDashboardRouter = () => {
         </p>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {user?.role === 'parent' && 'توجيهك إلى لوحة تحكم ولي الأمر'}
-          {user?.role === 'student' && 'توجيهك إلى لوحة تحكم الطالب'}
+          {user?.role === 'student' && 'توجيهك إلى لوحة التحكم'}
           {user?.role === 'admin' && 'توجيهك إلى لوحة تحكم الإدارة'}
         </p>
       </div>

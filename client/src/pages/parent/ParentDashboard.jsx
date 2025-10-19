@@ -1257,7 +1257,7 @@ const ParentDashboard = () => {
                   {/* Desktop Subtitle */}
                   <p className="hidden sm:block text-cyan-300 dark:text-cyan-200 light:text-cyan-700 text-sm lg:text-base font-medium">
                     {selectedChild ? 
-                      `تابع أداء ${selectedChild.firstName} الأكاديمي` : 
+                      `` : 
                       'تابع أداء أطفالك الأكاديمي'
                     }
                   </p>
@@ -1376,47 +1376,6 @@ const ParentDashboard = () => {
           </div>
         </div>
 
-        {/* Information Section for Student Navigation */}
-        {selectedChild && (
-          <div className="relative z-10 bg-gradient-to-r from-green-500/20 to-blue-500/20 backdrop-blur-sm border-b border-green-400/30">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                  <CheckCircle size={16} className="text-white sm:w-5 sm:h-5" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-base sm:text-lg font-bold text-white mb-2 sm:mb-1">
-                    طفلك مرتبط بنجاح!
-                  </h3>
-                  <div className="space-y-3 text-xs sm:text-sm text-green-200">
-                    <div className="flex items-start gap-2">
-                      <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></div>
-                      <span className="leading-relaxed">بعد ربط الطالب، ستتمكن من رؤية بياناته تلقائياً</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></div>
-                      <span className="leading-relaxed">يمكنك الانتقال لحساب الطالب مباشرة من لوحة التحكم</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></div>
-                      <span className="leading-relaxed">جميع الإحصائيات والدرجات ستكون متاحة فوراً</span>
-                    </div>
-                  </div>
-                </div>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => navigateToStudentAccount()}
-                  className="px-6 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white transition-all duration-200 flex items-center gap-2 shadow-lg"
-                >
-                  <Users size={18} />
-                  انتقل لحساب {selectedChild.firstName}
-                  <ArrowRight size={18} />
-                </motion.button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Children Selection */}
         {children && children.length > 1 && (
@@ -1831,7 +1790,7 @@ const ParentDashboard = () => {
                   </div>
                 )}
 
-                {/* Real Grades Table from Database - Beautiful Design */}
+                {/* Recent Test Results Table - Same as Student Stats */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1841,12 +1800,12 @@ const ParentDashboard = () => {
                   <h3 className="text-xl font-bold text-cyan-300 dark:text-cyan-200 light:text-cyan-700 mb-6 flex items-center gap-2">
                     <Award size={24} />
                     نتائج الاختبارات الأخيرة
-                    </h3>
+                  </h3>
                   
                   <div className="overflow-x-auto">
                     {gradesData && gradesData.length > 0 ? (
                       <table className="w-full table-fixed">
-                      <thead>
+                        <thead>
                           <tr className="border-b border-cyan-400/30 dark:border-cyan-400/40 light:border-cyan-600/20">
                             <th className="text-right py-4 px-4 text-cyan-400 dark:text-cyan-300 light:text-cyan-600 font-semibold w-32">
                               الاختبار
@@ -1869,14 +1828,14 @@ const ParentDashboard = () => {
                             <th className="text-center py-4 px-4 text-cyan-400 dark:text-cyan-300 light:text-cyan-600 font-semibold w-20">
                               الترتيب
                             </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {gradesData.map((grade, index) => (
-                          <motion.tr
-                            key={index}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {gradesData.map((grade, index) => (
+                            <motion.tr
+                              key={index}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
                               transition={{ duration: 0.6, delay: 1.8 + index * 0.1 }}
                               className="border-b border-cyan-400/20 dark:border-cyan-400/30 light:border-cyan-600/15 hover:bg-cyan-500/5 dark:hover:bg-cyan-500/10 light:hover:bg-cyan-500/5 transition-colors duration-300"
                             >
@@ -1884,12 +1843,12 @@ const ParentDashboard = () => {
                                 <div className="truncate" title={grade.examTitle || 'امتحان غير محدد'}>
                                   {grade.examTitle || 'امتحان غير محدد'}
                                 </div>
-                            </td>
+                              </td>
                               <td className="py-4 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600 text-right">
                                 <div className="truncate" title={grade.courseName || 'غير محدد'}>
                                   {grade.courseName || 'غير محدد'}
                                 </div>
-                            </td>
+                              </td>
                               <td className="py-4 px-4 text-center">
                                 <span className="bg-cyan-500/10 px-3 py-1 rounded-lg text-sm font-mono font-bold text-cyan-200 dark:text-cyan-100 light:text-cyan-600">
                                   {grade.studentScore || 0}/{grade.totalScore || 0}
@@ -1906,8 +1865,8 @@ const ParentDashboard = () => {
                                     : 'bg-red-500/20 text-red-300 dark:text-red-200 light:text-red-700'
                                 }`}>
                                   {grade.percentage || 0}%
-                              </span>
-                            </td>
+                                </span>
+                              </td>
                               <td className="py-4 px-4 text-center">
                                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                                   (grade.percentage || 0) >= 90 
@@ -1920,7 +1879,7 @@ const ParentDashboard = () => {
                                 }`}>
                                   {grade.grade || 'غير محدد'}
                                 </span>
-                            </td>
+                              </td>
                               <td className="py-4 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600 text-sm text-center">
                                 {grade.examDate ? new Date(grade.examDate).toLocaleDateString('ar-EG') : 'غير محدد'}
                               </td>
@@ -1928,11 +1887,11 @@ const ParentDashboard = () => {
                                 <span className="bg-cyan-500/20 px-3 py-1 rounded-lg text-sm font-bold text-cyan-300 dark:text-cyan-200 light:text-cyan-700">
                                   {grade.rank ? `#${grade.rank}` : 'غير محدد'}
                                 </span>
-                            </td>
-                          </motion.tr>
-                        ))}
-                      </tbody>
-                    </table>
+                              </td>
+                            </motion.tr>
+                          ))}
+                        </tbody>
+                      </table>
                     ) : (
                       <div className="text-center py-12">
                         <Award size={48} className="text-cyan-400 dark:text-cyan-500 light:text-cyan-600 mx-auto mb-4" />

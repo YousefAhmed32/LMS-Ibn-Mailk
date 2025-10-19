@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import StudentDashboard from '../dashboard/StudentDashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -97,7 +96,14 @@ const DashboardTest = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <StudentDashboard />
+          <div className="text-center p-8">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+              لوحة التحكم غير متاحة
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              تم حذف لوحة تحكم الطالب من النظام
+            </p>
+          </div>
         </motion.div>
 
         {/* Test Footer */}
