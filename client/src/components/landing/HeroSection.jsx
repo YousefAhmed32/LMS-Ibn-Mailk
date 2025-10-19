@@ -163,7 +163,7 @@ const HeroSection = () => {
                 <Heart size={36} className="sm:w-9 sm:h-9 md:w-10 md:h-10 lg:w-12 lg:h-12" />
               </motion.div>
               <span className=" pb-4 text-2xl sm:text-3xl md:text-4xl lg:text-5xl bg-gradient-to-r from-cyan-600 via-blue-600 via-purple-600 to-pink-600 dark:from-cyan-400 dark:via-blue-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent font-bold tracking-wide drop-shadow-lg">
-                للتعليم الأزهري المتميز1111
+                للتعليم الأزهري المتميز
               </span>
             </div>
           </motion.h1>
@@ -175,7 +175,7 @@ const HeroSection = () => {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-gray-700 dark:text-gray-200 leading-relaxed max-w-4xl mx-auto mb-10 font-medium"
           >
-    25ddd60 dfsad اكتشف عالم المواد العربية الأزهرية بطريقة حديثة ومتطورة
+   اكتشف عالم المواد العربية الأزهرية بطريقة حديثة ومتطورة
             <br />
             <span className="bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 dark:from-cyan-400 dark:via-blue-400 dark:to-purple-400 bg-clip-text text-transparent font-bold drop-shadow-lg">
               مع أفضل المعلمين وأحدث التقنيات التعليمية
