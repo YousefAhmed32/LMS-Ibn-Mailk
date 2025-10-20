@@ -6,6 +6,8 @@ const multer = require('multer');
 const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 
 const authRoutes = require("./routers/auth-routes");
 const courseRoutes = require("./routers/course-routes");
@@ -32,6 +34,10 @@ const adminDashboardRoutes = require("./routes/admin-dashboard-routes");
 
 // Security middleware
 const { configureCSP, configureSecurityHeaders } = require('./middleware/security');
+
+// Performance middleware
+const responseOptimizer = require('./middleware/responseOptimizer');
+const queryOptimizer = require('./middleware/queryOptimizer');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -81,6 +87,34 @@ const upload = multer({
   }
 });
 
+// Performance middleware
+app.use(compression({
+    level: 6, // Compression level (1-9, 6 is good balance)
+    threshold: 1024, // Only compress responses larger than 1KB
+    filter: (req, res) => {
+        // Don't compress if client doesn't support it
+        if (req.headers['x-no-compression']) {
+            return false;
+        }
+        // Use compression for all other requests
+        return compression.filter(req, res);
+    }
+}));
+
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: {
+        success: false,
+        error: 'Too many requests from this IP, please try again later.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+app.use('/api/', limiter);
+
 // Security middleware
 app.use(configureCSP());
 app.use(configureSecurityHeaders());
@@ -96,8 +130,16 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// Body parsing with size limits
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Response optimization
+app.use(responseOptimizer);
+
+// Query optimization
+app.use(queryOptimizer);
 
 // Create uploads directory if it doesn't exist
 const fs = require('fs');
