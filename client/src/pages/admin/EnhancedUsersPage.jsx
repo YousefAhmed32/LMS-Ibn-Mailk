@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { toast } from '../../hooks/use-toast';
 import { fetchAllUsers } from '../../store/slices/adminSlice';
 import ModernUsersTable from '../../components/admin/ModernUsersTable';
@@ -39,6 +40,7 @@ const EnhancedUsersPage = () => {
   const dispatch = useDispatch();
   const theme = useTheme();
   const { isDarkMode } = theme;
+  const { user } = useAuth();
 
   // Redux state
   const { users, loading, error } = useSelector((state) => state.admin);
@@ -66,10 +68,14 @@ const EnhancedUsersPage = () => {
   const fetchUsers = async () => {
     try {
       console.log('🔄 Fetching users...');
+      console.log('🔍 Current user from auth context:', user);
+      console.log('🔍 User role:', user?.role);
+      
       const result = await dispatch(fetchAllUsers()).unwrap();
       console.log('✅ Users fetched successfully:', result);
     } catch (error) {
       console.error('❌ Error fetching users:', error);
+      console.error('❌ Error details:', error);
       toast({
         title: 'خطأ في تحميل المستخدمين',
         description: 'فشل في تحميل قائمة المستخدمين',

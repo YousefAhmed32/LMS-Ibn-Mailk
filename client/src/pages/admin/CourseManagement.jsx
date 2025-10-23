@@ -184,12 +184,21 @@ const CourseManagement = () => {
   const fetchCourses = async () => {
     try {
       setLoading(true);
+      console.log('🚀 Fetching courses from /api/admin/courses');
       const response = await axiosInstance.get('/api/admin/courses');
+      console.log('✅ Courses API response:', response.data);
       if (response.data.success) {
         setCourses(response.data.data || []);
+        console.log('📚 Courses loaded:', response.data.data?.length || 0);
       }
     } catch (error) {
-      console.error('Error fetching courses:', error);
+      console.error('❌ Error fetching courses:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
     } finally {
       setLoading(false);
     }

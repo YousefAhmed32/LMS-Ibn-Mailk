@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Get auth token from localStorage
 const getAuthToken = () => {
@@ -68,37 +68,37 @@ const adminService = {
   getAnalytics: async (params = {}) => {
     const instance = createAuthInstance();
     const queryParams = new URLSearchParams(params);
-    return await instance.get(`/admin/analytics?${queryParams}`);
+    return await instance.get(`/api/admin/analytics?${queryParams}`);
   },
 
   // Get analytics service (alias for getAnalytics)
   getAnalyticsService: async () => {
     const instance = createAuthInstance();
-    return await instance.get('/admin/analytics');
+    return await instance.get('/api/admin/analytics');
   },
 
   // Get users analytics
   getUsersAnalytics: async () => {
     const instance = createAuthInstance();
-    return await instance.get('/admin/analytics/users');
+    return await instance.get('/api/admin/analytics/users');
   },
 
   // Get courses analytics
   getCoursesAnalytics: async () => {
     const instance = createAuthInstance();
-    return await instance.get('/admin/analytics/courses');
+    return await instance.get('/api/admin/analytics/courses');
   },
 
   // Get payments analytics
   getPaymentsAnalytics: async () => {
     const instance = createAuthInstance();
-    return await instance.get('/admin/analytics/payments');
+    return await instance.get('/api/admin/analytics/payments');
   },
 
   // Get activity analytics
   getActivityAnalytics: async () => {
     const instance = createAuthInstance();
-    return await instance.get('/admin/analytics/activity');
+    return await instance.get('/api/admin/analytics/activity');
   },
 
   // ==================== USERS MANAGEMENT ====================
@@ -107,80 +107,80 @@ const adminService = {
   getAllUsers: async (filters = {}) => {
     const instance = createAuthInstance();
     const params = new URLSearchParams(filters);
-    return await instance.get(`/admin/users?${params}`);
+    return await instance.get(`/api/admin/users?${params}`);
   },
 
   // Get single user details
   getUserById: async (userId) => {
     const instance = createAuthInstance();
-    return await instance.get(`/admin/users/${userId}`);
+    return await instance.get(`/api/admin/users/${userId}`);
   },
 
   // Create new user
   createUser: async (userData) => {
     const instance = createAuthInstance();
-    return await instance.post('/admin/users', userData);
+    return await instance.post('/api/admin/users', userData);
   },
 
   // Update user
   updateUser: async (userId, userData) => {
     const instance = createAuthInstance();
-    return await instance.put(`/admin/users/${userId}`, userData);
+    return await instance.put(`/api/admin/users/${userId}`, userData);
   },
 
   // Delete user
   deleteUser: async (userId) => {
     const instance = createAuthInstance();
-    return await instance.delete(`/admin/users/${userId}`);
+    return await instance.delete(`/api/admin/users/${userId}`);
   },
 
   // Get user courses
   getUserCourses: async (userId) => {
     const instance = createAuthInstance();
-    return await instance.get(`/admin/users/${userId}/courses`);
+    return await instance.get(`/api/admin/users/${userId}/courses`);
   },
 
   // Get user grades
   getUserGrades: async (userId) => {
     const instance = createAuthInstance();
-    return await instance.get(`/admin/users/${userId}/grades`);
+    return await instance.get(`/api/admin/users/${userId}/grades`);
   },
 
   // Get user activities
   getUserActivities: async (userId) => {
     const instance = createAuthInstance();
-    return await instance.get(`/admin/users/${userId}/activities`);
+    return await instance.get(`/api/admin/users/${userId}/activities`);
   },
 
   // Update user role
   updateUserRole: async (userId, role) => {
     const instance = createAuthInstance();
-    return await instance.put(`/admin/users/${userId}/role`, { role });
+    return await instance.put(`/api/admin/users/${userId}/role`, { role });
   },
 
   // Delete user
   deleteUser: async (userId) => {
     const instance = createAuthInstance();
-    return await instance.delete(`/admin/users/${userId}`);
+    return await instance.delete(`/api/admin/users/${userId}`);
   },
 
   // Create new user
   createUser: async (userData) => {
     const instance = createAuthInstance();
-    return await instance.post('/admin/users', userData);
+    return await instance.post('/api/admin/users', userData);
   },
 
   // Update existing user
   updateUser: async (userId, userData) => {
     const instance = createAuthInstance();
-    return await instance.put(`/admin/users/${userId}`, userData);
+    return await instance.put(`/api/admin/users/${userId}`, userData);
   },
 
   // Export users to CSV
   exportUsers: async (filters = {}) => {
     const instance = createAuthInstance();
     const params = new URLSearchParams(filters);
-    return await instance.get(`/admin/users/export?${params}`, {
+    return await instance.get(`/api/admin/users/export?${params}`, {
       responseType: 'blob'
     });
   },
@@ -191,7 +191,7 @@ const adminService = {
   addVideoToCourse: async (courseId, videoData) => {
     try {
       const authInstance = createAuthInstance();
-      const response = await authInstance.post(`/admin/courses/${courseId}/videos`, videoData);
+      const response = await authInstance.post(`/api/admin/courses/${courseId}/videos`, videoData);
       return response.data;
     } catch (error) {
       console.error('Error adding video to course:', error);
@@ -203,7 +203,7 @@ const adminService = {
   addQuizToCourse: async (courseId, quizData) => {
     try {
       const authInstance = createAuthInstance();
-      const response = await authInstance.post(`/admin/courses/${courseId}/quizzes`, quizData);
+      const response = await authInstance.post(`/api/admin/courses/${courseId}/quizzes`, quizData);
       return response.data;
     } catch (error) {
       console.error('Error adding quiz to course:', error);
@@ -215,7 +215,7 @@ const adminService = {
   getCourseVideos: async (courseId) => {
     try {
       const authInstance = createAuthInstance();
-      const response = await authInstance.get(`/admin/courses/${courseId}/videos`);
+      const response = await authInstance.get(`/api/admin/courses/${courseId}/videos`);
       return response.data;
     } catch (error) {
       console.error('Error fetching course videos:', error);
@@ -227,7 +227,7 @@ const adminService = {
   updateVideoInCourse: async (courseId, videoId, videoData) => {
     try {
       const authInstance = createAuthInstance();
-      const response = await authInstance.patch(`/admin/courses/${courseId}/videos/${videoId}`, videoData);
+      const response = await authInstance.patch(`/api/admin/courses/${courseId}/videos/${videoId}`, videoData);
       return response.data;
     } catch (error) {
       console.error('Error updating video:', error);
@@ -239,7 +239,7 @@ const adminService = {
   deleteVideoFromCourse: async (courseId, videoId) => {
     try {
       const authInstance = createAuthInstance();
-      const response = await authInstance.delete(`/admin/courses/${courseId}/videos/${videoId}`);
+      const response = await authInstance.delete(`/api/admin/courses/${courseId}/videos/${videoId}`);
       return response.data;
     } catch (error) {
       console.error('Error deleting video:', error);
@@ -253,13 +253,13 @@ const adminService = {
   getAllCourses: async (filters = {}) => {
     const instance = createAuthInstance();
     const params = new URLSearchParams(filters);
-    return await instance.get(`/admin/courses?${params}`);
+    return await instance.get(`/api/admin/courses?${params}`);
   },
 
   // Get course details with enrolled students
   getCourseById: async (courseId) => {
     const instance = createAuthInstance();
-    return await instance.get(`/admin/courses/${courseId}`);
+    return await instance.get(`/api/admin/courses/${courseId}`);
   },
 
   // Create new course
@@ -275,9 +275,9 @@ const adminService = {
           // Don't set Content-Type for FormData - let browser set it with boundary
         }
       });
-      return await formInstance.post('/admin/courses', courseData);
+      return await formInstance.post('/api/admin/courses', courseData);
     }
-    return await instance.post('/admin/courses', courseData);
+    return await instance.post('/api/admin/courses', courseData);
   },
 
   // Update existing course
@@ -293,21 +293,21 @@ const adminService = {
           // Don't set Content-Type for FormData - let browser set it with boundary
         }
       });
-      return await formInstance.patch(`/admin/courses/${courseId}`, courseData);
+      return await formInstance.patch(`/api/admin/courses/${courseId}`, courseData);
     }
-    return await instance.patch(`/admin/courses/${courseId}`, courseData);
+    return await instance.patch(`/api/admin/courses/${courseId}`, courseData);
   },
 
   // Delete course
   deleteCourse: async (courseId) => {
     const instance = createAuthInstance();
-    return await instance.delete(`/admin/courses/${courseId}`);
+    return await instance.delete(`/api/admin/courses/${courseId}`);
   },
 
   // Get course enrollment statistics
   getCourseEnrollment: async (courseId) => {
     const instance = createAuthInstance();
-    return await instance.get(`/admin/courses/${courseId}/enrollment`);
+    return await instance.get(`/api/admin/courses/${courseId}/enrollment`);
   },
 
   // ==================== VIDEO MANAGEMENT ====================
@@ -315,7 +315,7 @@ const adminService = {
   // Get course videos
   getCourseVideos: async (courseId) => {
     const instance = createAuthInstance();
-    return await instance.get(`/admin/courses/${courseId}/videos`);
+    return await instance.get(`/api/admin/courses/${courseId}/videos`);
   },
 
   // Add video to course
@@ -328,7 +328,7 @@ const adminService = {
         // Don't set Content-Type for FormData - let browser set it with boundary
       }
     });
-    return await formInstance.post(`/admin/courses/${courseId}/videos`, videoData);
+    return await formInstance.post(`/api/admin/courses/${courseId}/videos`, videoData);
   },
 
   // Update video in course
@@ -341,19 +341,19 @@ const adminService = {
         // Don't set Content-Type for FormData - let browser set it with boundary
       }
     });
-    return await formInstance.put(`/admin/courses/${courseId}/videos/${videoId}`, videoData);
+    return await formInstance.put(`/api/admin/courses/${courseId}/videos/${videoId}`, videoData);
   },
 
   // Delete video from course
   deleteVideoFromCourse: async (courseId, videoId) => {
     const instance = createAuthInstance();
-    return await instance.delete(`/admin/courses/${courseId}/videos/${videoId}`);
+    return await instance.delete(`/api/admin/courses/${courseId}/videos/${videoId}`);
   },
 
   // Reorder videos in course
   reorderVideosInCourse: async (courseId, videoOrder) => {
     const instance = createAuthInstance();
-    return await instance.put(`/admin/courses/${courseId}/videos/reorder`, { videoOrder });
+    return await instance.put(`/api/admin/courses/${courseId}/videos/reorder`, { videoOrder });
   },
 
   // ==================== PAYMENTS MANAGEMENT ====================
@@ -362,25 +362,32 @@ const adminService = {
   getAllPayments: async (filters = {}) => {
     const instance = createAuthInstance();
     const params = new URLSearchParams(filters);
-    return await instance.get(`/admin/payment-proofs/pending?${params}`);
+    return await instance.get(`/api/admin/payments?${params}`);
+  },
+
+  // Get payment statistics
+  getPaymentStatistics: async (period = 'all') => {
+    const instance = createAuthInstance();
+    const params = new URLSearchParams({ period });
+    return await instance.get(`/api/admin/payments/statistics?${params}`);
   },
 
   // Confirm payment
   confirmPayment: async (paymentId) => {
     const instance = createAuthInstance();
-    return await instance.put(`/admin/payments/${paymentId}/confirm`);
+    return await instance.put(`/api/admin/payments/${paymentId}/confirm`);
   },
 
   // Reject payment
   rejectPayment: async (paymentId, reason = '') => {
     const instance = createAuthInstance();
-    return await instance.put(`/admin/payments/${paymentId}/reject`, { reason });
+    return await instance.put(`/api/admin/payments/${paymentId}/reject`, { reason });
   },
 
   // Get payment details
   getPaymentById: async (paymentId) => {
     const instance = createAuthInstance();
-    return await instance.get(`/admin/payments/${paymentId}`);
+    return await instance.get(`/api/admin/payments/${paymentId}`);
   },
 
   // ==================== PAYMENT PROOF MANAGEMENT ====================
@@ -388,19 +395,19 @@ const adminService = {
   // Get pending payment proofs
   getPendingPaymentProofs: async () => {
     const instance = createAuthInstance();
-    return await instance.get('/admin/payment-proofs/pending');
+    return await instance.get('/api/admin/payment-proofs/pending');
   },
 
   // Approve payment proof
   approvePaymentProof: async (paymentId) => {
     const instance = createAuthInstance();
-    return await instance.patch(`/admin/payment-proofs/${paymentId}/approve`);
+    return await instance.patch(`/api/admin/payment-proofs/${paymentId}/approve`);
   },
 
   // Reject payment proof
   rejectPaymentProof: async (paymentId, rejectionReason) => {
     const instance = createAuthInstance();
-    return await instance.patch(`/admin/payment-proofs/${paymentId}/reject`, {
+    return await instance.patch(`/api/admin/payment-proofs/${paymentId}/reject`, {
       rejectionReason
     });
   },
@@ -408,7 +415,7 @@ const adminService = {
   // Get course enrollment statistics
   getCourseEnrollmentStats: async () => {
     const instance = createAuthInstance();
-    return await instance.get('/admin/enrollment-stats');
+    return await instance.get('/api/admin/enrollment-stats');
   },
 
   // ==================== REPORTS & EXPORTS ====================
@@ -417,7 +424,7 @@ const adminService = {
   exportPayments: async (filters = {}) => {
     const instance = createAuthInstance();
     const params = new URLSearchParams(filters);
-    return await instance.get(`/admin/payments/export?${params}`, {
+    return await instance.get(`/api/admin/payments/export?${params}`, {
       responseType: 'blob'
     });
   },
@@ -426,7 +433,7 @@ const adminService = {
   exportCourses: async (filters = {}) => {
     const instance = createAuthInstance();
     const params = new URLSearchParams(filters);
-    return await instance.get(`/admin/courses/export?${params}`, {
+    return await instance.get(`/api/admin/courses/export?${params}`, {
       responseType: 'blob'
     });
   },
@@ -434,7 +441,7 @@ const adminService = {
   // Generate dashboard report
   generateDashboardReport: async (dateRange = {}) => {
     const instance = createAuthInstance();
-    return await instance.post('/admin/reports/dashboard', dateRange);
+    return await instance.post('/api/admin/reports/dashboard', dateRange);
   }
 };
 

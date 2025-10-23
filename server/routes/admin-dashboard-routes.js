@@ -14,6 +14,8 @@ router.get('/test', (req, res) => {
 router.get('/dashboard-stats-simple', async (req, res) => {
   try {
     console.log('📊 Simple dashboard stats requested');
+    console.log('📊 Request query:', req.query);
+    console.log('📊 Request headers:', req.headers.authorization ? 'Has auth token' : 'No auth token');
     const { period = 'all' } = req.query;
     const { startDate, endDate } = getDateRange(period);
     
@@ -157,6 +159,7 @@ router.get('/dashboard-stats-simple', async (req, res) => {
     .lean();
     
     const response = {
+      success: true,
       stats: {
         overview: {
           totalStudents,
@@ -216,7 +219,11 @@ router.get('/dashboard-stats-simple', async (req, res) => {
       studentEngagement: []
     };
     
-    console.log('✅ Simple dashboard data sent:', response);
+    console.log('✅ Simple dashboard data sent:', {
+      hasStats: !!response.stats,
+      hasRecentPayments: !!response.recentPayments,
+      hasTopCourses: !!response.topCourses
+    });
     res.json(response);
   } catch (error) {
     console.error('❌ Simple dashboard error:', error);

@@ -62,8 +62,8 @@ const getUserNotifications = async (req, res) => {
 // Get unread notification count
 const getUnreadCount = async (req, res) => {
   try {
-    console.log('🔔 Getting unread count...');
-    console.log('User ID:', req.user?._id);
+    // console.log('🔔 Getting unread count...');
+    // console.log('User ID:', req.user?._id);
     
     if (!req.user || !req.user._id) {
       return res.status(401).json({

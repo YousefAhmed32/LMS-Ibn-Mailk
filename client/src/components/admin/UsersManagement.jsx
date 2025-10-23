@@ -306,12 +306,12 @@ const UsersManagement = ({ users }) => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">جميع الصفوف</SelectItem>
-                <SelectItem value="7">الصف السابع</SelectItem>
-                <SelectItem value="8">الصف الثامن</SelectItem>
-                <SelectItem value="9">الصف التاسع</SelectItem>
-                <SelectItem value="10">الصف العاشر</SelectItem>
-                <SelectItem value="11">الصف الحادي عشر</SelectItem>
-                <SelectItem value="12">الصف الثاني عشر</SelectItem>
+                <SelectItem value="7">أولي إعدادي</SelectItem>
+                <SelectItem value="8">ثاني إعدادي</SelectItem>
+                <SelectItem value="9">ثالث إعدادي</SelectItem>
+                <SelectItem value="10">أولي ثانوي</SelectItem>
+                <SelectItem value="11">ثاني ثانوي</SelectItem>
+                <SelectItem value="12">ثالث ثانوي</SelectItem>
               </SelectContent>
             </Select>
             <Select value={governorateFilter} onValueChange={setGovernorateFilter}>
@@ -549,12 +549,12 @@ const UsersManagement = ({ users }) => {
                       <SelectValue placeholder="اختر الصف" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="7">الصف السابع</SelectItem>
-                      <SelectItem value="8">الصف الثامن</SelectItem>
-                      <SelectItem value="9">الصف التاسع</SelectItem>
-                      <SelectItem value="10">الصف العاشر</SelectItem>
-                      <SelectItem value="11">الصف الحادي عشر</SelectItem>
-                      <SelectItem value="12">الصف الثاني عشر</SelectItem>
+                      <SelectItem value="7">أولي إعدادي</SelectItem>
+                      <SelectItem value="8">ثاني إعدادي</SelectItem>
+                      <SelectItem value="9">ثالث إعدادي</SelectItem>
+                      <SelectItem value="10">أولي ثانوي</SelectItem>
+                      <SelectItem value="11">ثاني ثانوي</SelectItem>
+                      <SelectItem value="12">ثالث ثانوي</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

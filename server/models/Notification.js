@@ -169,7 +169,7 @@ NotificationSchema.statics.getUserNotifications = async function(userId, options
 
     const total = await this.countDocuments(query);
 
-    console.log('📊 Query results:', { notificationsCount: notifications.length, total });
+    // console.log('📊 Query results:', { notificationsCount: notifications.length, total });
 
     const totalPages = Math.ceil(total / limit);
 

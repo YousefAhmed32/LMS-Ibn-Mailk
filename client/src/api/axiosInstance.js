@@ -3,7 +3,7 @@ import axios from "axios";
 // Create axios instance with proper configuration
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
-  timeout: 10000, // 10 second timeout
+  timeout: 30000, // 30 second timeout
   headers: {
     'Content-Type': 'application/json',
   },
@@ -251,8 +251,10 @@ axiosInstance.interceptors.response.use(
     }
     
     // Handle other error types
-    if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
+    if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error' || error.code === 'ECONNABORTED') {
       console.error('🌐 Network error - server might be down');
+      // Don't retry to prevent infinite loops
+      console.log('🌐 Network error - not retrying to prevent infinite loops');
     } else if (error.response?.status >= 500) {
       console.error('🔥 Server error:', error.response.status, error.response.data);
     } else if (error.response?.status >= 400) {

@@ -432,7 +432,7 @@ const PerformanceSection = ({ performance }) => {
                 </div>
               </div>
             </div>
-            <div className={`px-4 py-2 rounded-full text-sm font-bold border shadow-sm ${
+            <div className={`px-4 py-2 rounded-full text-sm font-bold border shadow-sm whitespace-nowrap ${
               exam.score >= 80 ? 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-700/30' :
               exam.score >= 60 ? 'bg-luxury-gold-100 text-luxury-gold-800 border-luxury-gold-200 dark:bg-luxury-gold-900/20 dark:text-luxury-gold-400 dark:border-luxury-gold-700/30' :
               'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-700/30'

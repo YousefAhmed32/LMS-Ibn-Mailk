@@ -286,11 +286,8 @@ const MySubscriptions = () => {
   };
 
   const handleContactAdmin = () => {
-    // Navigate to messages or open contact modal
-    toast({
-      title: "تواصل مع الإدارة",
-      description: "يمكنك التواصل مع الإدارة من خلال صفحة الرسائل"
-    });
+    // Open WhatsApp contact
+    window.open('https://wa.me/201022880651', '_blank');
   };
 
   // Handle unsubscribe from course

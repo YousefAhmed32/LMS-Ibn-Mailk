@@ -222,6 +222,26 @@ button {
   background: var(--color-accent-hover);
 }
 
+/* Hide scrollbars when not needed */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
+/* Prevent ghost scrollbars */
+.no-scrollbar {
+  overflow: hidden;
+}
+
+/* Smooth scrollbar behavior */
+.smooth-scroll {
+  scroll-behavior: smooth;
+}
+
 /* Selection */
 ::selection {
   background: var(--color-accent);

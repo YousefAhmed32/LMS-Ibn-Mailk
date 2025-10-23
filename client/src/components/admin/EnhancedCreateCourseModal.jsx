@@ -240,133 +240,66 @@ const EnhancedCreateCourseModal = ({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="w-full max-w-xs sm:max-w-sm md:max-w-lg lg:max-w-2xl xl:max-w-3xl h-[90vh] sm:h-[85vh] md:h-[80vh] overflow-hidden rounded-xl sm:rounded-2xl shadow-2xl mx-2 sm:mx-4 flex flex-col"
+            className="w-full max-w-4xl h-[85vh] overflow-hidden rounded-lg shadow-xl mx-4 flex flex-col"
             style={{
               backgroundColor: colors.surface,
               border: `1px solid ${colors.border}`
             }}
           >
-            {/* Enhanced Luxury Header */}
-            <div className="relative p-2 sm:p-3 md:p-4 lg:p-6 border-b overflow-hidden flex-shrink-0" style={{ 
+            {/* Clean Header */}
+            <div className="p-4 border-b flex items-center justify-between" style={{ 
               borderColor: colors.border,
-              background: `linear-gradient(135deg, ${colors.accent}08, ${colors.accent}03)`
+              backgroundColor: colors.surface
             }}>
-              {/* Luxury Background Effects */}
-              <div className="absolute inset-0 opacity-10">
-                <div className="absolute top-0 right-0 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 rounded-full" style={{
-                  background: `radial-gradient(circle, ${colors.accent} 0%, transparent 70%)`
-                }}></div>
-                <div className="absolute bottom-0 left-0 w-8 h-8 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 rounded-full" style={{
-                  background: `radial-gradient(circle, ${colors.accent}40 0%, transparent 70%)`
-                }}></div>
-              </div>
               
-              <div className="relative flex flex-col gap-2 sm:gap-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <div className="relative">
-                      <div className="p-1.5 sm:p-2 md:p-3 rounded-lg sm:rounded-xl" style={{
-                        background: `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`,
-                        border: `2px solid ${colors.accent}40`,
-                        boxShadow: `0 8px 32px ${colors.accent}20`
-                      }}>
-                        <Crown size={14} className="sm:w-4 sm:h-4 md:w-5 md:h-5" color={colors.accent} />
-                      </div>
-                      <div className="absolute -top-1 -right-1">
-                        <Sparkles size={6} className="sm:w-3 sm:h-3" color={colors.accent} />
-                      </div>
-                    </div>
-                    <div>
-                      <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold mb-1" style={{ 
-                        color: colors.text,
-                        background: `linear-gradient(135deg, ${colors.accent}, ${colors.accent}CC)`,
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        backgroundClip: 'text'
-                      }}>
-                        إنشاء دورة جديدة
-                      </h2>
-                      <p className="text-xs sm:text-sm font-medium" style={{ color: colors.textMuted }}>
-                        أضف دورة تعليمية فاخرة مع محتوى متقدم
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <LuxuryButton
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setShowModal(false);
-                      resetForm();
-                    }}
-                    className="p-1.5 sm:p-2 hover:scale-110 transition-transform"
-                    style={{
-                      backgroundColor: colors.surfaceCard + 'CC',
-                      backdropFilter: 'blur(15px)',
-                      border: `2px solid ${colors.border}40`,
-                      borderRadius: borderRadius.lg,
-                      boxShadow: `0 8px 25px ${colors.shadow}20`
-                    }}
-                  >
-                    <X size={12} className="sm:w-4 sm:h-4" />
-                  </LuxuryButton>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{
+                  backgroundColor: colors.accent + '20',
+                  color: colors.accent
+                }}>
+                  <Plus size={20} />
                 </div>
-                
-                <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-full" style={{
-                    backgroundColor: colors.success + '20',
-                    border: `1px solid ${colors.success}30`
-                  }}>
-                    <CheckCircle size={8} className="sm:w-3 sm:h-3" color={colors.success} />
-                    <span className="text-xs font-semibold" style={{ color: colors.success }}>
-                      محتوى متقدم
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-full" style={{
-                    backgroundColor: colors.accent + '20',
-                    border: `1px solid ${colors.accent}30`
-                  }}>
-                    <Star size={8} className="sm:w-3 sm:h-3" color={colors.accent} />
-                    <span className="text-xs font-semibold" style={{ color: colors.accent }}>
-                      تصميم فاخر
-                    </span>
-                  </div>
+                <div>
+                  <h2 className="text-lg font-semibold" style={{ color: colors.text }}>
+                    إنشاء دورة جديدة
+                  </h2>
+                  <p className="text-sm" style={{ color: colors.textMuted }}>
+                    أضف دورة تعليمية جديدة
+                  </p>
                 </div>
               </div>
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  resetForm();
+                }}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                style={{ color: colors.textMuted }}
+              >
+                <X size={20} />
+              </button>
             </div>
 
             {/* Scrollable Content */}
-            <div className="overflow-y-auto flex-1 min-h-0">
-              <form onSubmit={handleSubmit} className="p-2 sm:p-3 md:p-4 lg:p-6 space-y-3 sm:space-y-4 md:space-y-6">
-                {/* Enhanced Basic Information Section */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="relative"
-                >
-                  <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-3 sm:mb-4 md:mb-6">
-                    <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl" style={{
-                      background: `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`,
-                      border: `2px solid ${colors.accent}40`,
-                      boxShadow: `0 4px 16px ${colors.accent}20`
+            <div className="flex-1 overflow-y-auto hide-scrollbar clean-ui no-ghost-scroll" style={{ maxHeight: 'calc(85vh - 140px)' }}>
+              <form onSubmit={handleSubmit} className="p-4 space-y-6">
+                {/* Basic Information Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 rounded-lg" style={{
+                      backgroundColor: colors.accent + '20',
+                      color: colors.accent
                     }}>
-                      <BookOpen size={16} className="sm:w-5 sm:h-5 md:w-6 md:h-6" color={colors.accent} />
+                      <BookOpen size={18} />
                     </div>
-                    <div>
-                      <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold" style={{ color: colors.text }}>
-                        المعلومات الأساسية
-                      </h3>
-                      <p className="text-xs sm:text-sm font-medium" style={{ color: colors.textMuted }}>
-                        أدخل التفاصيل الأساسية للدورة التعليمية
-                      </p>
-                    </div>
+                    <h3 className="text-lg font-semibold" style={{ color: colors.text }}>
+                      المعلومات الأساسية
+                    </h3>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
-                      <label className="block text-xs sm:text-sm font-bold mb-2 sm:mb-3 flex items-center gap-1 sm:gap-2" style={{ color: colors.text }}>
-                        <Target size={12} className="sm:w-3 sm:h-3 md:w-4 md:h-4" color={colors.accent} />
+                      <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
                         عنوان الدورة *
                       </label>
                       <input
@@ -374,21 +307,19 @@ const EnhancedCreateCourseModal = ({
                         required
                         value={courseForm.title}
                         onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })}
-                        className="w-full px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 rounded-lg sm:rounded-xl md:rounded-2xl border-2 transition-all duration-300 focus:outline-none focus:ring-2 sm:focus:ring-4 focus:scale-105"
+                        className="w-full px-3 py-2 rounded-lg border transition-colors focus:outline-none focus:ring-2"
                         style={{
                           borderColor: colors.border,
                           backgroundColor: colors.background,
                           color: colors.text,
-                          '--tw-ring-color': colors.accent + '30',
-                          boxShadow: `0 4px 16px ${colors.shadow}10`
+                          '--tw-ring-color': colors.accent + '30'
                         }}
-                        placeholder="أدخل عنوان الدورة الجذاب"
+                        placeholder="أدخل عنوان الدورة"
                       />
                     </div>
                     
-                    <div className="lg:col-span-2">
-                      <label className="block text-xs sm:text-sm font-bold mb-2 sm:mb-3 flex items-center gap-1 sm:gap-2" style={{ color: colors.text }}>
-                        <Lightbulb size={12} className="sm:w-3 sm:h-3 md:w-4 md:h-4" color={colors.accent} />
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
                         وصف الدورة *
                       </label>
                       <textarea
@@ -396,135 +327,89 @@ const EnhancedCreateCourseModal = ({
                         rows={4}
                         value={courseForm.description}
                         onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })}
-                        className="w-full px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 rounded-lg sm:rounded-xl md:rounded-2xl border-2 transition-all duration-300 focus:outline-none focus:ring-2 sm:focus:ring-4 focus:scale-105 resize-none"
+                        className="w-full px-3 py-2 rounded-lg border transition-colors focus:outline-none focus:ring-2 resize-none"
                         style={{
                           borderColor: colors.border,
                           backgroundColor: colors.background,
                           color: colors.text,
-                          '--tw-ring-color': colors.accent + '30',
-                          boxShadow: `0 4px 16px ${colors.shadow}10`
+                          '--tw-ring-color': colors.accent + '30'
                         }}
-                        placeholder="أدخل وصفاً مفصلاً وجذاباً للدورة"
+                        placeholder="أدخل وصف الدورة"
                       />
                     </div>
                     
                     <div>
-                      <label className="block text-xs sm:text-sm font-bold mb-2 sm:mb-3 flex items-center gap-1 sm:gap-2" style={{ color: colors.text }}>
-                        <GraduationCap size={12} className="sm:w-3 sm:h-3 md:w-4 md:h-4" color={colors.accent} />
+                      <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
                         المادة *
                       </label>
                       <select
                         required
                         value={courseForm.subject}
                         onChange={(e) => setCourseForm({ ...courseForm, subject: e.target.value })}
-                        className="w-full px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 rounded-lg sm:rounded-xl md:rounded-2xl border-2 transition-all duration-300 focus:outline-none focus:ring-2 sm:focus:ring-4 focus:scale-105"
+                        className="w-full px-3 py-2 rounded-lg border transition-colors focus:outline-none focus:ring-2"
                         style={{
                           borderColor: colors.border,
                           backgroundColor: colors.background,
                           color: colors.text,
-                          '--tw-ring-color': colors.accent + '30',
-                          boxShadow: `0 4px 16px ${colors.shadow}10`
+                          '--tw-ring-color': colors.accent + '30'
                         }}
                       >
                         <option value="">اختر المادة</option>
-                        <option value="النحو والصرف">النحو والصرف</option>
-                        <option value="الأدب العربي">الأدب العربي</option>
-                        <option value="التعبير والإنشاء">التعبير والإنشاء</option>
-                        <option value="البلاغة العربية">البلاغة العربية</option>
-                        <option value="النقد الأدبي">النقد الأدبي</option>
-                        <option value="اللغة العربية المتقدمة">اللغة العربية المتقدمة</option>
-                        <option value="الإملاء والكتابة">الإملاء والكتابة</option>
-                        <option value="القراءة والاستيعاب">القراءة والاستيعاب</option>
-                        <option value="القواعد النحوية">القواعد النحوية</option>
-                        <option value="التحليل الأدبي">التحليل الأدبي</option>
+                        <option value="لغة عربية">لغة عربية</option>
                       </select>
                     </div>
                     
                     <div>
-                      <label className="block text-xs sm:text-sm font-bold mb-2 sm:mb-3 flex items-center gap-1 sm:gap-2" style={{ color: colors.text }}>
-                        <Users size={12} className="sm:w-3 sm:h-3 md:w-4 md:h-4" color={colors.accent} />
-                        الصف *
+                      <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
+                        الصف الدراسي *
                       </label>
                       <select
                         required
                         value={courseForm.grade}
                         onChange={(e) => setCourseForm({ ...courseForm, grade: e.target.value })}
-                        className="w-full px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 rounded-lg sm:rounded-xl md:rounded-2xl border-2 transition-all duration-300 focus:outline-none focus:ring-2 sm:focus:ring-4 focus:scale-105"
+                        className="w-full px-3 py-2 rounded-lg border transition-colors focus:outline-none focus:ring-2"
                         style={{
                           borderColor: colors.border,
                           backgroundColor: colors.background,
                           color: colors.text,
-                          '--tw-ring-color': colors.accent + '30',
-                          boxShadow: `0 4px 16px ${colors.shadow}10`
+                          '--tw-ring-color': colors.accent + '30'
                         }}
                       >
                         <option value="">اختر الصف</option>
-                        <option value="7">أولى إعدادي</option>
-                        <option value="8">ثانية إعدادي</option>
-                        <option value="9">ثالثة إعدادي</option>
-                        <option value="10">أولى ثانوي</option>
-                        <option value="11">ثانية ثانوي</option>
-                        <option value="12">ثالثة ثانوي</option>
+                        <option value="7">أولي إعدادي</option>
+                        <option value="8">ثاني إعدادي</option>
+                        <option value="9">ثالث إعدادي</option>
+                        <option value="10">أولي ثانوي</option>
+                        <option value="11">ثاني ثانوي</option>
+                        <option value="12">ثالث ثانوي</option>
                       </select>
                     </div>
                     
                     <div>
-                      <label className="block text-xs sm:text-sm font-bold mb-2 sm:mb-3 flex items-center gap-1 sm:gap-2" style={{ color: colors.text }}>
-                        <DollarSign size={12} className="sm:w-3 sm:h-3 md:w-4 md:h-4" color={colors.accent} />
-                        السعر (جنيه) *
+                      <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
+                        السعر *
                       </label>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          required
-                          min="0"
-                          value={courseForm.price || ''}
-                          onChange={(e) => setCourseForm({ ...courseForm, price: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 pr-8 sm:pr-12 rounded-lg sm:rounded-xl md:rounded-2xl border-2 transition-all duration-300 focus:outline-none focus:ring-2 sm:focus:ring-4 focus:scale-105"
-                          style={{
-                            borderColor: colors.border,
-                            backgroundColor: colors.background,
-                            color: colors.text,
-                            '--tw-ring-color': colors.accent + '30',
-                            boxShadow: `0 4px 16px ${colors.shadow}10`
-                          }}
-                          placeholder="0"
-                        />
-                        <div className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2">
-                          <DollarSign size={16} className="sm:w-5 sm:h-5" color={colors.textMuted} />
-                        </div>
-                      </div>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        step="0.01"
+                        value={courseForm.price}
+                        onChange={(e) => setCourseForm({ ...courseForm, price: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg border transition-colors focus:outline-none focus:ring-2"
+                        style={{
+                          borderColor: colors.border,
+                          backgroundColor: colors.background,
+                          color: colors.text,
+                          '--tw-ring-color': colors.accent + '30'
+                        }}
+                        placeholder="أدخل سعر الدورة"
+                      />
                     </div>
                     
-                    <div>
-                      <label className="block text-xs sm:text-sm font-bold mb-2 sm:mb-3 flex items-center gap-1 sm:gap-2" style={{ color: colors.text }}>
-                        <Clock size={12} className="sm:w-3 sm:h-3 md:w-4 md:h-4" color={colors.accent} />
-                        المدة (دقيقة) *
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          required
-                          min="0"
-                          value={courseForm.duration || ''}
-                          onChange={(e) => setCourseForm({ ...courseForm, duration: parseInt(e.target.value) || 0 })}
-                          className="w-full px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 pr-8 sm:pr-12 rounded-lg sm:rounded-xl md:rounded-2xl border-2 transition-all duration-300 focus:outline-none focus:ring-2 sm:focus:ring-4 focus:scale-105"
-                          style={{
-                            borderColor: colors.border,
-                            backgroundColor: colors.background,
-                            color: colors.text,
-                            '--tw-ring-color': colors.accent + '30',
-                            boxShadow: `0 4px 16px ${colors.shadow}10`
-                          }}
-                          placeholder="0"
-                        />
-                        <div className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2">
-                          <Clock size={16} className="sm:w-5 sm:h-5" color={colors.textMuted} />
-                        </div>
-                      </div>
-                    </div>
+           
                   </div>
-                </motion.div>
+                </div>
                 {/* Enhanced Course Image Section */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -914,106 +799,46 @@ const EnhancedCreateCourseModal = ({
                     </div>
                   </div>
                 </motion.div>
-              </form>
-            </div>
-
-            {/* Enhanced Luxury Footer */}
-            <div className="relative p-2 sm:p-3 md:p-4 lg:p-6 border-t overflow-hidden flex-shrink-0" style={{ 
-              borderColor: colors.border,
-              background: `linear-gradient(135deg, ${colors.accent}05, ${colors.accent}02)`
-            }}>
-              {/* Luxury Background Effects */}
-              <div className="absolute inset-0 opacity-5">
-                <div className="absolute top-0 left-0 w-8 h-8 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 rounded-full" style={{
-                  background: `radial-gradient(circle, ${colors.accent} 0%, transparent 70%)`
-                }}></div>
-                <div className="absolute bottom-0 right-0 w-6 h-6 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-16 lg:h-16 rounded-full" style={{
-                  background: `radial-gradient(circle, ${colors.accent}40 0%, transparent 70%)`
-                }}></div>
-              </div>
-              
-              <div className="relative flex flex-col gap-2 sm:gap-3 md:gap-4">
-                <div className="text-center sm:text-right">
-                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1 sm:gap-2 md:gap-3 mb-1 sm:mb-2">
-                    <div className="flex items-center gap-1 px-2 py-1 rounded-full" style={{
-                      backgroundColor: colors.accent + '15',
-                      border: `1px solid ${colors.accent}30`
-                    }}>
-                      <Rocket size={8} className="sm:w-3 sm:h-3" color={colors.accent} />
-                      <span className="text-xs font-semibold" style={{ color: colors.accent }}>
-                        محتوى متقدم
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 px-2 py-1 rounded-full" style={{
-                      backgroundColor: colors.success + '15',
-                      border: `1px solid ${colors.success}30`
-                    }}>
-                      <Zap size={8} className="sm:w-3 sm:h-3" color={colors.success} />
-                      <span className="text-xs font-semibold" style={{ color: colors.success }}>
-                        تصميم فاخر
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-xs font-medium" style={{ color: colors.textMuted }}>
-                    {courseVideos.length > 0 || courseExams.length > 0 ? (
-                      <span>
-                        سيتم إنشاء الدورة مع <span className="font-bold" style={{ color: colors.accent }}>{courseVideos.length}</span> فيديو و <span className="font-bold" style={{ color: colors.accent }}>{courseExams.length}</span> امتحان
-                      </span>
-                    ) : (
-                      <span>يمكنك إضافة الفيديوهات والامتحانات لاحقاً</span>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center sm:justify-end">
-                  <LuxuryButton
+                {/* Footer Buttons */}
+                <div className="flex justify-end gap-3 pt-4 border-t" style={{ borderColor: colors.border }}>
+                  <button
                     type="button"
-                    variant="outline"
                     onClick={() => {
                       setShowModal(false);
                       resetForm();
                     }}
                     disabled={isCreating}
-                    className="px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 hover:scale-105 transition-transform w-full sm:w-auto"
+                    className="px-4 py-2 rounded-lg border transition-colors hover:bg-gray-50 disabled:opacity-50"
                     style={{
-                      backgroundColor: colors.surfaceCard + 'CC',
-                      backdropFilter: 'blur(15px)',
-                      border: `2px solid ${colors.border}40`,
-                      borderRadius: borderRadius.lg,
-                      boxShadow: `0 8px 25px ${colors.shadow}20`
+                      borderColor: colors.border,
+                      backgroundColor: colors.background,
+                      color: colors.text
                     }}
                   >
-                    <span className="font-semibold text-xs sm:text-sm">إلغاء</span>
-                  </LuxuryButton>
-                  <LuxuryButton
+                    إلغاء
+                  </button>
+                  <button
                     type="submit"
-                    onClick={handleSubmit}
                     disabled={isCreating}
-                    className="px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 flex items-center justify-center gap-1 sm:gap-2 hover:scale-105 transition-transform w-full sm:w-auto"
+                    className="px-4 py-2 rounded-lg text-white transition-colors hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
                     style={{
-                      background: `linear-gradient(135deg, ${colors.accent}, ${colors.accent}CC)`,
-                      boxShadow: `0 8px 32px ${colors.accent}30`
+                      backgroundColor: colors.accent
                     }}
                   >
                     {isCreating ? (
                       <>
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        >
-                          <Save size={12} className="sm:w-3 sm:h-3 md:w-4 md:h-4" />
-                        </motion.div>
-                        <span className="font-semibold text-xs sm:text-sm">جاري الإنشاء...</span>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        جاري الإنشاء...
                       </>
                     ) : (
                       <>
-                        <Rocket size={12} className="sm:w-3 sm:h-3 md:w-4 md:h-4" />
-                        <span className="font-semibold text-xs sm:text-sm">إنشاء الدورة</span>
+                        <Save size={16} />
+                        إنشاء الدورة
                       </>
                     )}
-                  </LuxuryButton>
+                  </button>
                 </div>
-              </div>
+              </form>
             </div>
           </motion.div>
         </motion.div>

@@ -57,6 +57,22 @@ const EditCourse = () => {
   // Modal states
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [showExamModal, setShowExamModal] = useState(false);
+
+  // Prevent scroll jump when modal opens
+  useEffect(() => {
+    if (showExamModal) {
+      document.body.classList.add('modal-open');
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = 'auto';
+    }
+    
+    return () => {
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = 'auto';
+    };
+  }, [showExamModal]);
   const [editingVideo, setEditingVideo] = useState(null);
   const [editingExam, setEditingExam] = useState(null);
   
@@ -650,16 +666,7 @@ const EditCourse = () => {
                       }}
                     >
                       <option value="">اختر المادة</option>
-                      <option value="النحو والصرف">النحو والصرف</option>
-                      <option value="الأدب العربي">الأدب العربي</option>
-                      <option value="التعبير والإنشاء">التعبير والإنشاء</option>
-                      <option value="البلاغة العربية">البلاغة العربية</option>
-                      <option value="النقد الأدبي">النقد الأدبي</option>
-                      <option value="اللغة العربية المتقدمة">اللغة العربية المتقدمة</option>
-                      <option value="الإملاء والكتابة">الإملاء والكتابة</option>
-                      <option value="القراءة والاستيعاب">القراءة والاستيعاب</option>
-                      <option value="القواعد النحوية">القواعد النحوية</option>
-                      <option value="التحليل الأدبي">التحليل الأدبي</option>
+                      <option value="لغة عربية">لغة عربية</option>
                     </select>
                   </div>
 
@@ -1211,7 +1218,7 @@ const EditCourse = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 "
           >
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -1220,7 +1227,7 @@ const EditCourse = () => {
               transition={{ duration: 0.2, ease: "easeOut" }}
               className="w-full max-w-4xl max-h-[90vh] overflow-y-auto"
             >
-              <LuxuryCard className="p-6">
+              <LuxuryCard className="p-6 form-container">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
@@ -1338,7 +1345,7 @@ const EditCourse = () => {
                       type="text"
                       value={newExam.title}
                       onChange={(e) => setNewExam(prev => ({ ...prev, title: e.target.value }))}
-                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-200"
+                      className="stable-field w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-200"
                       placeholder="أدخل عنوان الامتحان"
                     />
                   </div>
@@ -1454,7 +1461,7 @@ const EditCourse = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-4 max-h-60 overflow-y-auto">
+                    <div className="space-y-4">
                       {newExam.questions?.map((question, index) => (
                         <div key={question.id} className="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800/50">
                           <div className="flex items-center justify-between mb-3">
@@ -1485,12 +1492,12 @@ const EditCourse = () => {
                             <input
                               type="text"
                               value={question.questionText}
+                              className="stable-field w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-200"
                               onChange={(e) => {
                                 const updatedQuestions = [...(newExam.questions || [])];
                                 updatedQuestions[index].questionText = e.target.value;
                                 setNewExam(prev => ({ ...prev, questions: updatedQuestions }));
                               }}
-                              className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-200"
                               placeholder="نص السؤال..."
                             />
 
@@ -1520,12 +1527,7 @@ const EditCourse = () => {
                                   <input
                                     type="text"
                                     value={option}
-                                    onChange={(e) => {
-                                      const updatedQuestions = [...(newExam.questions || [])];
-                                      updatedQuestions[index].options[optIndex] = e.target.value;
-                                      setNewExam(prev => ({ ...prev, questions: updatedQuestions }));
-                                    }}
-                                    className={`flex-1 px-3 py-2 rounded-lg border-2 transition-all duration-200 ${
+                                    className={`stable-field flex-1 px-3 py-2 rounded-lg border-2 transition-all duration-200 ${
                                       question.correctAnswer === optIndex
                                         ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
                                         : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'

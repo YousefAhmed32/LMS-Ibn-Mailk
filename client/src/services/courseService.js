@@ -128,28 +128,19 @@ export async function getMyEnrolledCoursesService() {
 
 export const getCourseFilters = () => ({
   grades: [
-    { value: "Grade 7", label: "Grade 7" },
-    { value: "Grade 8", label: "Grade 8" },
-    { value: "Grade 9", label: "Grade 9" },
-    { value: "Grade 10", label: "Grade 10" },
-    { value: "Grade 11", label: "Grade 11" },
-    { value: "Grade 12", label: "Grade 12" }
+    { value: "Grade 7", label: "أولي إعدادي" },
+    { value: "Grade 8", label: "ثاني إعدادي" },
+    { value: "Grade 9", label: "ثالث إعدادي" },
+    { value: "Grade 10", label: "أولي ثانوي" },
+    { value: "Grade 11", label: "ثاني ثانوي" },
+    { value: "Grade 12", label: "ثالث ثانوي" }
   ],
   terms: [
     { value: "Term 1", label: "Term 1" },
     { value: "Term 2", label: "Term 2" }
   ],
   subjects: [
-    { value: "النحو والصرف", label: "النحو والصرف" },
-    { value: "الأدب العربي", label: "الأدب العربي" },
-    { value: "التعبير والإنشاء", label: "التعبير والإنشاء" },
-    { value: "البلاغة العربية", label: "البلاغة العربية" },
-    { value: "النقد الأدبي", label: "النقد الأدبي" },
-    { value: "اللغة العربية المتقدمة", label: "اللغة العربية المتقدمة" },
-    { value: "الإملاء والكتابة", label: "الإملاء والكتابة" },
-    { value: "القراءة والاستيعاب", label: "القراءة والاستيعاب" },
-    { value: "القواعد النحوية", label: "القواعد النحوية" },
-    { value: "التحليل الأدبي", label: "التحليل الأدبي" }
+    { value: "لغة عربية", label: "لغة عربية" }
   ]
 });
 

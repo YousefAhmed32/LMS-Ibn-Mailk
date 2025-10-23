@@ -145,7 +145,7 @@ const LessonCompletionModal = ({ isVisible, lessonTitle, xpGained, onClose }) =>
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.5 }}
-                className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-6 py-3 rounded-full inline-flex items-center gap-2 text-lg font-bold mb-6"
+                className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-6 py-3 rounded-xl inline-flex items-center gap-2 text-lg font-bold mb-6 shadow-lg"
               >
                 <Sparkles className="w-5 h-5" />
                 +{xpGained} XP Earned

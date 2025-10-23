@@ -50,7 +50,17 @@ const CourseCard = ({
             </CardTitle>
             <div className="flex flex-wrap gap-2 mb-3">
               <Badge variant="secondary" className="text-xs">
-                {grade}
+                {(() => {
+                  const gradeLabels = {
+                    '7': 'أولي إعدادي',
+                    '8': 'ثاني إعدادي',
+                    '9': 'ثالث إعدادي',
+                    '10': 'أولي ثانوي',
+                    '11': 'ثاني ثانوي',
+                    '12': 'ثالث ثانوي'
+                  };
+                  return gradeLabels[grade] || grade;
+                })()}
               </Badge>
               <Badge variant="outline" className="text-xs">
                 {term}

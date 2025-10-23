@@ -7,14 +7,14 @@ export const governorates = [
   "New Valley", "North Sinai", "South Sinai"
 ];
 
-// School Grades
+// School Grades - Egyptian System
 export const grades = [
-  { value: "grade7", label: "Grade 7" },
-  { value: "grade8", label: "Grade 8" },
-  { value: "grade9", label: "Grade 9" },
-  { value: "grade10", label: "Grade 10" },
-  { value: "grade11", label: "Grade 11" },
-  { value: "grade12", label: "Grade 12" }
+  { value: "grade7", label: "أولي إعدادي" },
+  { value: "grade8", label: "ثاني إعدادي" },
+  { value: "grade9", label: "ثالث إعدادي" },
+  { value: "grade10", label: "أولي ثانوي" },
+  { value: "grade11", label: "ثاني ثانوي" },
+  { value: "grade12", label: "ثالث ثانوي" }
 ];
 
 // Sign Up Form Controls

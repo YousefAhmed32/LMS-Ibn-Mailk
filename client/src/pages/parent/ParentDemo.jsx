@@ -1002,16 +1002,16 @@ const ParentDemo = () => {
                     transition={{ duration: 0.6, delay: 1.8 + index * 0.1 }}
                     className="border-b border-cyan-400/20 dark:border-cyan-400/30 light:border-cyan-600/15 hover:bg-cyan-500/5 dark:hover:bg-cyan-500/10 light:hover:bg-cyan-500/5 transition-colors duration-300"
                   >
-                    <td className="py-3 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600">
+                    <td className="py-3 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600 whitespace-nowrap">
                       {exam.examTitle}
                     </td>
-                    <td className="py-3 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600">
+                    <td className="py-3 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600 whitespace-nowrap">
                       {exam.course}
                     </td>
-                    <td className="py-3 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600">
+                    <td className="py-3 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600 whitespace-nowrap">
                       {exam.studentScore}/{exam.totalScore}
                     </td>
-                    <td className="py-3 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600">
+                    <td className="py-3 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600 whitespace-nowrap">
                       {exam.percentage}%
                     </td>
                     <td className="py-3 px-4">
@@ -1025,10 +1025,10 @@ const ParentDemo = () => {
                         {exam.grade}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600">
+                    <td className="py-3 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600 whitespace-nowrap">
                       {new Date(exam.examDate).toLocaleDateString('ar-EG')}
                     </td>
-                    <td className="py-3 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600">
+                    <td className="py-3 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600 whitespace-nowrap">
                       {exam.rank} من {exam.totalStudents}
                     </td>
                   </motion.tr>

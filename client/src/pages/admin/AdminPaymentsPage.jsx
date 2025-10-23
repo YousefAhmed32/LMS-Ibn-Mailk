@@ -158,10 +158,18 @@ const AdminPaymentsPage = () => {
 
       const response = await axiosInstance.get(`/api/admin/payments?${params}`);
       console.log('✅ Payments API response:', response.data);
+      console.log('🔍 Response structure:', {
+        success: response.data.success,
+        hasData: !!response.data.data,
+        dataKeys: response.data.data ? Object.keys(response.data.data) : [],
+        paymentsLength: response.data.data?.payments?.length || 0
+      });
       
       if (response.data.success) {
         const { payments: paymentsData, pagination, statistics } = response.data.data;
         console.log('📋 Payments data received:', paymentsData);
+        console.log('📋 Pagination:', pagination);
+        console.log('📋 Statistics:', statistics);
         setPayments(paymentsData || []);
         setTotalPages(pagination?.totalPages || 1);
         setTotalItems(pagination?.totalItems || 0);

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { useTheme } from '../../contexts/ThemeContext';
+import axiosInstance from '../../api/axiosInstance';
 // import dashboardService from '../../services/dashboardService'; // Removed - student dashboard service
 import {
   Users,
@@ -110,25 +111,46 @@ const ModernAdminDashboard = () => {
       setError(null);
       
       console.log('🔄 Fetching dashboard data for period:', timePeriod);
+      console.log('🔐 Using axiosInstance with baseURL:', axiosInstance.defaults.baseURL);
       
-      // Fetch real data from API with time period parameter
-      const response = await fetch(`/api/admin/dashboard-stats-simple?period=${timePeriod}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      // Check authentication state
+      const token = localStorage.getItem('token');
+      const user = localStorage.getItem('user');
+      console.log('🔐 Auth state:', { 
+        hasToken: !!token, 
+        hasUser: !!user,
+        tokenLength: token?.length || 0,
+        userData: user ? JSON.parse(user) : null
       });
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Fetch real data from API with time period parameter
+      console.log('🔐 AxiosInstance config:', {
+        baseURL: axiosInstance.defaults.baseURL,
+        timeout: axiosInstance.defaults.timeout,
+        headers: axiosInstance.defaults.headers
+      });
+      
+      const response = await axiosInstance.get(`/api/admin/dashboard-stats-simple?period=${timePeriod}`);
+      console.log('✅ API response received:', response.data);
+      console.log('🔍 Response structure:', {
+        success: response.data.success,
+        hasData: !!response.data.data,
+        message: response.data.message,
+        error: response.data.error
+      });
+      
+      if (!response.data.success) {
+        console.error('❌ API Error Details:', {
+          success: response.data.success,
+          message: response.data.message,
+          error: response.data.error,
+          status: response.status,
+          statusText: response.statusText
+        });
+        throw new Error(`API error: ${response.data.message || response.data.error || 'Unknown error'}`);
       }
       
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('Response is not JSON');
-      }
-      
-      const data = await response.json();
+      const data = response.data;
       setDashboardData(data);
       console.log('✅ Real API data loaded successfully:', data);
     } catch (error) {

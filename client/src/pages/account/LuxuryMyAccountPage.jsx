@@ -42,6 +42,19 @@ const LuxuryMyAccountPage = () => {
   const { user, updateUser, refreshUser } = useAuth();
   const { showSuccess, showError, showInfo } = useNotification();
   
+  // Add CSS for spinner animation
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+  
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -57,6 +70,9 @@ const LuxuryMyAccountPage = () => {
     governorate: '',
     grade: ''
   });
+  
+  const [enrollments, setEnrollments] = useState([]);
+  const [loadingEnrollments, setLoadingEnrollments] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -73,6 +89,30 @@ const LuxuryMyAccountPage = () => {
       });
     }
   }, [user]);
+
+  // Fetch enrollments with course details
+  const fetchEnrollments = async () => {
+    try {
+      setLoadingEnrollments(true);
+      const response = await axiosInstance.get('/api/student/enrollments');
+      
+      if (response.data.success) {
+        setEnrollments(response.data.enrollments || []);
+      }
+    } catch (error) {
+      console.error('Error fetching enrollments:', error);
+      showError('خطأ في جلب البيانات', 'فشل في تحميل طلباتك');
+    } finally {
+      setLoadingEnrollments(false);
+    }
+  };
+
+  // Fetch enrollments when orders tab is active
+  useEffect(() => {
+    if (activeTab === 'orders') {
+      fetchEnrollments();
+    }
+  }, [activeTab]);
 
   const handleInputChange = (e) => {
     setFormData({
@@ -651,9 +691,23 @@ const LuxuryMyAccountPage = () => {
         طلباتي
       </h3>
       
-      {user?.enrolledCourses && user.enrolledCourses.length > 0 ? (
+      {loadingEnrollments ? (
+        <div style={{ textAlign: 'center', padding: spacing['2xl'] }}>
+          <div style={{ 
+            width: '40px', 
+            height: '40px', 
+            border: `3px solid ${colors.border}`,
+            borderTop: `3px solid ${colors.accent}`,
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto',
+            marginBottom: spacing.md
+          }}></div>
+          <p style={{ color: colors.textMuted, margin: 0 }}>جاري تحميل طلباتك...</p>
+        </div>
+      ) : (enrollments.length > 0 || (user?.enrolledCourses && user.enrolledCourses.length > 0)) ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
-          {user.enrolledCourses.map((enrollment, index) => (
+          {(enrollments.length > 0 ? enrollments : user.enrolledCourses || []).map((enrollment, index) => (
             <div
               key={index}
               style={{
@@ -688,7 +742,24 @@ const LuxuryMyAccountPage = () => {
                   margin: 0,
                   marginBottom: spacing.xs
                 }}>
-                  {enrollment.courseId?.title || 'دورة غير محددة'}
+                  {(() => {
+                    // Debug: Log the enrollment data to see what's available
+                    console.log('Enrollment data:', enrollment);
+                    console.log('CourseId data:', enrollment.courseId);
+                    
+                    // Try different possible field names for course title
+                    const courseTitle = enrollment.courseId?.title || 
+                                      enrollment.courseId?.name || 
+                                      enrollment.courseTitle || 
+                                      enrollment.course?.title || 
+                                      enrollment.course?.name ||
+                                      enrollment.title ||
+                                      enrollment.name;
+                    
+                    console.log('Course title found:', courseTitle);
+                    
+                    return courseTitle || 'دورة غير محددة';
+                  })()}
                 </h4>
                 <p style={{
                   color: colors.textMuted,

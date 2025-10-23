@@ -13,7 +13,8 @@ import {
   FileText,
   Mail,
   Phone,
-  ExternalLink
+  ExternalLink,
+  MessageSquare
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import logo from '/assets/logo.png'
@@ -410,10 +411,31 @@ const Footer = () => {
               </div>
               <div className="flex items-center justify-center lg:justify-end space-x-2">
                 <Phone className="w-4 h-4" />
-                <span className="text-sm">+201022880651</span>
+                <a 
+                  href="https://wa.me/201022880651" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm hover:text-luxury-gold-400 transition-colors duration-300"
+                >
+                  +201022880651
+                </a>
+              </div>
+              
+              {/* WhatsApp Contact Button */}
+              <div className="flex items-center justify-center lg:justify-end space-x-2 mt-3">
+                <MessageSquare className="w-4 h-4" />
+                <a 
+                  href="https://wa.me/201022880651" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-full transition-colors duration-300 flex items-center space-x-1"
+                >
+                  <span>تواصل معنا على WhatsApp</span>
+                </a>
               </div>
             </motion.div>
           </motion.div>
+   
         </div>
 
         {/* Bottom Section - Copyright */}
@@ -456,6 +478,26 @@ const Footer = () => {
           </div>
         </motion.div>
       </div>
+      
+      {/* Floating WhatsApp Button */}
+      <motion.div
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.5, duration: 0.3 }}
+        className="fixed bottom-6 left-6 z-50"
+      >
+        <a
+          href="https://wa.me/201022880651"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-2xl hover:shadow-green-500/25 transition-all duration-300 flex items-center space-x-2 group"
+        >
+          <MessageSquare className="w-6 h-6" />
+          <span className="hidden group-hover:block text-sm font-medium whitespace-nowrap">
+            تواصل مع المعلم
+          </span>
+        </a>
+      </motion.div>
     </motion.footer>
   );
 };

@@ -503,9 +503,18 @@ const getMyEnrolledCourses = async (req, res) => {
 // Get all courses with enrollment status for current user
 const getAllCoursesWithEnrollmentStatus = async (req, res) => {
   try {
-    const userId = req.user._id;
-
     console.log('=== Get All Courses with Enrollment Status Request ===');
+    console.log('Request user:', req.user);
+    console.log('Request headers:', req.headers.authorization ? 'Has auth token' : 'No auth token');
+    
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: "User not authenticated"
+      });
+    }
+    
+    const userId = req.user._id;
     console.log('User ID:', userId);
 
     // Get all active courses
@@ -563,6 +572,12 @@ const getAllCoursesWithEnrollmentStatus = async (req, res) => {
           paymentApprovedAt: null
         }
       };
+    });
+
+    console.log('✅ Sending courses response:', {
+      success: true,
+      totalCourses: coursesWithStatus.length,
+      enrolledCount: enrolledCoursesMap.size
     });
 
     res.status(200).json({

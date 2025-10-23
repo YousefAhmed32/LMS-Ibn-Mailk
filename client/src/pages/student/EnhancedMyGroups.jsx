@@ -39,7 +39,7 @@ import socketService from '../../services/socketService';
 
 const EnhancedMyGroups = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { colors, isDarkMode } = useTheme();
 
   // Helper function to get full image URL
@@ -188,7 +188,7 @@ const EnhancedMyGroups = () => {
   const tabs = [
     { id: 'overview', label: 'نظرة عامة', icon: Eye },
     { id: 'announcements', label: 'الإعلانات', icon: Bell },
-    { id: 'members', label: 'الأعضاء', icon: Users },
+    ...(isAdmin ? [{ id: 'members', label: 'الأعضاء', icon: Users }] : []),
     { id: 'chat', label: 'المحادثة', icon: MessageSquare },
     { id: 'progress', label: 'تقدمي', icon: TrendingUp }
   ];
@@ -688,7 +688,19 @@ const EnhancedMyGroups = () => {
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.3 }}
                     >
-                      <StudentMembersTab group={selectedGroup} colors={colors} />
+                      {isAdmin ? (
+                        <StudentMembersTab group={selectedGroup} colors={colors} />
+                      ) : (
+                        <div className="text-center py-12">
+                          <Users size={48} className="mx-auto mb-4 opacity-50" style={{ color: colors.textMuted }} />
+                          <h3 className="text-lg font-semibold mb-2" style={{ color: colors.text }}>
+                            غير مسموح بعرض الأعضاء
+                          </h3>
+                          <p className="text-sm" style={{ color: colors.textSecondary }}>
+                            فقط الأدمن يمكنه رؤية قائمة أعضاء المجموعة
+                          </p>
+                        </div>
+                      )}
                     </motion.div>
                   )}
                   

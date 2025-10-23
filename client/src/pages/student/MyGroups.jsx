@@ -30,7 +30,7 @@ import LuxuryCard from '../../components/ui/LuxuryCard';
 
 const MyGroups = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { colors, isDarkMode } = useTheme();
   
   // State management
@@ -559,41 +559,43 @@ const MyGroups = () => {
                 )}
               </div>
 
-              {/* Group Members */}
-              <div>
-                <h3 className="text-xl font-bold mb-4" style={{ color: colors.text }}>
-                  أعضاء المجموعة
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {selectedGroup.students.map((student) => (
-                    <div
-                      key={student._id}
-                      className="p-4 rounded-xl border"
-                      style={{
-                        backgroundColor: colors.background,
-                        borderColor: colors.border
-                      }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-[#F97316] to-[#EA580C] rounded-full flex items-center justify-center text-white font-bold">
-                          {student.firstName ? student.firstName.charAt(0) : student.name ? student.name.charAt(0) : '?'}
-                        </div>
-                        <div>
-                          <h4 className="font-semibold" style={{ color: colors.text }}>
-                            {student.firstName && student.secondName 
-                              ? `${student.firstName} ${student.secondName}` 
-                              : student.name || 'Unknown Student'}
-                          </h4>
-                          <p className="text-sm" style={{ color: colors.textSecondary }}>
-                            {student.userEmail || student.email || 'No email'}
-                          </p>
+              {/* Group Members - Only for Admins */}
+              {isAdmin && (
+                <div>
+                  <h3 className="text-xl font-bold mb-4" style={{ color: colors.text }}>
+                    أعضاء المجموعة
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {selectedGroup.students.map((student) => (
+                      <div
+                        key={student._id}
+                        className="p-4 rounded-xl border"
+                        style={{
+                          backgroundColor: colors.background,
+                          borderColor: colors.border
+                        }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-[#F97316] to-[#EA580C] rounded-full flex items-center justify-center text-white font-bold">
+                            {student.firstName ? student.firstName.charAt(0) : student.name ? student.name.charAt(0) : '?'}
+                          </div>
+                          <div>
+                            <h4 className="font-semibold" style={{ color: colors.text }}>
+                              {student.firstName && student.secondName 
+                                ? `${student.firstName} ${student.secondName}` 
+                                : student.name || 'Unknown Student'}
+                            </h4>
+                            <p className="text-sm" style={{ color: colors.textSecondary }}>
+                              {student.userEmail || student.email || 'No email'}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </motion.div>
           </motion.div>
         )}

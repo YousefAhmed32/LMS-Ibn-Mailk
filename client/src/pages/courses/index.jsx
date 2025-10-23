@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import PageWrapper from '../../components/layout/PageWrapper';
@@ -32,13 +32,30 @@ const CoursesPage = () => {
   const [selectedSubject, setSelectedSubject] = useState('');
   const [enrolledCourses, setEnrolledCourses] = useState([]);
 
-  // Fetch courses from API
-  const fetchCourses = async () => {
+  // Cache for courses data
+  const [coursesCache, setCoursesCache] = useState(null);
+  const [cacheTimestamp, setCacheTimestamp] = useState(null);
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+  // Fetch courses from API with caching
+  const fetchCourses = async (forceRefresh = false) => {
     try {
       setLoading(true);
+      
+      // Check cache first
+      if (!forceRefresh && coursesCache && cacheTimestamp && 
+          (Date.now() - cacheTimestamp) < CACHE_DURATION) {
+        console.log('📦 Using cached courses data');
+        setCourses(coursesCache);
+        setLoading(false);
+        return;
+      }
+
+      console.log('🚀 Fetching fresh courses data...');
       const response = await fetch('http://localhost:5000/api/courses', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Cache-Control': 'no-cache'
         }
       });
       
@@ -46,7 +63,12 @@ const CoursesPage = () => {
         const result = await response.json();
         // Filter out inactive courses on the frontend as well
         const activeCourses = (result.data || []).filter(course => course.isActive !== false);
+        
+        // Cache the results
+        setCoursesCache(activeCourses);
+        setCacheTimestamp(Date.now());
         setCourses(activeCourses);
+        
         console.log('📚 Active courses loaded:', activeCourses.length);
       } else {
         console.error('Failed to fetch courses');
@@ -128,38 +150,52 @@ const CoursesPage = () => {
     }
   };
 
-  // Check if user is enrolled in a course
-  const isEnrolled = (courseId) => {
+  // Check if user is enrolled in a course (memoized)
+  const isEnrolled = useCallback((courseId) => {
     return enrolledCourses.some(enrollment => 
       enrollment.courseId === courseId && enrollment.paymentStatus === 'approved'
     );
-  };
+  }, [enrolledCourses]);
 
-  // Check if user has pending enrollment
-  const hasPendingEnrollment = (courseId) => {
+  // Check if user has pending enrollment (memoized)
+  const hasPendingEnrollment = useCallback((courseId) => {
     return enrolledCourses.some(enrollment => 
       enrollment.courseId === courseId && enrollment.paymentStatus === 'pending'
     );
-  };
+  }, [enrolledCourses]);
 
-  const filteredCourses = courses.filter(course => {
-    const matchesSearch = course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesGrade = !selectedGrade || course.grade === selectedGrade;
-    const matchesSubject = !selectedSubject || course.subject === selectedSubject;
+  // Memoized filtered courses for better performance
+  const filteredCourses = useMemo(() => {
+    if (!courses.length) return [];
     
-    return matchesSearch && matchesGrade && matchesSubject;
-  });
+    return courses.filter(course => {
+      const matchesSearch = !searchTerm || 
+        course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        course.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesGrade = !selectedGrade || course.grade === selectedGrade;
+      const matchesSubject = !selectedSubject || course.subject === selectedSubject;
+      
+      return matchesSearch && matchesGrade && matchesSubject;
+    });
+  }, [courses, searchTerm, selectedGrade, selectedSubject]);
 
-  const grades = ['7', '8', '9', '10', '11', '12'];
-  const subjects = ['النحو والصرف', 'الأدب العربي', 'التعبير والإنشاء', 'البلاغة العربية', 'النقد الأدبي', 'اللغة العربية المتقدمة', 'الإملاء والكتابة', 'القراءة والاستيعاب', 'القواعد النحوية', 'التحليل الأدبي'];
+  const grades = [
+    { value: '7', label: 'أولي إعدادي' },
+    { value: '8', label: 'ثاني إعدادي' },
+    { value: '9', label: 'ثالث إعدادي' },
+    { value: '10', label: 'أولي ثانوي' },
+    { value: '11', label: 'ثاني ثانوي' },
+    { value: '12', label: 'ثالث ثانوي' }
+  ];
+  const subjects = ['لغة عربية'];
 
   if (loading) {
     return (
       <PageWrapper>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">جاري تحميل الدورات...</p>
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400 text-lg">جاري تحميل الدورات...</p>
+          <p className="mt-2 text-gray-400 text-sm">يرجى الانتظار قليلاً</p>
         </div>
       </PageWrapper>
     );
@@ -305,7 +341,7 @@ const CoursesPage = () => {
                 >
                   <option value="">جميع الصفوف</option>
                   {grades.map(grade => (
-                    <option key={grade} value={grade}>الصف {grade}</option>
+                    <option key={grade.value} value={grade.value}>{grade.label}</option>
                   ))}
                 </select>
                 
@@ -337,13 +373,20 @@ const CoursesPage = () => {
 
           {/* Courses Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCourses.map((course) => {
+            {filteredCourses.map((course, index) => {
               const enrolled = isEnrolled(course._id);
               const pending = hasPendingEnrollment(course._id);
               
               return (
                 <motion.div
                   key={course._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ 
+                    duration: 0.3, 
+                    delay: index * 0.1,
+                    ease: "easeOut"
+                  }}
                   whileHover={{ scale: 1.02, y: -5 }}
                   className="group"
                 >
@@ -353,10 +396,19 @@ const CoursesPage = () => {
                         src={course.imageUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop'}
                         alt={course.title}
                         className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                        decoding="async"
+                        style={{
+                          background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
+                          minHeight: '192px'
+                        }}
+                        onError={(e) => {
+                          e.target.src = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop';
+                        }}
                       />
                       <div className="absolute top-3 right-3">
                         <Badge className="bg-blue-600 text-white">
-                          الصف {course.grade}
+                          {grades.find(g => g.value === course.grade)?.label || `الصف ${course.grade}`}
                         </Badge>
                       </div>
                       <div className="absolute top-3 left-3">

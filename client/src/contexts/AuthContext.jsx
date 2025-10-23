@@ -44,9 +44,18 @@ export const AuthProvider = ({ children }) => {
   const initializeAuth = useCallback(async () => {
     console.log('🚀 AuthContext: Starting authentication initialization...');
     
+    let timeoutId;
+    
     try {
       setLoading(true);
       setError(null);
+      
+      // Add timeout to prevent hanging
+      timeoutId = setTimeout(() => {
+        console.log('⏰ AuthContext: Initialization timeout, setting loading to false');
+        setLoading(false);
+        setIsInitialized(true);
+      }, 10000); // 10 second timeout
       
       const token = TokenManager.getToken();
       const userData = localStorage.getItem('user');
@@ -162,10 +171,11 @@ export const AuthProvider = ({ children }) => {
             // Server error - don't clear auth data, just show error
             console.log('🔥 AuthContext: Server error (500) - keeping auth data');
             setError('Server error. Please try again later.');
-          } else if (error.status === 0) {
-            // Network error - don't clear auth data
-            console.log('🌐 AuthContext: Network error - keeping auth data');
+          } else if (error.status === 0 || error.code === 'NETWORK_ERROR') {
+            // Network error - don't clear auth data, but don't retry to prevent infinite loop
+            console.log('🌐 AuthContext: Network error - keeping auth data, not retrying to prevent loop');
             setError(null);
+            return; // Exit early to prevent clearing auth data
           } else {
             // Other errors - clear auth data
             console.log('❌ AuthContext: Other error - clearing auth data');
@@ -178,10 +188,18 @@ export const AuthProvider = ({ children }) => {
       
     } catch (error) {
       console.error('💥 AuthContext: Critical error during initialization:', error);
-      setError('Failed to initialize authentication');
-      TokenManager.removeToken();
-      setUser(null);
+      
+      // Don't show error for network issues, just set user to null
+      if (error.status === 0 || error.code === 'NETWORK_ERROR') {
+        console.log('🌐 Network error during initialization - keeping user data if available');
+        setError(null);
+      } else {
+        setError('Failed to initialize authentication');
+        TokenManager.removeToken();
+        setUser(null);
+      }
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
       setIsInitialized(true);
       console.log('🏁 AuthContext: Authentication initialization complete');
@@ -190,7 +208,12 @@ export const AuthProvider = ({ children }) => {
 
   // Initialize auth on mount
   useEffect(() => {
-    initializeAuth();
+    // Add a small delay to prevent race conditions
+    const timer = setTimeout(() => {
+      initializeAuth();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, [initializeAuth]);
 
   const login = useCallback(async (email, password) => {

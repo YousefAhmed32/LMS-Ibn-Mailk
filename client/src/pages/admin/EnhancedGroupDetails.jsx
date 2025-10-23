@@ -1338,31 +1338,85 @@ const MembersTab = ({ group, colors }) => (
     </div>
     
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {group.students.map((student) => (
-        <LuxuryCard key={student._id} className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#F97316] to-[#EA580C] rounded-full flex items-center justify-center text-white font-bold">
-              {student.firstName ? student.firstName.charAt(0) : '?'}
-            </div>
-            <div className="flex-1">
-              <h4 className="font-semibold" style={{ color: colors.text }}>
-                {student.firstName && student.secondName 
-                  ? `${student.firstName} ${student.secondName}` 
-                  : student.name || 'Unknown Student'}
-              </h4>
-              <p className="text-sm" style={{ color: colors.textSecondary }}>
-                {student.userEmail || student.email || 'No email'}
-              </p>
-              {student.parentPhone && (
-                <p className="text-xs" style={{ color: colors.textMuted }}>
-                  <Phone size={12} className="inline mr-1" />
-                  {student.parentPhone}
+      {group.students.map((student) => {
+        // Debug: Log student data to see what fields are available
+        console.log('Student data for admin:', student);
+        console.log('Student email fields:', {
+          userEmail: student.userEmail,
+          email: student.email
+        });
+        
+        return (
+          <LuxuryCard key={student._id} className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#F97316] to-[#EA580C] rounded-full flex items-center justify-center text-white font-bold">
+                {student.firstName ? student.firstName.charAt(0) : '?'}
+              </div>
+              <div className="flex-1">
+                <h4 className="font-semibold" style={{ color: colors.text }}>
+                  {student.firstName && student.secondName 
+                    ? `${student.firstName} ${student.secondName}` 
+                    : student.name || 'Unknown Student'}
+                </h4>
+                <p className="text-sm" style={{ color: colors.textSecondary }}>
+                  {(() => {
+                    // Debug: Log all possible email fields
+                    console.log('All student fields:', Object.keys(student));
+                    console.log('Email fields check:', {
+                      userEmail: student.userEmail,
+                      email: student.email,
+                      userEmail: student.userEmail,
+                      email: student.email,
+                      // Try other possible email fields
+                      userEmail: student.userEmail,
+                      email: student.email,
+                      userEmail: student.userEmail,
+                      email: student.email,
+                      // Check all possible field names
+                      userEmail: student.userEmail,
+                      email: student.email,
+                      userEmail: student.userEmail,
+                      email: student.email
+                    });
+                    
+                    // Try all possible email field combinations
+                    const email = student.userEmail || 
+                                 student.email || 
+                                 student.userEmail || 
+                                 student.email ||
+                                 student.userEmail ||
+                                 student.email ||
+                                 // Try other possible field names
+                                 student.userEmail ||
+                                 student.email ||
+                                 student.userEmail ||
+                                 student.email ||
+                                 // Try other possible field names that might exist
+                                 student.userEmail ||
+                                 student.email ||
+                                 student.userEmail ||
+                                 student.email;
+                    
+                    if (email) {
+                      console.log('Found email:', email);
+                      return email;
+                    } else {
+                      console.log('No email found, showing fallback');
+                      return 'عضو في المجموعة';
+                    }
+                  })()}
                 </p>
-              )}
+                {student.parentPhone && (
+                  <p className="text-xs" style={{ color: colors.textMuted }}>
+                    <Phone size={12} className="inline mr-1" />
+                    {student.parentPhone}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-        </LuxuryCard>
-      ))}
+          </LuxuryCard>
+        );
+      })}
     </div>
   </div>
 );

@@ -18,6 +18,7 @@ import {
   Filter,
   Grid,
   List,
+  RefreshCw,
   ChevronRight,
   CheckCircle,
   Lock
@@ -33,6 +34,7 @@ const LuxuryCoursesPage = () => {
   
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSubject, setFilterSubject] = useState('all');
   const [filterGrade, setFilterGrade] = useState('all');
@@ -47,13 +49,49 @@ const LuxuryCoursesPage = () => {
   const fetchCourses = async () => {
     try {
       setLoading(true);
-      // Use the new endpoint that includes enrollment status
-      const response = await axiosInstance.get('/api/courses/with-enrollment-status');
+      setError(null);
+      console.log('🚀 Fetching courses...');
+      console.log('🔐 Auth state:', {
+        hasToken: !!localStorage.getItem('token'),
+        hasUser: !!localStorage.getItem('user')
+      });
+      
+      let response;
+      
+      // Try the new endpoint first with timeout
+      try {
+        console.log('🔄 Trying /api/courses/with-enrollment-status...');
+        response = await axiosInstance.get('/api/courses/with-enrollment-status', {
+          timeout: 10000 // 10 seconds timeout
+        });
+        console.log('✅ Courses API response:', response.data);
+      } catch (endpointError) {
+        console.warn('⚠️ New endpoint failed, trying fallback...', endpointError.message);
+        
+        // Fallback to regular courses endpoint
+        console.log('🔄 Trying fallback /api/courses...');
+        response = await axiosInstance.get('/api/courses', {
+          timeout: 15000 // 15 seconds timeout
+        });
+        console.log('✅ Fallback API response:', response.data);
+      }
       
       if (response.data.success) {
-        const coursesWithStatus = response.data.data.courses || [];
+        const coursesData = response.data.data.courses || response.data.data || [];
+        
+        // Add enrollment status if not present
+        const coursesWithStatus = coursesData.map(course => ({
+          ...course,
+          enrollmentStatus: course.enrollmentStatus || {
+            isEnrolled: false,
+            enrollmentDate: null,
+            progress: 0
+          }
+        }));
+        
         setCourses(coursesWithStatus);
-        console.log('📚 Courses with enrollment status loaded:', coursesWithStatus.length);
+        setError(null);
+        console.log('📚 Courses loaded:', coursesWithStatus.length);
         console.log('📊 Enrollment summary:', {
           total: coursesWithStatus.length,
           enrolled: coursesWithStatus.filter(c => c.enrollmentStatus.isEnrolled).length
@@ -62,8 +100,25 @@ const LuxuryCoursesPage = () => {
         throw new Error(response.data.error || 'Failed to fetch courses');
       }
     } catch (error) {
-      console.error('Error fetching courses:', error);
-      showError('خطأ في تحميل الدورات', 'فشل في تحميل قائمة الدورات');
+      console.error('❌ Error fetching courses:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        code: error.code
+      });
+      
+      setError(error);
+      
+      // Show more specific error message
+      if (error.code === 'ECONNABORTED') {
+        showError('خطأ في الاتصال', 'انتهت مهلة الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
+      } else if (error.response?.status === 401) {
+        showError('خطأ في المصادقة', 'يرجى تسجيل الدخول مرة أخرى.');
+      } else {
+        showError('خطأ في تحميل الدورات', 'فشل في تحميل قائمة الدورات. يرجى المحاولة مرة أخرى.');
+      }
     } finally {
       setLoading(false);
     }
@@ -351,16 +406,7 @@ const LuxuryCoursesPage = () => {
             className="px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-base outline-none min-w-[150px] focus:border-blue-500 transition-colors"
           >
             <option value="all">جميع المواد</option>
-            <option value="النحو والصرف">النحو والصرف</option>
-            <option value="الأدب العربي">الأدب العربي</option>
-            <option value="التعبير والإنشاء">التعبير والإنشاء</option>
-            <option value="البلاغة العربية">البلاغة العربية</option>
-            <option value="النقد الأدبي">النقد الأدبي</option>
-            <option value="اللغة العربية المتقدمة">اللغة العربية المتقدمة</option>
-            <option value="الإملاء والكتابة">الإملاء والكتابة</option>
-            <option value="القراءة والاستيعاب">القراءة والاستيعاب</option>
-            <option value="القواعد النحوية">القواعد النحوية</option>
-            <option value="التحليل الأدبي">التحليل الأدبي</option>
+            <option value="لغة عربية">لغة عربية</option>
           </select>
           
           {/* Grade Filter */}
@@ -370,10 +416,13 @@ const LuxuryCoursesPage = () => {
             className="px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-base outline-none min-w-[120px] focus:border-blue-500 transition-colors"
           >
             <option value="all">جميع الصفوف</option>
-            <option value="9">الصف التاسع</option>
-            <option value="10">الصف العاشر</option>
-            <option value="11">الصف الحادي عشر</option>
-            <option value="12">الصف الثاني عشر</option>
+            <option value="7">أولي إعدادي</option>
+            <option value="8">ثاني إعدادي</option>
+            <option value="9">ثالث إعدادي</option>
+            <option value="10">أولي ثانوي</option>
+            <option value="11">ثاني ثانوي</option>
+            <option value="12">ثالث ثانوي</option>
+          
           </select>
           
           {/* View Mode */}
@@ -411,6 +460,89 @@ const LuxuryCoursesPage = () => {
           <p style={{ color: colors.textMuted, marginTop: spacing.md }}>
             جاري تحميل الدورات...
           </p>
+        </div>
+      ) : error ? (
+        <div style={{ textAlign: 'center', padding: spacing['2xl'] }}>
+          <div style={{
+            width: '80px',
+            height: '80px',
+            background: `linear-gradient(135deg, ${colors.error}20, ${colors.error}40)`,
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto',
+            marginBottom: spacing.lg
+          }}>
+            <RefreshCw size={32} color={colors.error} />
+          </div>
+          <h3 style={{ 
+            color: colors.text, 
+            marginBottom: spacing.sm,
+            fontSize: typography.fontSize.lg,
+            fontWeight: typography.fontWeight.semibold
+          }}>
+            خطأ في تحميل الدورات
+          </h3>
+          <p style={{ 
+            color: colors.textMuted, 
+            marginBottom: spacing.lg,
+            fontSize: typography.fontSize.sm
+          }}>
+            {error.code === 'ECONNABORTED' 
+              ? 'انتهت مهلة الاتصال بالخادم. يرجى المحاولة مرة أخرى.'
+              : 'فشل في تحميل قائمة الدورات. يرجى المحاولة مرة أخرى.'
+            }
+          </p>
+          <LuxuryButton
+            onClick={fetchCourses}
+            variant="primary"
+            size="md"
+            style={{ marginTop: spacing.md }}
+          >
+            <RefreshCw size={16} style={{ marginLeft: spacing.xs }} />
+            إعادة المحاولة
+          </LuxuryButton>
+        </div>
+      ) : courses.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: spacing['2xl'] }}>
+          <div style={{
+            width: '80px',
+            height: '80px',
+            background: `linear-gradient(135deg, ${colors.accent}20, ${colors.accent}40)`,
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto',
+            marginBottom: spacing.lg
+          }}>
+            <BookOpen size={32} color={colors.accent} />
+          </div>
+          <h3 style={{ 
+            color: colors.text, 
+            marginBottom: spacing.sm,
+            fontSize: typography.fontSize.lg,
+            fontWeight: typography.fontWeight.semibold
+          }}>
+            لا توجد دورات متاحة
+          </h3>
+          <p style={{ 
+            color: colors.textMuted, 
+            marginBottom: spacing.lg,
+            fontSize: typography.fontSize.sm
+          }}>
+            لم يتم العثور على أي دورات. يرجى المحاولة مرة أخرى.
+          </p>
+          <LuxuryButton
+            onClick={fetchCourses}
+            variant="primary"
+            size="md"
+            style={{ marginTop: spacing.md }}
+          >
+            <RefreshCw size={16} style={{ marginLeft: spacing.xs }} />
+            إعادة المحاولة
+          </LuxuryButton>
         </div>
       ) : filteredCourses.length > 0 ? (
         <div style={{ 

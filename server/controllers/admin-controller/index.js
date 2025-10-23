@@ -968,6 +968,7 @@ const deleteUser = async (req, res) => {
 // Get all courses with enrollment data
 const getAllCourses = async (req, res) => {
   try {
+    console.log('📚 getAllCourses called with query:', req.query);
     const { grade, subject, search, page = 1, limit = 10 } = req.query;
     
     let query = {};
@@ -985,14 +986,18 @@ const getAllCourses = async (req, res) => {
       ];
     }
 
+    console.log('📚 Query object:', query);
     const skip = (page - 1) * limit;
     
+    console.log('📚 Executing database query...');
     const courses = await Course.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit))
       .lean(); // Use lean() for better performance
 
+    console.log('📚 Found courses:', courses.length);
+    
     // Add video and test counts to each course
     const coursesWithStats = courses.map(course => {
       const videos = course.videos || [];
@@ -1008,8 +1013,9 @@ const getAllCourses = async (req, res) => {
     });
 
     const total = await Course.countDocuments(query);
+    console.log('📚 Total courses count:', total);
 
-    res.json({
+    const response = {
       success: true,
       data: coursesWithStats,
       pagination: {
@@ -1018,7 +1024,15 @@ const getAllCourses = async (req, res) => {
         totalItems: total,
         itemsPerPage: parseInt(limit)
       }
+    };
+
+    console.log('📚 Sending response:', {
+      success: response.success,
+      dataLength: response.data.length,
+      pagination: response.pagination
     });
+
+    res.json(response);
   } catch (error) {
     console.error('Error fetching courses:', error);
     res.status(500).json({

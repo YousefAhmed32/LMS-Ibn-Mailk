@@ -239,20 +239,20 @@ const AdminOverview = ({ analytics, onRefresh, isLoading }) => {
 
   // Mock data for recent payments (in real app, this would come from backend)
   const mockRecentPayments = [
-    { id: 1, student: 'أحمد علي', course: 'الرياضيات الصف 7', amount: 150, status: 'pending', date: '2024-12-20' },
-    { id: 2, student: 'فاطمة حسن', course: 'الفيزياء الصف 10', amount: 200, status: 'confirmed', date: '2024-12-19' },
-    { id: 3, student: 'عمر خليل', course: 'الكيمياء الصف 11', amount: 180, status: 'pending', date: '2024-12-18' },
-    { id: 4, student: 'سارة محمد', course: 'الأحياء الصف 9', amount: 160, status: 'confirmed', date: '2024-12-17' },
-    { id: 5, student: 'محمد أحمد', course: 'الرياضيات الصف 8', amount: 140, status: 'pending', date: '2024-12-16' }
+    { id: 1, student: 'أحمد علي', course: 'الرياضيات أولي إعدادي', amount: 150, status: 'pending', date: '2024-12-20' },
+    { id: 2, student: 'فاطمة حسن', course: 'الفيزياء أولي ثانوي', amount: 200, status: 'confirmed', date: '2024-12-19' },
+    { id: 3, student: 'عمر خليل', course: 'الكيمياء ثاني ثانوي', amount: 180, status: 'pending', date: '2024-12-18' },
+    { id: 4, student: 'سارة محمد', course: 'الأحياء ثالث إعدادي', amount: 160, status: 'confirmed', date: '2024-12-17' },
+    { id: 5, student: 'محمد أحمد', course: 'الرياضيات ثاني إعدادي', amount: 140, status: 'pending', date: '2024-12-16' }
   ];
 
   // Mock data for recent messages (in real app, this would come from backend)
   const mockRecentMessages = [
-    { id: 1, student: 'أحمد علي', message: 'هل يمكنني تغيير موعد الاختبار؟', course: 'الرياضيات الصف 7', time: '2024-12-20 14:30' },
-    { id: 2, student: 'فاطمة حسن', message: 'محتوى الدرس الثالث غير واضح', course: 'الفيزياء الصف 10', time: '2024-12-19 16:45' },
-    { id: 3, student: 'عمر خليل', message: 'أريد إضافة دورة جديدة', course: 'الكيمياء الصف 11', time: '2024-12-18 10:20' },
-    { id: 4, student: 'سارة محمد', message: 'مشكلة في تحميل الفيديو', course: 'الأحياء الصف 9', time: '2024-12-17 13:15' },
-    { id: 5, student: 'محمد أحمد', message: 'استفسار عن الامتحان النهائي', course: 'الرياضيات الصف 8', time: '2024-12-16 15:30' }
+    { id: 1, student: 'أحمد علي', message: 'هل يمكنني تغيير موعد الاختبار؟', course: 'الرياضيات أولي إعدادي', time: '2024-12-20 14:30' },
+    { id: 2, student: 'فاطمة حسن', message: 'محتوى الدرس الثالث غير واضح', course: 'الفيزياء أولي ثانوي', time: '2024-12-19 16:45' },
+    { id: 3, student: 'عمر خليل', message: 'أريد إضافة دورة جديدة', course: 'الكيمياء ثاني ثانوي', time: '2024-12-18 10:20' },
+    { id: 4, student: 'سارة محمد', message: 'مشكلة في تحميل الفيديو', course: 'الأحياء ثالث إعدادي', time: '2024-12-17 13:15' },
+    { id: 5, student: 'محمد أحمد', message: 'استفسار عن الامتحان النهائي', course: 'الرياضيات ثاني إعدادي', time: '2024-12-16 15:30' }
   ];
 
   const finalRecentPayments = recentPayments.length > 0 ? recentPayments : mockRecentPayments;

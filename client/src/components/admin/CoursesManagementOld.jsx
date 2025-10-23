@@ -462,16 +462,7 @@ const CoursesManagement = ({ courses }) => {
                 </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">جميع المواد</SelectItem>
-                      <SelectItem value="النحو والصرف">النحو والصرف</SelectItem>
-                      <SelectItem value="الأدب العربي">الأدب العربي</SelectItem>
-                      <SelectItem value="التعبير والإنشاء">التعبير والإنشاء</SelectItem>
-                      <SelectItem value="البلاغة العربية">البلاغة العربية</SelectItem>
-                      <SelectItem value="النقد الأدبي">النقد الأدبي</SelectItem>
-                      <SelectItem value="اللغة العربية المتقدمة">اللغة العربية المتقدمة</SelectItem>
-                      <SelectItem value="الإملاء والكتابة">الإملاء والكتابة</SelectItem>
-                      <SelectItem value="القراءة والاستيعاب">القراءة والاستيعاب</SelectItem>
-                      <SelectItem value="القواعد النحوية">القواعد النحوية</SelectItem>
-                      <SelectItem value="التحليل الأدبي">التحليل الأدبي</SelectItem>
+                      <SelectItem value="لغة عربية">لغة عربية</SelectItem>
                     </SelectContent>
               </Select>
               <Select value={gradeFilter} onValueChange={setGradeFilter}>
@@ -480,12 +471,12 @@ const CoursesManagement = ({ courses }) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">جميع الصفوف</SelectItem>
-                  <SelectItem value="7">الصف السابع</SelectItem>
-                  <SelectItem value="8">الصف الثامن</SelectItem>
-                  <SelectItem value="9">الصف التاسع</SelectItem>
-                  <SelectItem value="10">الصف العاشر</SelectItem>
-                  <SelectItem value="11">الصف الحادي عشر</SelectItem>
-                  <SelectItem value="12">الصف الثاني عشر</SelectItem>
+                  <SelectItem value="7">أولي إعدادي</SelectItem>
+                  <SelectItem value="8">ثاني إعدادي</SelectItem>
+                  <SelectItem value="9">ثالث إعدادي</SelectItem>
+                  <SelectItem value="10">أولي ثانوي</SelectItem>
+                  <SelectItem value="11">ثاني ثانوي</SelectItem>
+                  <SelectItem value="12">ثالث ثانوي</SelectItem>
                 </SelectContent>
               </Select>
               <motion.div
@@ -755,16 +746,7 @@ const CoursesManagement = ({ courses }) => {
                       <SelectValue placeholder="اختر المادة" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="النحو والصرف">النحو والصرف</SelectItem>
-                      <SelectItem value="الأدب العربي">الأدب العربي</SelectItem>
-                      <SelectItem value="التعبير والإنشاء">التعبير والإنشاء</SelectItem>
-                      <SelectItem value="البلاغة العربية">البلاغة العربية</SelectItem>
-                      <SelectItem value="النقد الأدبي">النقد الأدبي</SelectItem>
-                      <SelectItem value="اللغة العربية المتقدمة">اللغة العربية المتقدمة</SelectItem>
-                      <SelectItem value="الإملاء والكتابة">الإملاء والكتابة</SelectItem>
-                      <SelectItem value="القراءة والاستيعاب">القراءة والاستيعاب</SelectItem>
-                      <SelectItem value="القواعد النحوية">القواعد النحوية</SelectItem>
-                      <SelectItem value="التحليل الأدبي">التحليل الأدبي</SelectItem>
+                      <SelectItem value="لغة عربية">لغة عربية</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -781,12 +763,12 @@ const CoursesManagement = ({ courses }) => {
                       <SelectValue placeholder="اختر الصف" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="7">الصف السابع</SelectItem>
-                      <SelectItem value="8">الصف الثامن</SelectItem>
-                      <SelectItem value="9">الصف التاسع</SelectItem>
-                      <SelectItem value="10">الصف العاشر</SelectItem>
-                      <SelectItem value="11">الصف الحادي عشر</SelectItem>
-                      <SelectItem value="12">الصف الثاني عشر</SelectItem>
+                      <SelectItem value="7">أولي إعدادي</SelectItem>
+                      <SelectItem value="8">ثاني إعدادي</SelectItem>
+                      <SelectItem value="9">ثالث إعدادي</SelectItem>
+                      <SelectItem value="10">أولي ثانوي</SelectItem>
+                      <SelectItem value="11">ثاني ثانوي</SelectItem>
+                      <SelectItem value="12">ثالث ثانوي</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

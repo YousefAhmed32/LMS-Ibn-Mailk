@@ -35,15 +35,11 @@ const adminDashboardRoutes = require("./routes/admin-dashboard-routes");
 // Security middleware
 const { configureCSP, configureSecurityHeaders } = require('./middleware/security');
 
-// Performance middleware
-const responseOptimizer = require('./middleware/responseOptimizer');
-const queryOptimizer = require('./middleware/queryOptimizer');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// const MONGO_URL = process.env.MONGO_URL || "mongodb://localhost:27017/lms-ebn";
-const MONGO_URL = process.env.MONGO_URL ;
+const MONGO_URL = process.env.MONGO_URL || "mongodb://localhost:27017/lms-ebn";
 
 // Set JWT secret with fallback
 process.env.JWT_SECRET = process.env.JWT_SECRET || "your-super-secret-jwt-key-change-this-in-production";
@@ -135,11 +131,6 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Response optimization
-app.use(responseOptimizer);
-
-// Query optimization
-app.use(queryOptimizer);
 
 // Create uploads directory if it doesn't exist
 const fs = require('fs');
@@ -155,8 +146,8 @@ app.use('/uploads', express.static('uploads'));
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
-app.use("/api/admin", adminDashboardRoutes);  // Admin dashboard statistics - mount first
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin", adminDashboardRoutes);  // Admin dashboard statistics - mount after main admin routes
 app.use("/api/admin/payments", adminPaymentRoutes);  // Mount specific routes before general ones
 app.use("/api", paymentRoutes);
 app.use("/api/notifications", notificationRoutes);

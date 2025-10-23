@@ -166,6 +166,7 @@ const CourseList = ({ userRole, userId, showCreateButton = false, onCreateCourse
                 course={course}
                 onView={() => window.open(`/courses/${course._id}`, '_blank')}
                 onEdit={() => window.open(`/courses/${course._id}/edit`, '_blank')}
+                onEdit={() => navigate(`/admin/courses/${course?._id?.toString()}/edit`)}
                 onDelete={() => handleDelete(course._id)}
                 onDeactivate={() => handleDeactivate(course._id)}
                 isCreator={course.createdBy?._id === userId}

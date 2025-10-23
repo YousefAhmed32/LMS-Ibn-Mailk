@@ -41,16 +41,16 @@ const rateLimit = (windowMs = 15 * 60 * 1000, max = 100) => {
 // Middleware to verify JWT token
 const authenticateToken = async (req, res, next) => {
   try {
-    console.log('🔐 Auth Middleware: Starting token verification...');
+    // console.log('🔐 Auth Middleware: Starting token verification...');
     
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-    console.log('🔍 Auth Middleware: Token check:', {
-      hasAuthHeader: !!authHeader,
-      hasToken: !!token,
-      tokenLength: token ? token.length : 0
-    });
+    // console.log('🔍 Auth Middleware: Token check:', {
+    //   hasAuthHeader: !!authHeader,
+    //   hasToken: !!token,
+    //   tokenLength: token ? token.length : 0
+    // });
 
     if (!token) {
       console.log('❌ Auth Middleware: No token provided');
@@ -61,13 +61,13 @@ const authenticateToken = async (req, res, next) => {
     }
 
     // Verify token
-    console.log('🔐 Auth Middleware: Verifying token...');
+    // console.log('🔐 Auth Middleware: Verifying token...');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    console.log('✅ Auth Middleware: Token verified:', {
-      userId: decoded.userId,
-      tokenType: decoded.type || 'access'
-    });
+    // console.log('✅ Auth Middleware: Token verified:', {
+    //   userId: decoded.userId,
+    //   tokenType: decoded.type || 'access'
+    // });
     
     // Validate userId exists and is a valid ObjectId
     if (!decoded.userId) {
@@ -79,7 +79,7 @@ const authenticateToken = async (req, res, next) => {
     }
     
     // Check if user exists and is active
-    console.log('🔍 Auth Middleware: Fetching user from database...');
+    // console.log('🔍 Auth Middleware: Fetching user from database...');
     const user = await User.findById(decoded.userId).select('-password');
     
     if (!user) {
@@ -90,11 +90,11 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    console.log('✅ Auth Middleware: User found:', {
-      userId: user._id,
-      role: user.role,
-      email: user.userEmail || user.email
-    });
+    // console.log('✅ Auth Middleware: User found:', {
+    //   userId: user._id,
+    //   role: user.role,
+    //   email: user.userEmail || user.email
+    // });
 
     // Check if user account is active
     if (user.status && user.status !== 'active') {
@@ -109,7 +109,7 @@ const authenticateToken = async (req, res, next) => {
     req.user = user;
     req.userId = user._id;
     
-    console.log('✅ Auth Middleware: Authentication successful');
+    // console.log('✅ Auth Middleware: Authentication successful');
     next();
   } catch (error) {
     console.error('💥 Auth Middleware: Error occurred:', {

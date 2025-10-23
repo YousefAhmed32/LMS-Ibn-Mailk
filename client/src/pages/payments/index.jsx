@@ -31,9 +31,9 @@ const PaymentsPage = () => {
 
   // Mock courses data - in real app, this would come from API
   const availableCourses = [
-    { id: '1', title: 'Mathematics Grade 7 - First Term', price: 150 },
-    { id: '2', title: 'Physics Grade 10 - Second Term', price: 200 },
-    { id: '3', title: 'English Literature Grade 12', price: 180 }
+    { id: '1', title: 'Mathematics أولي إعدادي - الفصل الأول', price: 150 },
+    { id: '2', title: 'Physics أولي ثانوي - الفصل الثاني', price: 200 },
+    { id: '3', title: 'English Literature ثالث ثانوي', price: 180 }
   ];
 
   const handleInputChange = (field, value) => {

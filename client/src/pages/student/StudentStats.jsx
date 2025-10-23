@@ -157,6 +157,29 @@ const StudentStats = () => {
 
   useEffect(() => {
     fetchStudentStats();
+    
+    // Handle browser back/forward navigation
+    const handlePopState = () => {
+      console.log('🔄 Browser navigation detected, refreshing data...');
+      fetchStudentStats(); // Force refresh
+    };
+    
+    // Handle page visibility change
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('👁️ Page became visible, refreshing data...');
+        fetchStudentStats(); // Force refresh
+      }
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Cleanup event listeners on unmount
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [fetchStudentStats]);
 
   // Handle refresh

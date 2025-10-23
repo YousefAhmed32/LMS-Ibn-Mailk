@@ -645,12 +645,30 @@ const LuxuryStudentStats = () => {
       fetchStudentStats(true); // Force refresh
     };
     
-    window.addEventListener('focus', handleFocus);
+    // Handle browser back/forward navigation
+    const handlePopState = () => {
+      console.log('🔄 Browser navigation detected, refreshing data...');
+      fetchStudentStats(true); // Force refresh
+    };
     
-    // Cleanup interval and event listener on unmount
+    // Handle page visibility change
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('👁️ Page became visible, refreshing data...');
+        fetchStudentStats(true); // Force refresh
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('popstate', handlePopState);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Cleanup interval and event listeners on unmount
     return () => {
       clearInterval(autoRefreshInterval);
       window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('popstate', handlePopState);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [fetchStudentStats]);
 
@@ -1578,18 +1596,18 @@ const LuxuryStudentStats = () => {
                       transition={{ duration: 0.6, delay: 1.8 + index * 0.1 }}
                       className="border-b border-cyan-400/20 dark:border-cyan-400/30 light:border-cyan-600/15 hover:bg-cyan-500/5 dark:hover:bg-cyan-500/10 light:hover:bg-cyan-500/5 transition-colors duration-300"
                     >
-                      <td className="py-4 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600 font-medium text-right">
+                      <td className="py-4 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600 font-medium text-right whitespace-nowrap">
                         <div className="truncate" title={grade.examTitle || 'امتحان غير محدد'}>
                           {grade.examTitle || 'امتحان غير محدد'}
                         </div>
                       </td>
-                      <td className="py-4 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600 text-right">
+                      <td className="py-4 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600 text-right whitespace-nowrap">
                         <div className="truncate" title={grade.courseName || 'غير محدد'}>
                           {grade.courseName || 'غير محدد'}
                         </div>
                       </td>
                       <td className="py-4 px-4 text-center">
-                        <span className="bg-cyan-500/10 px-3 py-1 rounded-lg text-sm font-mono font-bold text-cyan-200 dark:text-cyan-100 light:text-cyan-600">
+                        <span className="bg-cyan-500/10 px-3 py-1 rounded-lg text-sm font-mono font-bold text-cyan-200 dark:text-cyan-100 light:text-cyan-600 whitespace-nowrap">
                           {grade.studentScore || 0}/{grade.totalScore || 0}
                         </span>
                       </td>
