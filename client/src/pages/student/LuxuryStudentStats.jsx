@@ -673,7 +673,7 @@ const LuxuryStudentStats = () => {
   }, [fetchStudentStats]);
 
   const handleBack = () => {
-    navigate('/dashboard');
+    navigate('/courses');
   };
 
   const handleRefresh = () => {

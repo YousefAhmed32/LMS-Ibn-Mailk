@@ -15,7 +15,7 @@ const SmartDashboardRouter = () => {
           navigate('/parent/dashboard');
           break;
         case 'student':
-          navigate('/dashboard');
+          navigate('/courses');
           break;
         case 'admin':
           navigate('/admin/dashboard');
@@ -41,7 +41,7 @@ const SmartDashboardRouter = () => {
         </p>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {user?.role === 'parent' && 'توجيهك إلى لوحة تحكم ولي الأمر'}
-          {user?.role === 'student' && 'توجيهك إلى لوحة التحكم'}
+          {user?.role === 'student' && 'توجيهك إلى صفحة الدورات'}
           {user?.role === 'admin' && 'توجيهك إلى لوحة تحكم الإدارة'}
         </p>
       </div>

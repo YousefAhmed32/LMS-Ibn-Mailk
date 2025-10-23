@@ -113,6 +113,10 @@ const UserSchema = new mongoose.Schema({
   strict: true // Prevent additional fields not defined in schema
 });
 
+// Performance indexes for faster enrollment lookups
+UserSchema.index({ '_id': 1, 'enrolledCourses.course': 1 });
+UserSchema.index({ 'enrolledCourses.course': 1 });
+
 // Pre-save middleware to hash password
 UserSchema.pre('save', async function(next) {
   // Only hash the password if it has been modified (or is new)

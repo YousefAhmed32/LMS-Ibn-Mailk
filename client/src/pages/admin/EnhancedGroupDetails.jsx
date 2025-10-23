@@ -1364,38 +1364,11 @@ const MembersTab = ({ group, colors }) => (
                     console.log('All student fields:', Object.keys(student));
                     console.log('Email fields check:', {
                       userEmail: student.userEmail,
-                      email: student.email,
-                      userEmail: student.userEmail,
-                      email: student.email,
-                      // Try other possible email fields
-                      userEmail: student.userEmail,
-                      email: student.email,
-                      userEmail: student.userEmail,
-                      email: student.email,
-                      // Check all possible field names
-                      userEmail: student.userEmail,
-                      email: student.email,
-                      userEmail: student.userEmail,
                       email: student.email
                     });
                     
-                    // Try all possible email field combinations
-                    const email = student.userEmail || 
-                                 student.email || 
-                                 student.userEmail || 
-                                 student.email ||
-                                 student.userEmail ||
-                                 student.email ||
-                                 // Try other possible field names
-                                 student.userEmail ||
-                                 student.email ||
-                                 student.userEmail ||
-                                 student.email ||
-                                 // Try other possible field names that might exist
-                                 student.userEmail ||
-                                 student.email ||
-                                 student.userEmail ||
-                                 student.email;
+                    // Try to find email from possible field names
+                    const email = student.userEmail || student.email;
                     
                     if (email) {
                       console.log('Found email:', email);

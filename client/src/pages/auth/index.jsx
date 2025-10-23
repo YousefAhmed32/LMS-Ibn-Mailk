@@ -26,7 +26,17 @@ function AuthPage() {
 
   // Redirect if already authenticated
   if (isAuthenticated) {
-    navigate("/dashboard");
+    // Get user role to redirect appropriately
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    const userRole = userData?.role;
+    
+    if (userRole === 'admin') {
+      navigate('/admin');
+    } else if (userRole === 'parent') {
+      navigate('/parent/dashboard');
+    } else {
+      navigate('/courses');
+    }
     return null;
   }
 
@@ -66,7 +76,17 @@ function AuthPage() {
         title: "Success!",
         description: result.message,
       });
-      navigate("/dashboard");
+      // Redirect based on user role
+      const userData = JSON.parse(localStorage.getItem('user') || '{}');
+      const userRole = userData?.role;
+      
+      if (userRole === 'admin') {
+        navigate('/admin');
+      } else if (userRole === 'parent') {
+        navigate('/parent/dashboard');
+      } else {
+        navigate('/courses');
+      }
     } else {
       toast({
         title: "Error",
@@ -83,7 +103,17 @@ function AuthPage() {
         title: "Success!",
         description: result.message,
       });
-      navigate("/dashboard");
+      // Redirect based on user role
+      const userData = JSON.parse(localStorage.getItem('user') || '{}');
+      const userRole = userData?.role;
+      
+      if (userRole === 'admin') {
+        navigate('/admin');
+      } else if (userRole === 'parent') {
+        navigate('/parent/dashboard');
+      } else {
+        navigate('/courses');
+      }
     } else {
       toast({
         title: "Error",

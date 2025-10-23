@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -25,6 +25,114 @@ import {
 } from 'lucide-react';
 import axiosInstance from '../../api/axiosInstance';
 
+// Skeleton loader component with shimmer effect
+const CourseCardSkeleton = ({ theme }) => {
+  const { colors, spacing, borderRadius, typography } = theme;
+  
+  return (
+    <LuxuryCard 
+      variant="default"
+      className="course-card p-1"
+      style={{ height: '100%' }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        {/* Image skeleton */}
+        <div style={{ 
+          height: '200px', 
+          background: `linear-gradient(90deg, ${colors.border} 25%, ${colors.surfaceCard} 50%, ${colors.border} 75%)`,
+          backgroundSize: '200% 100%',
+          animation: 'shimmer 1.5s infinite',
+          borderRadius: `${borderRadius.lg} ${borderRadius.lg} 0 0`,
+          marginBottom: spacing.md
+        }} />
+        
+        {/* Content skeleton */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          {/* Title skeleton */}
+          <div style={{
+            height: '24px',
+            background: `linear-gradient(90deg, ${colors.border} 25%, ${colors.surfaceCard} 50%, ${colors.border} 75%)`,
+            backgroundSize: '200% 100%',
+            animation: 'shimmer 1.5s infinite',
+            borderRadius: borderRadius.sm,
+            marginBottom: spacing.sm,
+            width: '80%'
+          }} />
+          
+          {/* Description skeleton */}
+          <div style={{
+            height: '16px',
+            background: `linear-gradient(90deg, ${colors.border} 25%, ${colors.surfaceCard} 50%, ${colors.border} 75%)`,
+            backgroundSize: '200% 100%',
+            animation: 'shimmer 1.5s infinite',
+            borderRadius: borderRadius.sm,
+            marginBottom: spacing.sm,
+            width: '100%'
+          }} />
+          <div style={{
+            height: '16px',
+            background: `linear-gradient(90deg, ${colors.border} 25%, ${colors.surfaceCard} 50%, ${colors.border} 75%)`,
+            backgroundSize: '200% 100%',
+            animation: 'shimmer 1.5s infinite',
+            borderRadius: borderRadius.sm,
+            marginBottom: spacing.md,
+            width: '60%'
+          }} />
+          
+          {/* Meta skeleton */}
+          <div style={{ 
+            display: 'flex', 
+            gap: spacing.md, 
+            marginBottom: spacing.md 
+          }}>
+            <div style={{
+              height: '16px',
+              width: '60px',
+              background: `linear-gradient(90deg, ${colors.border} 25%, ${colors.surfaceCard} 50%, ${colors.border} 75%)`,
+              backgroundSize: '200% 100%',
+              animation: 'shimmer 1.5s infinite',
+              borderRadius: borderRadius.sm
+            }} />
+            <div style={{
+              height: '16px',
+              width: '50px',
+              background: `linear-gradient(90deg, ${colors.border} 25%, ${colors.surfaceCard} 50%, ${colors.border} 75%)`,
+              backgroundSize: '200% 100%',
+              animation: 'shimmer 1.5s infinite',
+              borderRadius: borderRadius.sm
+            }} />
+          </div>
+          
+          {/* Price and button skeleton */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginTop: 'auto'
+          }}>
+            <div style={{
+              height: '20px',
+              width: '80px',
+              background: `linear-gradient(90deg, ${colors.border} 25%, ${colors.surfaceCard} 50%, ${colors.border} 75%)`,
+              backgroundSize: '200% 100%',
+              animation: 'shimmer 1.5s infinite',
+              borderRadius: borderRadius.sm
+            }} />
+            <div style={{
+              height: '36px',
+              width: '100px',
+              background: `linear-gradient(90deg, ${colors.border} 25%, ${colors.surfaceCard} 50%, ${colors.border} 75%)`,
+              backgroundSize: '200% 100%',
+              animation: 'shimmer 1.5s infinite',
+              borderRadius: borderRadius.md
+            }} />
+          </div>
+        </div>
+      </div>
+    </LuxuryCard>
+  );
+};
+
 const LuxuryCoursesPage = () => {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -40,44 +148,57 @@ const LuxuryCoursesPage = () => {
   const [filterGrade, setFilterGrade] = useState('all');
   const [viewMode, setViewMode] = useState('grid');
   const [subscribing, setSubscribing] = useState(null);
+  
+  // Add ref for request cancellation
+  const abortControllerRef = useRef(null);
 
   useEffect(() => {
-    fetchCourses();
-  }, []);
+    // Only fetch courses if user is authenticated
+    if (user) {
+      fetchCourses();
+    }
+    
+    // Cleanup function to cancel requests on unmount
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [user]); // Add user as dependency
 
 
   const fetchCourses = async () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('🚀 Fetching courses...');
-      console.log('🔐 Auth state:', {
-        hasToken: !!localStorage.getItem('token'),
-        hasUser: !!localStorage.getItem('user')
-      });
       
-      let response;
-      
-      // Try the new endpoint first with timeout
-      try {
-        console.log('🔄 Trying /api/courses/with-enrollment-status...');
-        response = await axiosInstance.get('/api/courses/with-enrollment-status', {
-          timeout: 10000 // 10 seconds timeout
-        });
-        console.log('✅ Courses API response:', response.data);
-      } catch (endpointError) {
-        console.warn('⚠️ New endpoint failed, trying fallback...', endpointError.message);
-        
-        // Fallback to regular courses endpoint
-        console.log('🔄 Trying fallback /api/courses...');
-        response = await axiosInstance.get('/api/courses', {
-          timeout: 15000 // 15 seconds timeout
-        });
-        console.log('✅ Fallback API response:', response.data);
+      // Check if user is authenticated
+      if (!user) {
+        console.log('❌ User not authenticated, redirecting to login');
+        setError('يجب تسجيل الدخول أولاً');
+        setLoading(false);
+        return;
       }
       
+      // Debug: Log authentication status
+      console.log('🔐 Authentication status:', {
+        hasUser: !!user,
+        userId: user?._id,
+        userRole: user?.role,
+        hasToken: !!localStorage.getItem('token')
+      });
+      
+      // Create new AbortController for this request
+      abortControllerRef.current = new AbortController();
+      
+      // Optimized: Single endpoint with reduced timeout
+      const response = await axiosInstance.get('/api/courses/with-enrollment-status', {
+        timeout: 5000, // Reduced to 5 seconds
+        signal: abortControllerRef.current.signal
+      });
+      
       if (response.data.success) {
-        const coursesData = response.data.data.courses || response.data.data || [];
+        const coursesData = response.data.data.courses || [];
         
         // Add enrollment status if not present
         const coursesWithStatus = coursesData.map(course => ({
@@ -91,31 +212,40 @@ const LuxuryCoursesPage = () => {
         
         setCourses(coursesWithStatus);
         setError(null);
-        console.log('📚 Courses loaded:', coursesWithStatus.length);
-        console.log('📊 Enrollment summary:', {
-          total: coursesWithStatus.length,
-          enrolled: coursesWithStatus.filter(c => c.enrollmentStatus.isEnrolled).length
-        });
       } else {
         throw new Error(response.data.error || 'Failed to fetch courses');
       }
     } catch (error) {
-      console.error('❌ Error fetching courses:', error);
-      console.error('❌ Error details:', {
-        message: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        code: error.code
-      });
+      // Don't show error if request was aborted
+      if (error.name === 'AbortError') {
+        return;
+      }
       
       setError(error);
       
       // Show more specific error message
       if (error.code === 'ECONNABORTED') {
         showError('خطأ في الاتصال', 'انتهت مهلة الاتصال بالخادم. يرجى المحاولة مرة أخرى.');
+      } else if (error.message === 'Network Error' || error.code === 'NETWORK_ERROR') {
+        showError('خطأ في الشبكة', 'فشل في الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.');
       } else if (error.response?.status === 401) {
-        showError('خطأ في المصادقة', 'يرجى تسجيل الدخول مرة أخرى.');
+        // Try to refresh the user data first
+        try {
+          await refreshUser();
+          // If refresh successful, try the request again
+          setTimeout(() => {
+            fetchCourses();
+          }, 1000);
+          return;
+        } catch (refreshError) {
+          console.log('Token refresh failed, redirecting to login');
+          showError('خطأ في المصادقة', 'يرجى تسجيل الدخول مرة أخرى.');
+          // Redirect to login after a short delay
+          setTimeout(() => {
+            logout();
+            navigate('/login');
+          }, 2000);
+        }
       } else {
         showError('خطأ في تحميل الدورات', 'فشل في تحميل قائمة الدورات. يرجى المحاولة مرة أخرى.');
       }
@@ -177,9 +307,38 @@ const LuxuryCoursesPage = () => {
     return matchesSearch && matchesSubject && matchesGrade;
   });
 
+  // Lazy loading hook for images
+  const useLazyImage = (src) => {
+    const [imageSrc, setImageSrc] = useState(null);
+    const [isLoaded, setIsLoaded] = useState(false);
+    const imgRef = useRef();
+
+    useEffect(() => {
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setImageSrc(src);
+            observer.disconnect();
+          }
+        },
+        { threshold: 0.1 }
+      );
+
+      if (imgRef.current) {
+        observer.observe(imgRef.current);
+      }
+
+      return () => observer.disconnect();
+    }, [src]);
+
+    return { imageSrc, isLoaded, imgRef, setIsLoaded };
+  };
+
   const CourseCard = ({ course }) => {
     const status = getCourseStatus(course);
     const isSubscribing = subscribing === course._id;
+    const courseImageSrc = getCourseCoverImage(course);
+    const { imageSrc, isLoaded, imgRef, setIsLoaded } = useLazyImage(courseImageSrc);
     
     return (
       <LuxuryCard 
@@ -189,7 +348,7 @@ const LuxuryCoursesPage = () => {
         style={{ height: '100%' }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          {/* Course Image */}
+          {/* Course Image with lazy loading */}
           <div style={{ 
             height: '200px', 
             background: colors.cardGradient,
@@ -201,15 +360,20 @@ const LuxuryCoursesPage = () => {
             position: 'relative',
             marginBottom: spacing.md
           }}>
-            {getCourseCoverImage(course) !== getDefaultVideoThumbnail() ? (
+            {imageSrc && imageSrc !== getDefaultVideoThumbnail() ? (
               <img 
-                src={getCourseCoverImage(course)} 
+                ref={imgRef}
+                src={imageSrc} 
                 alt={course.title}
+                loading="lazy"
                 style={{
                   width: '100%',
                   height: '100%',
-                  objectFit: 'cover'
+                  objectFit: 'cover',
+                  opacity: isLoaded ? 1 : 0,
+                  transition: 'opacity 0.3s ease'
                 }}
+                onLoad={() => setIsLoaded(true)}
                 onError={(e) => {
                   e.target.style.display = 'none';
                   e.target.nextSibling.style.display = 'flex';
@@ -217,8 +381,9 @@ const LuxuryCoursesPage = () => {
               />
             ) : null}
             <div 
+              ref={imgRef}
               style={{ 
-                display: getCourseCoverImage(course) !== getDefaultVideoThumbnail() ? 'none' : 'flex',
+                display: imageSrc && imageSrc !== getDefaultVideoThumbnail() ? 'none' : 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 width: '100%',
@@ -368,8 +533,61 @@ const LuxuryCoursesPage = () => {
     );
   };
 
+  // Show loading state if user authentication is still being checked
+  if (!user && !error) {
+    return (
+      <GlobalLayout>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400">جاري التحقق من المصادقة...</p>
+          </div>
+        </div>
+      </GlobalLayout>
+    );
+  }
+
+  // Show authentication required message if no user
+  if (!user) {
+    return (
+      <GlobalLayout>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8 flex items-center justify-center">
+          <div className="text-center max-w-md">
+            <div className="mb-6">
+              <Lock className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                مطلوب تسجيل الدخول
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                يجب عليك تسجيل الدخول أولاً للوصول إلى الدورات التعليمية
+              </p>
+            </div>
+            <button
+              onClick={() => navigate('/login')}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+            >
+              تسجيل الدخول
+            </button>
+          </div>
+        </div>
+      </GlobalLayout>
+    );
+  }
+
   return (
     <GlobalLayout>
+      <style>
+        {`
+          @keyframes shimmer {
+            0% {
+              background-position: -200% 0;
+            }
+            100% {
+              background-position: 200% 0;
+            }
+          }
+        `}
+      </style>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
         {/* Page Header */}
         <div className="mb-8">
@@ -447,19 +665,16 @@ const LuxuryCoursesPage = () => {
 
       {/* Courses Grid */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: spacing['2xl'] }}>
-          <div style={{
-            display: 'inline-block',
-            width: '40px',
-            height: '40px',
-            border: `4px solid ${colors.border}`,
-            borderTop: `4px solid ${colors.accent}`,
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite'
-          }} />
-          <p style={{ color: colors.textMuted, marginTop: spacing.md }}>
-            جاري تحميل الدورات...
-          </p>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: viewMode === 'grid' 
+            ? 'repeat(auto-fill, minmax(350px, 1fr))' 
+            : '1fr',
+          gap: spacing.lg
+        }}>
+          {Array.from({ length: 6 }).map((_, index) => (
+            <CourseCardSkeleton key={index} theme={theme} />
+          ))}
         </div>
       ) : error ? (
         <div style={{ textAlign: 'center', padding: spacing['2xl'] }}>
@@ -491,6 +706,10 @@ const LuxuryCoursesPage = () => {
           }}>
             {error.code === 'ECONNABORTED' 
               ? 'انتهت مهلة الاتصال بالخادم. يرجى المحاولة مرة أخرى.'
+              : error.message === 'Network Error' || error.code === 'NETWORK_ERROR'
+              ? 'فشل في الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.'
+              : error.response?.status === 401
+              ? 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.'
               : 'فشل في تحميل قائمة الدورات. يرجى المحاولة مرة أخرى.'
             }
           </p>

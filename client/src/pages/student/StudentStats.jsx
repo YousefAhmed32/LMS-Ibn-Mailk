@@ -187,9 +187,9 @@ const StudentStats = () => {
     fetchStudentStats();
   };
 
-  // Handle back to dashboard
+  // Handle back to courses
   const handleBack = () => {
-    navigate('/dashboard');
+    navigate('/courses');
   };
 
   if (loading) {

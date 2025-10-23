@@ -503,10 +503,6 @@ const getMyEnrolledCourses = async (req, res) => {
 // Get all courses with enrollment status for current user
 const getAllCoursesWithEnrollmentStatus = async (req, res) => {
   try {
-    console.log('=== Get All Courses with Enrollment Status Request ===');
-    console.log('Request user:', req.user);
-    console.log('Request headers:', req.headers.authorization ? 'Has auth token' : 'No auth token');
-    
     if (!req.user) {
       return res.status(401).json({
         success: false,
@@ -515,19 +511,20 @@ const getAllCoursesWithEnrollmentStatus = async (req, res) => {
     }
     
     const userId = req.user._id;
-    console.log('User ID:', userId);
 
-    // Get all active courses
+    // Optimized: Get all active courses with lean() for faster serialization
+    // Only select essential fields, exclude heavy nested data
     const courses = await Course.find({ isActive: { $ne: false } })
-      .select('title description grade subject price imageUrl videos exams createdAt')
-      .sort({ createdAt: -1 });
+      .select('title description grade subject price imageUrl coverImage videos.title videos.duration exams.title exams.type createdAt')
+      .lean() // Use lean() for 30-50% performance boost
+      .sort({ createdAt: -1 })
+      .maxTimeMS(3000); // 3 second timeout
 
-    // Get user's enrolled courses
+    // Optimized: Only get enrolledCourses field, no populate needed
     const user = await User.findById(userId)
-      .populate({
-        path: 'enrolledCourses.course',
-        select: '_id'
-      });
+      .select('enrolledCourses')
+      .lean()
+      .maxTimeMS(2000); // 2 second timeout
 
     if (!user) {
       return res.status(404).json({
@@ -540,7 +537,7 @@ const getAllCoursesWithEnrollmentStatus = async (req, res) => {
     const enrolledCoursesMap = new Map();
     user.enrolledCourses.forEach(enrollment => {
       if (enrollment.course) {
-        enrolledCoursesMap.set(enrollment.course._id.toString(), {
+        enrolledCoursesMap.set(enrollment.course.toString(), {
           paymentStatus: enrollment.paymentStatus,
           enrolledAt: enrollment.enrolledAt,
           progress: enrollment.progress,
@@ -555,7 +552,7 @@ const getAllCoursesWithEnrollmentStatus = async (req, res) => {
       const enrollment = enrolledCoursesMap.get(course._id.toString());
       
       return {
-        ...course.toObject(),
+        ...course,
         enrollmentStatus: enrollment ? {
           isEnrolled: true,
           paymentStatus: enrollment.paymentStatus,
@@ -572,12 +569,6 @@ const getAllCoursesWithEnrollmentStatus = async (req, res) => {
           paymentApprovedAt: null
         }
       };
-    });
-
-    console.log('✅ Sending courses response:', {
-      success: true,
-      totalCourses: coursesWithStatus.length,
-      enrolledCount: enrolledCoursesMap.size
     });
 
     res.status(200).json({
