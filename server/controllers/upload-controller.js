@@ -13,6 +13,14 @@ const uploadImage = async (req, res) => {
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     const fileUrl = `${baseUrl}/uploads/${req.file.filename}`;
     
+    console.log('📤 Image uploaded successfully:', {
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      size: req.file.size,
+      url: fileUrl,
+      baseUrl: baseUrl
+    });
+    
     res.json({
       success: true,
       message: 'Image uploaded successfully',
@@ -24,7 +32,7 @@ const uploadImage = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Upload error:', error);
+    console.error('❌ Upload error:', error);
     res.status(500).json({
       success: false,
       message: 'Error uploading image',

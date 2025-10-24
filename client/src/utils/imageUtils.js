@@ -8,7 +8,10 @@ export const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
   
   // If it's already a full URL, return as is
-  if (imagePath.startsWith('http')) return imagePath;
+  if (imagePath.startsWith('http')) {
+    console.log('✅ Full URL detected:', imagePath);
+    return imagePath;
+  }
   
   // Get base URL from axios instance or use current origin
   const baseURL = axiosInstance.defaults.baseURL || window.location.origin;
@@ -16,7 +19,16 @@ export const getImageUrl = (imagePath) => {
   // Ensure the path starts with /
   const normalizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
   
-  return `${baseURL}${normalizedPath}`;
+  const fullUrl = `${baseURL}${normalizedPath}`;
+  
+  console.log('🖼️ Image URL processed:', {
+    original: imagePath,
+    baseURL: baseURL,
+    normalizedPath: normalizedPath,
+    fullUrl: fullUrl
+  });
+  
+  return fullUrl;
 };
 
 /**
@@ -37,6 +49,29 @@ export const isValidImageUrl = (url) => {
   } catch {
     return false;
   }
+};
+
+/**
+ * Test if image URL is accessible
+ */
+export const testImageUrl = (url) => {
+  return new Promise((resolve) => {
+    if (!url) {
+      resolve(false);
+      return;
+    }
+    
+    const img = new Image();
+    img.onload = () => {
+      console.log('✅ Image test successful:', url);
+      resolve(true);
+    };
+    img.onerror = () => {
+      console.log('❌ Image test failed:', url);
+      resolve(false);
+    };
+    img.src = url;
+  });
 };
 
 /**
@@ -99,6 +134,12 @@ export const compressImage = (file, maxWidth = 1920, quality = 0.8) => {
  */
 export const uploadImageToGridFS = async (file, compress = true) => {
   try {
+    console.log('📤 Starting image upload:', {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type
+    });
+    
     let fileToUpload = file;
     
     // Compress image if requested and file is larger than 1MB
@@ -111,6 +152,7 @@ export const uploadImageToGridFS = async (file, compress = true) => {
     const formData = new FormData();
     formData.append('image', fileToUpload);
     
+    console.log('📤 Sending upload request to /api/upload/image');
     const response = await axiosInstance.post('/api/upload/image', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -118,14 +160,32 @@ export const uploadImageToGridFS = async (file, compress = true) => {
       timeout: 60000, // 60 seconds timeout
     });
     
+    console.log('📤 Upload response:', response.data);
+    
     if (response.data.success) {
-      // Handle both old and new response formats
-      return response.data.url || response.data.data?.url;
+      const imageUrl = response.data.url || response.data.data?.url;
+      console.log('✅ Image uploaded successfully:', imageUrl);
+      
+      // Test the uploaded image URL
+      if (imageUrl) {
+        console.log('🧪 Testing uploaded image URL:', imageUrl);
+        testImageUrl(imageUrl).then(isAccessible => {
+          console.log('📸 Uploaded image accessibility:', isAccessible);
+        });
+      }
+      
+      return imageUrl;
     }
     
+    console.log('❌ Upload failed - no success response');
     return null;
   } catch (error) {
-    console.error('Error uploading image to GridFS:', error);
+    console.error('❌ Error uploading image to GridFS:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data
+    });
     return null;
   }
 };

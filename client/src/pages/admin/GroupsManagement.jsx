@@ -33,7 +33,7 @@ import {
 import axiosInstance from '../../api/axiosInstance';
 import LuxuryCard from '../../components/ui/LuxuryCard';
 import LuxuryButton from '../../components/ui/LuxuryButton';
-import { getImageUrl } from '../../utils/imageUtils';
+import { getImageUrl, testImageUrl } from '../../utils/imageUtils';
 
 const GroupsManagement = () => {
   const navigate = useNavigate();
@@ -91,7 +91,21 @@ const GroupsManagement = () => {
       ]);
 
       if (groupsResponse.data.success) {
-        setGroups(groupsResponse.data.data || []);
+        const groupsData = groupsResponse.data.data || [];
+        console.log('📊 Groups data fetched:', groupsData);
+        
+        // Test image URLs
+        for (const group of groupsData) {
+          if (group.coverImage) {
+            const imageUrl = getImageUrl(group.coverImage);
+            console.log(`🖼️ Testing image for group "${group.name}":`, imageUrl);
+            testImageUrl(imageUrl).then(isAccessible => {
+              console.log(`📸 Image accessibility for "${group.name}":`, isAccessible);
+            });
+          }
+        }
+        
+        setGroups(groupsData);
       }
 
       if (statsResponse.data.success) {
@@ -148,11 +162,19 @@ const GroupsManagement = () => {
     setImageUpload(prev => ({ ...prev, uploading: true }));
     
     try {
+      console.log('📤 Uploading image:', {
+        fileName: imageUpload.file.name,
+        fileSize: imageUpload.file.size,
+        fileType: imageUpload.file.type
+      });
+      
       const { uploadImageToGridFS } = await import('../../utils/imageUtils');
       const imageUrl = await uploadImageToGridFS(imageUpload.file);
+      
+      console.log('✅ Image uploaded successfully:', imageUrl);
       return imageUrl;
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error('❌ Error uploading image:', error);
     } finally {
       setImageUpload(prev => ({ ...prev, uploading: false }));
     }
@@ -179,10 +201,13 @@ const GroupsManagement = () => {
         coverImage: coverImageUrl
       };
 
-      console.log('Creating group with data:', groupData);
+      console.log('📝 Creating group with data:', groupData);
+      console.log('🖼️ Cover image URL:', coverImageUrl);
       const response = await axiosInstance.post('/api/groups/admin/groups', groupData);
       
       if (response.data.success) {
+        console.log('✅ Group created successfully:', response.data.data);
+        console.log('🖼️ Created group cover image:', response.data.data.coverImage);
         setGroups([response.data.data, ...groups]);
         setShowCreateModal(false);
         setFormData({
@@ -549,12 +574,27 @@ const GroupsManagement = () => {
                   src={getImageUrl(group.coverImage)}
                   alt={group.name}
                   className="w-full h-32 object-cover rounded-xl"
+                  onError={(e) => {
+                    console.error('❌ Group image failed to load:', {
+                      originalSrc: group.coverImage,
+                      processedSrc: e.target.src,
+                      groupName: group.name
+                    });
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                  onLoad={(e) => {
+                    console.log('✅ Group image loaded successfully:', e.target.src);
+                  }}
                 />
-              ) : (
-                <div className="w-full h-32 bg-gradient-to-br from-[#F97316]/20 to-[#EA580C]/20 rounded-xl flex items-center justify-center">
-                  <Users size={32} className="text-[#F97316]" />
-                </div>
-              )}
+              ) : null}
+              
+              {/* Fallback when no image or image fails to load */}
+              <div 
+                className={`w-full h-32 bg-gradient-to-br from-[#F97316]/20 to-[#EA580C]/20 rounded-xl flex items-center justify-center ${group.coverImage ? 'hidden' : 'flex'}`}
+              >
+                <Users size={32} className="text-[#F97316]" />
+              </div>
               <div className="absolute top-2 right-2">
                 <span className="px-2 py-1 bg-[#F97316]/90 text-white text-xs font-semibold rounded-lg">
                   {group.students.length} طالب

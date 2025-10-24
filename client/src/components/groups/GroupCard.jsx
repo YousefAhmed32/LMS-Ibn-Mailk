@@ -85,12 +85,27 @@ const GroupCard = ({
             src={getImageUrl(group.coverImage)}
             alt={group.name}
             className={`w-full ${styles.image} object-cover rounded-xl`}
+            onError={(e) => {
+              console.error('❌ Image failed to load:', {
+                originalSrc: group.coverImage,
+                processedSrc: e.target.src,
+                groupName: group.name
+              });
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'flex';
+            }}
+            onLoad={(e) => {
+              console.log('✅ Image loaded successfully:', e.target.src);
+            }}
           />
-        ) : (
-          <div className={`w-full ${styles.image} bg-gradient-to-br from-[#F97316]/20 to-[#EA580C]/20 rounded-xl flex items-center justify-center`}>
-            <Users size={variant === 'detailed' ? 48 : 32} className="text-[#F97316]" />
-          </div>
-        )}
+        ) : null}
+        
+        {/* Fallback when no image or image fails to load */}
+        <div 
+          className={`w-full ${styles.image} bg-gradient-to-br from-[#F97316]/20 to-[#EA580C]/20 rounded-xl flex items-center justify-center ${group.coverImage ? 'hidden' : 'flex'}`}
+        >
+          <Users size={variant === 'detailed' ? 48 : 32} className="text-[#F97316]" />
+        </div>
         
         {/* Overlay Badges */}
         <div className="absolute top-2 right-2">

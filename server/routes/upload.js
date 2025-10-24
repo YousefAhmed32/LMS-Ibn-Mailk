@@ -79,10 +79,20 @@ router.post("/image", (req, res) => {
     
     // req.file.id is the ObjectId
     const fileId = req.file.id || req.file._id || req.file.gridFsFileId;
+    const imageUrl = `http://localhost:${process.env.PORT || 5000}/api/image/${fileId.toString()}`;
+    
+    console.log('📤 GridFS image uploaded successfully:', {
+      fileId: fileId.toString(),
+      url: imageUrl,
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      size: req.file.size
+    });
+    
     return res.json({
       success: true,
       id: fileId.toString(),
-      url: `http://localhost:${process.env.PORT || 5000}/api/image/${fileId.toString()}`,
+      url: imageUrl,
     });
   });
 });
@@ -90,6 +100,8 @@ router.post("/image", (req, res) => {
 // GET image by id
 router.get("/image/:id", async (req, res) => {
   try {
+    console.log('🖼️ Requesting image:', req.params.id);
+    
     if (!conn) {
       return res.status(500).json({ 
         success: false, 
@@ -102,17 +114,25 @@ router.get("/image/:id", async (req, res) => {
     const files = await conn.db.collection("images.files").findOne({ _id: id });
     
     if (!files) {
+      console.log('❌ Image not found in database:', req.params.id);
       return res.status(404).json({ 
         success: false, 
         message: "File not found" 
       });
     }
 
+    console.log('✅ Image found in database:', {
+      id: req.params.id,
+      filename: files.filename,
+      contentType: files.contentType,
+      size: files.length
+    });
+
     res.setHeader("Content-Type", files.contentType || "application/octet-stream");
     const downloadStream = bucket.openDownloadStream(id);
     
     downloadStream.on("error", (error) => {
-      console.error("Download stream error:", error);
+      console.error("❌ Download stream error:", error);
       res.status(404).json({ 
         success: false, 
         message: "File not found" 
@@ -121,7 +141,7 @@ router.get("/image/:id", async (req, res) => {
     
     downloadStream.pipe(res);
   } catch (err) {
-    console.error("Image retrieval error:", err);
+    console.error("❌ Image retrieval error:", err);
     return res.status(400).json({ 
       success: false, 
       message: "Invalid file ID" 

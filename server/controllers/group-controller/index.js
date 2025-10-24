@@ -32,6 +32,12 @@ const createGroup = async (req, res) => {
     await group.save();
     await group.populate('createdBy', 'firstName secondName userEmail');
 
+    console.log('✅ Group created successfully:', {
+      id: group._id,
+      name: group.name,
+      coverImage: group.coverImage
+    });
+
     res.status(201).json({
       success: true,
       message: 'Group created successfully',
@@ -73,6 +79,16 @@ const getAdminGroups = async (req, res) => {
       .skip((page - 1) * limit);
 
     const total = await Group.countDocuments(query);
+
+    console.log('📊 Admin groups fetched:', {
+      count: groups.length,
+      total: total,
+      groups: groups.map(g => ({
+        id: g._id,
+        name: g.name,
+        coverImage: g.coverImage
+      }))
+    });
 
     res.json({
       success: true,

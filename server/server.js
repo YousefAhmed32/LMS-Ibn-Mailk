@@ -141,8 +141,15 @@ if (!fs.existsSync(uploadsDir)){
     console.log('📁 Created uploads directory');
 }
 
-// Serve uploaded files
-app.use('/uploads', express.static('uploads'));
+// Serve uploaded files with debugging
+app.use('/uploads', (req, res, next) => {
+  console.log('📁 Static file request:', {
+    path: req.path,
+    originalUrl: req.originalUrl,
+    method: req.method
+  });
+  next();
+}, express.static('uploads'));
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -164,6 +171,16 @@ app.use("/api/exam-results", examResultRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api", gridfsUploadRoutes);
+
+// Debug middleware for image requests
+app.use('/api/image/:id', (req, res, next) => {
+  console.log('🖼️ GridFS image request:', {
+    id: req.params.id,
+    method: req.method,
+    url: req.originalUrl
+  });
+  next();
+});
 app.use("/api/user", userDashboardRoutes);
 app.use("/api/parent", parentRoutes);
 app.use("/api/parent", enhancedParentRoutes);
