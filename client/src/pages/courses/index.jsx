@@ -52,7 +52,7 @@ const CoursesPage = () => {
       }
 
       console.log('🚀 Fetching fresh courses data...');
-      const response = await fetch('http://localhost:5000/api/courses', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/courses`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Cache-Control': 'no-cache'
@@ -95,7 +95,7 @@ const CoursesPage = () => {
     if (!user) return;
     
     try {
-      const response = await fetch('http://localhost:5000/api/courses/my/enrolled', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/courses/my/enrolled`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -118,7 +118,7 @@ const CoursesPage = () => {
   // Handle course subscription
   const handleSubscribe = async (courseId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/courses/${courseId}/enroll`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/courses/${courseId}/enroll`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

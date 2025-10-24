@@ -43,6 +43,7 @@ import {
 import axiosInstance from '../../api/axiosInstance';
 import LuxuryCard from '../../components/ui/LuxuryCard';
 import socketService from '../../services/socketService';
+import { getImageUrl } from '../../utils/imageUtils';
 
 const EnhancedGroupDetails = () => {
   const { id } = useParams();
@@ -51,12 +52,7 @@ const EnhancedGroupDetails = () => {
   const { user } = useAuth();
   const { colors, isDarkMode } = useTheme();
 
-  // Helper function to get full image URL
-  const getImageUrl = (imagePath) => {
-    if (!imagePath) return null;
-    if (imagePath.startsWith('http')) return imagePath;
-    return `http://localhost:5000${imagePath}`;
-  };
+  // Helper function to get full image URL is now imported from utils
   
   // State management
   const [group, setGroup] = useState(null);

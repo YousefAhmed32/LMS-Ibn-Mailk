@@ -29,7 +29,7 @@ const VideoManagement = ({ courseId }) => {
   const fetchVideos = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/admin/courses/${courseId}/videos`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/courses/${courseId}/videos`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -135,8 +135,8 @@ const VideoManagement = ({ courseId }) => {
       }
 
       const url = editingVideo 
-        ? `http://localhost:5000/api/admin/courses/${courseId}/videos/${editingVideo._id}`
-        : `http://localhost:5000/api/admin/courses/${courseId}/videos`;
+        ? `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/courses/${courseId}/videos/${editingVideo._id}`
+        : `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/courses/${courseId}/videos`;
       
       const method = editingVideo ? 'PUT' : 'POST';
 
@@ -172,7 +172,7 @@ const VideoManagement = ({ courseId }) => {
 
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5000/api/admin/courses/${courseId}/videos/${videoId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/courses/${courseId}/videos/${videoId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -192,7 +192,7 @@ const VideoManagement = ({ courseId }) => {
   // Handle reorder videos
   const handleReorderVideos = async (newOrder) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/courses/${courseId}/videos/reorder`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/courses/${courseId}/videos/reorder`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

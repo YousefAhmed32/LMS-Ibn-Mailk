@@ -33,18 +33,14 @@ import {
 import axiosInstance from '../../api/axiosInstance';
 import LuxuryCard from '../../components/ui/LuxuryCard';
 import LuxuryButton from '../../components/ui/LuxuryButton';
+import { getImageUrl } from '../../utils/imageUtils';
 
 const GroupsManagement = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { colors, isDarkMode } = useTheme();
 
-  // Helper function to get full image URL
-  const getImageUrl = (imagePath) => {
-    if (!imagePath) return null;
-    if (imagePath.startsWith('http')) return imagePath;
-    return `http://localhost:5000${imagePath}`;
-  };
+  // Helper function to get full image URL is now imported from utils
 
   // State management
   const [groups, setGroups] = useState([]);

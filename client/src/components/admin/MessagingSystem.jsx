@@ -125,7 +125,7 @@ const MessagingSystem = () => {
   // Mark conversation as read
   const markAsRead = async (studentId) => {
     try {
-      await fetch(`http://localhost:5000/api/admin/messages/${studentId}/read`, {
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/messages/${studentId}/read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -170,7 +170,7 @@ const MessagingSystem = () => {
   // Fetch messages for a specific conversation
   const fetchConversationMessages = async (studentId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/messages/${studentId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/messages/${studentId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -202,7 +202,7 @@ const MessagingSystem = () => {
 
     try {
       setSending(true);
-      const response = await fetch(`http://localhost:5000/api/admin/messages/${selectedConversation.studentId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/messages/${selectedConversation.studentId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
