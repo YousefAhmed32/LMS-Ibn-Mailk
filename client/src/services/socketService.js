@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import { productionConfig, getServerUrl } from '../config/production';
 
 class SocketService {
   constructor() {
@@ -11,13 +12,16 @@ class SocketService {
       return this.socket;
     }
 
-    const serverUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    // Get server URL with proper protocol detection
+    const serverUrl = getServerUrl();
     
-    this.socket = io(serverUrl, {
-      transports: ['websocket', 'polling'],
-      timeout: 20000,
+    // Use production config for better compatibility
+    const connectionOptions = {
+      ...productionConfig.socket,
       forceNew: true
-    });
+    };
+    
+    this.socket = io(serverUrl, connectionOptions);
 
     this.socket.on('connect', () => {
       console.log('🔌 Connected to server:', this.socket.id);
@@ -37,6 +41,36 @@ class SocketService {
 
     this.socket.on('connect_error', (error) => {
       console.error('❌ Socket connection error:', error);
+      this.isConnected = false;
+      
+      // Try to reconnect with different transport
+      if (error.type === 'TransportError') {
+        console.log('🔄 Trying to reconnect with different transport...');
+        setTimeout(() => {
+          this.socket.disconnect();
+          this.socket = null;
+          this.isConnected = false;
+          // Retry connection
+          this.connect(userId);
+        }, 2000);
+      }
+    });
+
+    // Handle reconnection events
+    this.socket.on('reconnect', (attemptNumber) => {
+      console.log('🔄 Reconnected after', attemptNumber, 'attempts');
+      this.isConnected = true;
+      if (userId) {
+        this.socket.emit('join', userId);
+      }
+    });
+
+    this.socket.on('reconnect_error', (error) => {
+      console.error('❌ Reconnection error:', error);
+    });
+
+    this.socket.on('reconnect_failed', () => {
+      console.error('❌ Reconnection failed, falling back to polling only');
       this.isConnected = false;
     });
 
@@ -104,6 +138,42 @@ class SocketService {
   // Check if connected
   isSocketConnected() {
     return this.isConnected;
+  }
+
+  // Fallback connection method for production issues
+  connectWithFallback(userId) {
+    try {
+      return this.connect(userId);
+    } catch (error) {
+      console.error('❌ Primary connection failed, trying fallback...', error);
+      
+      // Try with polling only
+      const serverUrl = getServerUrl();
+      const fallbackSocket = io(serverUrl, {
+        transports: ['polling'],
+        timeout: 30000,
+        forceNew: true,
+        reconnection: true,
+        reconnectionAttempts: 3,
+        reconnectionDelay: 2000
+      });
+
+      fallbackSocket.on('connect', () => {
+        console.log('🔌 Fallback connection established');
+        this.socket = fallbackSocket;
+        this.isConnected = true;
+        if (userId) {
+          fallbackSocket.emit('join', userId);
+        }
+      });
+
+      fallbackSocket.on('connect_error', (error) => {
+        console.error('❌ Fallback connection also failed:', error);
+        this.isConnected = false;
+      });
+
+      return fallbackSocket;
+    }
   }
 }
 

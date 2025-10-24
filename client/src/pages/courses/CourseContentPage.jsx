@@ -141,25 +141,27 @@ const LessonCompletionModal = ({ isVisible, lessonTitle, xpGained, onClose }) =>
                 {lessonTitle}
               </motion.p>
               
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.5 }}
-                className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-6 py-3 rounded-xl inline-flex items-center gap-2 text-lg font-bold mb-6 shadow-lg"
-              >
-                <Sparkles className="w-5 h-5" />
-                +{xpGained} XP Earned
-              </motion.div>
-              
-              <motion.button
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                onClick={onClose}
-                className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-200"
-              >
-                متابعة التعلم
-              </motion.button>
+              <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mb-6">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-6 py-3 rounded-lg inline-flex items-center gap-2 text-lg font-bold shadow-lg"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  +{xpGained} XP Earned
+                </motion.div>
+                
+                <motion.button
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  onClick={onClose}
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
+                >
+                  متابعة التعلم
+                </motion.button>
+              </div>
             </div>
           </motion.div>
         </motion.div>
@@ -818,7 +820,7 @@ const CourseContentPage = () => {
                             </div>
                                 
                                 {/* Play overlay for unwatched videos */}
-                                {!isWatched && (
+                                {/* {!isWatched && (
                                   <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -828,10 +830,10 @@ const CourseContentPage = () => {
                                       whileHover={{ scale: 1.1 }}
                                       className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg"
                                     >
-                                      <Play size={20} className="text-gray-700 ml-1" />
+                                      <Play size={200} className="text-gray-700 ml-1" />
                                     </motion.div>
                                   </motion.div>
-                                )}
+                                )} */}
                               </motion.div>
                             
                             {/* Video Info */}

@@ -102,12 +102,15 @@ const markAsRead = async (req, res) => {
     const { notificationId } = req.params;
     const userId = req.user._id;
 
+    console.log('🔔 Server: Marking notification as read:', { notificationId, userId });
+
     const notification = await Notification.findOne({
       _id: notificationId,
       userId
     });
 
     if (!notification) {
+      console.log('❌ Server: Notification not found');
       return res.status(404).json({
         success: false,
         error: 'Notification not found',
@@ -116,7 +119,9 @@ const markAsRead = async (req, res) => {
       });
     }
 
+    console.log('🔔 Server: Found notification:', notification);
     await notification.markAsRead();
+    console.log('🔔 Server: Notification marked as read successfully');
 
     res.json({
       success: true,
@@ -125,7 +130,7 @@ const markAsRead = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Mark as read error:', error);
+    console.error('❌ Server: Mark as read error:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error while marking notification as read',
@@ -139,7 +144,10 @@ const markAsRead = async (req, res) => {
 const markAllAsRead = async (req, res) => {
   try {
     const userId = req.user._id;
+    console.log('🔔 Server: Marking all notifications as read for user:', userId);
+    
     const result = await Notification.markAllAsRead(userId);
+    console.log('🔔 Server: Mark all as read result:', result);
 
     res.json({
       success: true,
@@ -150,7 +158,7 @@ const markAllAsRead = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Mark all as read error:', error);
+    console.error('❌ Server: Mark all as read error:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error while marking all notifications as read',

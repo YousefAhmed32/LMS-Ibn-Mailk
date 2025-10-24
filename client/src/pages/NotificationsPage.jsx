@@ -93,7 +93,9 @@ const NotificationsPage = () => {
   };
 
   const handleMarkAllAsRead = async () => {
-    await markAllAsRead();
+    console.log('🔔 Marking all as read...');
+    const success = await markAllAsRead();
+    console.log('🔔 Mark all as read result:', success);
     setSelectedNotifications([]);
   };
 
@@ -132,8 +134,11 @@ const NotificationsPage = () => {
   };
 
   const handleNotificationClick = async (notification) => {
+    console.log('🔔 Notification clicked:', notification);
     if (!notification.read) {
-      await markAsRead(notification.id || notification._id);
+      console.log('🔔 Marking as read...');
+      const success = await markAsRead(notification.id || notification._id);
+      console.log('🔔 Mark as read result:', success);
     }
   };
 

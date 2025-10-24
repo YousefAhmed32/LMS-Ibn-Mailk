@@ -211,13 +211,11 @@ app.use("*", (req, res) => {
 // Create HTTP server
 const server = http.createServer(app);
 
-// Configure Socket.IO
-const io = new Server(server, {
-  cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
-    methods: ["GET", "POST"]
-  }
-});
+// Import production config
+const productionConfig = require('./config/production');
+
+// Configure Socket.IO with production-ready settings
+const io = new Server(server, productionConfig.socket);
 
 // Store io instance in app for use in controllers
 app.set('io', io);

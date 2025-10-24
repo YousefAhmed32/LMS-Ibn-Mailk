@@ -24,11 +24,26 @@ export const NotificationProvider = ({ children }) => {
   // Initialize Socket.IO connection
   useEffect(() => {
     const initializeSocket = () => {
-      const newSocket = io(import.meta.env.VITE_SERVER_URL || 'http://localhost:5000', {
-        transports: ['websocket', 'polling'],
-        timeout: 20000,
-        forceNew: true
-      });
+      const serverUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
+      const isProduction = import.meta.env.PROD;
+      
+      const connectionOptions = {
+        transports: ['polling', 'websocket'], // Try polling first
+        timeout: 30000,
+        forceNew: true,
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000
+      };
+
+      if (isProduction) {
+        connectionOptions.autoConnect = true;
+        connectionOptions.upgrade = true;
+        connectionOptions.rememberUpgrade = true;
+      }
+
+      const newSocket = io(serverUrl, connectionOptions);
 
       newSocket.on('connect', () => {
         console.log('🔌 Connected to notification server');
@@ -44,6 +59,31 @@ export const NotificationProvider = ({ children }) => {
       newSocket.on('connect_error', (error) => {
         console.error('🔌 Connection error:', error);
         setError('Failed to connect to notification server');
+        setIsConnected(false);
+        
+        // Try to reconnect with different transport
+        if (error.type === 'TransportError') {
+          console.log('🔄 Trying to reconnect notification socket...');
+          setTimeout(() => {
+            newSocket.disconnect();
+            initializeSocket();
+          }, 2000);
+        }
+      });
+
+      newSocket.on('reconnect', (attemptNumber) => {
+        console.log('🔄 Notification socket reconnected after', attemptNumber, 'attempts');
+        setIsConnected(true);
+        setError(null);
+      });
+
+      newSocket.on('reconnect_error', (error) => {
+        console.error('❌ Notification socket reconnection error:', error);
+      });
+
+      newSocket.on('reconnect_failed', () => {
+        console.error('❌ Notification socket reconnection failed');
+        setError('Failed to reconnect to notification server');
         setIsConnected(false);
       });
 
@@ -223,7 +263,10 @@ export const NotificationProvider = ({ children }) => {
   // Mark notification as read
   const markAsRead = useCallback(async (notificationId) => {
     try {
+      console.log('🔔 Marking notification as read:', notificationId);
       const response = await axiosInstance.patch(`/api/notifications/${notificationId}/read`);
+      
+      console.log('🔔 Mark as read response:', response.data);
       
       if (response.data.success) {
         setNotifications(prev => 
@@ -237,10 +280,19 @@ export const NotificationProvider = ({ children }) => {
         // Update unread count
         setUnreadCount(prev => Math.max(0, prev - 1));
         
+        // Refresh notifications to ensure UI is updated
+        await fetchNotifications();
+        
+        toast({
+          title: 'تم',
+          description: 'تم تحديد الإشعار كمقروء',
+          variant: 'success'
+        });
+        
         return true;
       }
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      console.error('❌ Error marking notification as read:', error);
       toast({
         title: 'خطأ',
         description: 'فشل في تحديث حالة الإشعار',
@@ -253,13 +305,19 @@ export const NotificationProvider = ({ children }) => {
   // Mark all notifications as read
   const markAllAsRead = useCallback(async () => {
     try {
+      console.log('🔔 Marking all notifications as read');
       const response = await axiosInstance.patch('/api/notifications/mark-all-read');
+      
+      console.log('🔔 Mark all as read response:', response.data);
       
       if (response.data.success) {
         setNotifications(prev => 
           prev.map(notification => ({ ...notification, read: true, readAt: new Date() }))
         );
         setUnreadCount(0);
+        
+        // Refresh notifications to ensure UI is updated
+        await fetchNotifications();
         
         toast({
           title: 'تم',
@@ -270,7 +328,7 @@ export const NotificationProvider = ({ children }) => {
         return true;
       }
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
+      console.error('❌ Error marking all notifications as read:', error);
       toast({
         title: 'خطأ',
         description: 'فشل في تحديث حالة الإشعارات',
