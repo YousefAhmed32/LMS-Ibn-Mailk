@@ -1,0 +1,5 @@
+This is a test text file that should be rejected by the image upload system.
+It contains plain text content and should not be accepted as an image file.
+The upload system should only accept jpg, jpeg, png, and webp files.
+
+

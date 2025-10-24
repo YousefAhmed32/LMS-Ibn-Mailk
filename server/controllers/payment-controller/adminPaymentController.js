@@ -712,12 +712,100 @@ const exportPayments = async (req, res) => {
   }
 };
 
+// Delete payment
+const deletePayment = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+    const adminId = req.user._id;
+
+    if (!paymentId || typeof paymentId !== 'string' || paymentId.length !== 24) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid payment ID format',
+        error: 'Payment ID must be a valid 24-character ObjectId'
+      });
+    }
+
+    const payment = await Payment.findById(paymentId)
+      .populate('studentId', 'firstName secondName thirdName fourthName userEmail')
+      .populate('courseId', 'title price');
+
+    if (!payment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Payment not found',
+        message: 'The requested payment does not exist',
+        code: 'PAYMENT_NOT_FOUND'
+      });
+    }
+
+    const paymentData = {
+      studentId: payment.studentId._id,
+      courseId: payment.courseId._id,
+      amount: payment.amount,
+      studentName: payment.studentName,
+      status: payment.status
+    };
+
+    await Payment.findByIdAndDelete(paymentId);
+
+    // Clean up related data only if payment was accepted
+    if (payment.status === 'accepted') {
+      try {
+        const user = await User.findById(paymentData.studentId);
+        if (user) {
+          user.enrolledCourses = user.enrolledCourses.filter(
+            enrollment => enrollment.course.toString() !== paymentData.courseId.toString()
+          );
+          user.allowedCourses = user.allowedCourses.filter(
+            courseId => courseId.toString() !== paymentData.courseId.toString()
+          );
+          await user.save();
+        }
+      } catch (cleanupError) {
+        console.error('Error during payment cleanup:', cleanupError);
+      }
+    }
+
+    try {
+      await NotificationService.notifyPaymentDeleted(paymentId, paymentData.studentName);
+    } catch (notificationError) {
+      console.error('Notification error:', notificationError);
+    }
+
+    res.json({
+      success: true,
+      message: 'Payment deleted successfully',
+      data: {
+        deletedPayment: {
+          id: paymentId,
+          studentName: paymentData.studentName,
+          amount: paymentData.amount,
+          status: paymentData.status,
+          deletedAt: new Date(),
+          deletedBy: adminId
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Delete payment error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error while deleting payment',
+      message: 'An error occurred while deleting the payment',
+      code: 'DELETE_PAYMENT_ERROR'
+    });
+  }
+};
+
 module.exports = {
   getAllPayments,
   getPaymentById,
   updatePaymentStatus,
   bulkUpdatePaymentStatuses,
   getPaymentStatistics,
-  exportPayments
+  exportPayments,
+  deletePayment
 };
 

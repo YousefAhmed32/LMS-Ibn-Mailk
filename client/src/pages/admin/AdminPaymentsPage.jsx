@@ -41,7 +41,9 @@ import {
   Star,
   Target,
   Zap,
-  Sparkles
+  Sparkles,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import axiosInstance from '../../api/axiosInstance';
 import LuxuryCard from '../../components/ui/LuxuryCard';
@@ -71,6 +73,8 @@ const AdminPaymentsPage = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showBulkActionModal, setShowBulkActionModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [paymentToDelete, setPaymentToDelete] = useState(null);
   const [selectedPayments, setSelectedPayments] = useState([]);
   const [bulkAction, setBulkAction] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
@@ -433,6 +437,75 @@ const AdminPaymentsPage = () => {
     } finally {
       setActionLoading(prev => ({ ...prev, [paymentId]: null }));
     }
+  };
+
+  const handleDeletePayment = async (paymentId) => {
+    try {
+      setActionLoading(prev => ({ ...prev, [paymentId]: 'deleting' }));
+      
+      const response = await axiosInstance.delete(`/api/admin/payments/${paymentId}`);
+      
+      if (response.data.success) {
+        // Remove payment from local state immediately
+        setPayments(prevPayments => 
+          prevPayments.filter(payment => payment._id !== paymentId)
+        );
+        
+        // Update stats immediately
+        const deletedPayment = payments.find(p => p._id === paymentId);
+        if (deletedPayment) {
+          setStats(prevStats => ({
+            ...prevStats,
+            totalPayments: Math.max(0, prevStats.totalPayments - 1),
+            totalAmount: Math.max(0, prevStats.totalAmount - deletedPayment.amount),
+            pendingCount: Math.max(0, prevStats.pendingCount - 1),
+            pendingAmount: Math.max(0, prevStats.pendingAmount - deletedPayment.amount)
+          }));
+        }
+        
+        toast({
+          title: 'تم حذف طلب الدفع',
+          description: 'تم حذف طلب الدفع بنجاح وإشعار الطالب',
+          variant: 'success',
+          duration: 5000
+        });
+        
+        // Close delete modal
+        setShowDeleteModal(false);
+        setPaymentToDelete(null);
+        
+        // Refresh data in background to ensure consistency
+        fetchPayments();
+        fetchStats();
+      }
+    } catch (error) {
+      console.error('Error deleting payment:', error);
+      
+      // Handle specific error cases
+      if (error.response?.data?.code === 'PAYMENT_ALREADY_PROCESSED') {
+        toast({
+          title: 'لا يمكن حذف الدفع',
+          description: 'هذا الدفع تم معالجته مسبقاً ولا يمكن حذفه',
+          variant: 'destructive',
+          duration: 5000
+        });
+      } else {
+        const errorMessage = error.response?.data?.error || error.response?.data?.message || 'حدث خطأ أثناء حذف طلب الدفع';
+        toast({
+          title: 'خطأ في حذف طلب الدفع',
+          description: errorMessage,
+          variant: 'destructive',
+          duration: 5000
+        });
+      }
+    } finally {
+      setActionLoading(prev => ({ ...prev, [paymentId]: null }));
+    }
+  };
+
+  const confirmDeletePayment = (payment) => {
+    setPaymentToDelete(payment);
+    setShowDeleteModal(true);
   };
 
   const handleViewImage = (payment) => {
@@ -1131,6 +1204,30 @@ const AdminPaymentsPage = () => {
                             )}
                           </div>
                         )}
+
+                        {/* Delete button - always visible */}
+                        <LuxuryButton
+                          variant="outline"
+                          size="sm"
+                          onClick={() => confirmDeletePayment(payment)}
+                          disabled={actionLoading[payment._id]}
+                          className="h-10 w-10 p-0 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 dark:hover:from-orange-900/30 dark:hover:to-red-900/30 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                          style={{
+                            borderColor: colors.warning + '30',
+                            color: colors.warning
+                          }}
+                        >
+                          {actionLoading[payment._id] === 'deleting' ? (
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            >
+                              <RefreshCw size={18} />
+                            </motion.div>
+                          ) : (
+                            <Trash2 size={18} />
+                          )}
+                        </LuxuryButton>
                       </div>
                     </td>
                   </motion.tr>
@@ -1322,6 +1419,30 @@ const AdminPaymentsPage = () => {
                         )}
                       </div>
                     )}
+
+                    {/* Delete button - always visible */}
+                    <LuxuryButton
+                      variant="outline"
+                      size="sm"
+                      onClick={() => confirmDeletePayment(payment)}
+                      disabled={actionLoading[payment._id]}
+                      className="h-10 w-10 p-0 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 dark:hover:from-orange-900/30 dark:hover:to-red-900/30 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                      style={{
+                        borderColor: colors.warning + '30',
+                        color: colors.warning
+                      }}
+                    >
+                      {actionLoading[payment._id] === 'deleting' ? (
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        >
+                          <RefreshCw size={18} />
+                        </motion.div>
+                      ) : (
+                        <Trash2 size={18} />
+                      )}
+                    </LuxuryButton>
                   </div>
                 </div>
               </LuxuryCard>
@@ -1405,6 +1526,110 @@ const AdminPaymentsPage = () => {
                       className="w-full h-auto rounded-xl"
                       style={{ maxHeight: '70vh' }}
                     />
+                  </div>
+                </div>
+              </LuxuryCard>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteModal && paymentToDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="w-full max-w-md mx-4"
+            >
+              <LuxuryCard style={{
+                background: `linear-gradient(135deg, ${colors.surface} 0%, ${colors.background} 100%)`,
+                border: `1px solid ${colors.border}`,
+                boxShadow: shadows.xl
+              }}>
+                <div className="p-6">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="p-3 rounded-full" style={{
+                      backgroundColor: colors.error + '20',
+                      border: `2px solid ${colors.error}30`
+                    }}>
+                      <AlertTriangle size={24} color={colors.error} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold" style={{ color: colors.text }}>
+                        تأكيد حذف طلب الدفع
+                      </h3>
+                      <p className="text-sm" style={{ color: colors.textMuted }}>
+                        هذا الإجراء لا يمكن التراجع عنه
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-6 p-4 rounded-xl" style={{
+                    backgroundColor: colors.warning + '10',
+                    border: `1px solid ${colors.warning}30`
+                  }}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <User size={20} color={colors.text} />
+                      <span className="font-medium" style={{ color: colors.text }}>
+                        {paymentToDelete.studentName}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <BookOpen size={20} color={colors.textMuted} />
+                      <span className="text-sm" style={{ color: colors.textMuted }}>
+                        {paymentToDelete.courseId?.title}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <DollarSign size={20} color={colors.accent} />
+                      <span className="font-bold" style={{ color: colors.accent }}>
+                        {formatCurrency(paymentToDelete.amount)}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <LuxuryButton
+                      variant="outline"
+                      onClick={() => {
+                        setShowDeleteModal(false);
+                        setPaymentToDelete(null);
+                      }}
+                      className="flex-1 hover:bg-gradient-to-r hover:from-gray-50 hover:to-slate-50 dark:hover:from-gray-900/30 dark:hover:to-slate-900/30 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                    >
+                      إلغاء
+                    </LuxuryButton>
+                    <LuxuryButton
+                      variant="primary"
+                      onClick={() => handleDeletePayment(paymentToDelete._id)}
+                      disabled={actionLoading[paymentToDelete._id]}
+                      className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                    >
+                      {actionLoading[paymentToDelete._id] === 'deleting' ? (
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          className="flex items-center gap-2"
+                        >
+                          <RefreshCw size={18} />
+                          <span>جاري الحذف...</span>
+                        </motion.div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Trash2 size={18} />
+                          <span>حذف طلب الدفع</span>
+                        </div>
+                      )}
+                    </LuxuryButton>
                   </div>
                 </div>
               </LuxuryCard>

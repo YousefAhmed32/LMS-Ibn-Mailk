@@ -38,3 +38,31 @@ export const isValidImageUrl = (url) => {
     return false;
   }
 };
+
+/**
+ * Upload image to GridFS backend
+ * @param {File} file - The image file to upload
+ * @returns {Promise<string|null>} - The image URL or null if upload failed
+ */
+export const uploadImageToGridFS = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    const response = await axiosInstance.post('/api/upload/image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    if (response.data.success) {
+      // Handle both old and new response formats
+      return response.data.url || response.data.data?.url;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error uploading image to GridFS:', error);
+    return null;
+  }
+};

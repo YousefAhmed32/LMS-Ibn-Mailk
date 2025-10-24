@@ -59,5 +59,12 @@ router.put('/:paymentId/status', adminPaymentController.updatePaymentStatus);
  */
 router.put('/bulk-status', adminPaymentController.bulkUpdatePaymentStatuses);
 
+/**
+ * @route   DELETE /api/admin/payments/:paymentId
+ * @desc    Delete payment (all statuses can be deleted)
+ * @access  Admin only
+ */
+router.delete('/:paymentId', adminPaymentController.deletePayment);
+
 module.exports = router;
 

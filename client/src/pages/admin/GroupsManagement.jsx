@@ -148,18 +148,9 @@ const GroupsManagement = () => {
     setImageUpload(prev => ({ ...prev, uploading: true }));
     
     try {
-      const formData = new FormData();
-      formData.append('image', imageUpload.file);
-      
-      const response = await axiosInstance.post('/api/upload/image', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      
-      if (response.data.success) {
-        return response.data.data.url;
-      }
+      const { uploadImageToGridFS } = await import('../../utils/imageUtils');
+      const imageUrl = await uploadImageToGridFS(imageUpload.file);
+      return imageUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
     } finally {
