@@ -25,7 +25,9 @@ export const getImageUrl = (imagePath) => {
     original: imagePath,
     baseURL: baseURL,
     normalizedPath: normalizedPath,
-    fullUrl: fullUrl
+    fullUrl: fullUrl,
+    isGridFS: imagePath.startsWith('/api/image/'),
+    isLocal: imagePath.startsWith('/uploads/')
   });
   
   return fullUrl;

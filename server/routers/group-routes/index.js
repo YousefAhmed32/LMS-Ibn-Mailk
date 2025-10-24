@@ -35,12 +35,9 @@ const groupValidation = [
     .optional()
     .custom((value) => {
       if (value && value.trim() !== '') {
-        // Allow both full URLs and local file paths
-        const urlPattern = /^https?:\/\/.+/;
-        const localPathPattern = /^\/uploads\/.+/;
-        if (!urlPattern.test(value) && !localPathPattern.test(value)) {
-          throw new Error('Cover image must be a valid URL or local file path');
-        }
+        // Allow any non-empty string for coverImage
+        // This includes URLs, local paths, and GridFS paths
+        return true;
       }
       return true;
     }),

@@ -6,11 +6,11 @@ const { validationResult } = require('express-validator');
 // Create a new group
 const createGroup = async (req, res) => {
   try {
-    console.log('Create group request body:', req.body);
+    console.log('📝 Create group request body:', req.body);
     
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log('Validation errors:', errors.array());
+      console.log('❌ Validation errors:', errors.array());
       return res.status(400).json({
         success: false,
         message: 'Validation errors',
@@ -20,6 +20,14 @@ const createGroup = async (req, res) => {
 
     const { name, description, coverImage, settings } = req.body;
     const createdBy = req.user.id;
+
+    console.log('📝 Creating group with:', {
+      name,
+      description,
+      coverImage,
+      settings,
+      createdBy
+    });
 
     const group = new Group({
       name,
@@ -35,7 +43,8 @@ const createGroup = async (req, res) => {
     console.log('✅ Group created successfully:', {
       id: group._id,
       name: group.name,
-      coverImage: group.coverImage
+      coverImage: group.coverImage,
+      fullGroup: group
     });
 
     res.status(201).json({
@@ -44,7 +53,12 @@ const createGroup = async (req, res) => {
       data: group
     });
   } catch (error) {
-    console.error('Error creating group:', error);
+    console.error('❌ Error creating group:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     res.status(500).json({
       success: false,
       message: 'Internal server error',
@@ -86,7 +100,8 @@ const getAdminGroups = async (req, res) => {
       groups: groups.map(g => ({
         id: g._id,
         name: g.name,
-        coverImage: g.coverImage
+        coverImage: g.coverImage,
+        fullGroup: g
       }))
     });
 

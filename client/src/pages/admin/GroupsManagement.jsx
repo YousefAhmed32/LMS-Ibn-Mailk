@@ -93,12 +93,23 @@ const GroupsManagement = () => {
       if (groupsResponse.data.success) {
         const groupsData = groupsResponse.data.data || [];
         console.log('📊 Groups data fetched:', groupsData);
+        console.log('📊 Groups analysis:', groupsData.map(g => ({
+          name: g.name,
+          coverImage: g.coverImage,
+          hasImage: !!g.coverImage,
+          imageType: g.coverImage ? (g.coverImage.startsWith('http') ? 'HTTP' : g.coverImage.startsWith('/api/image/') ? 'GRIDFS' : 'LOCAL') : 'NONE'
+        })));
         
         // Test image URLs
         for (const group of groupsData) {
           if (group.coverImage) {
             const imageUrl = getImageUrl(group.coverImage);
-            console.log(`🖼️ Testing image for group "${group.name}":`, imageUrl);
+            console.log(`🖼️ Testing image for group "${group.name}":`, {
+              original: group.coverImage,
+              processed: imageUrl,
+              isHttp: group.coverImage.startsWith('http'),
+              isGridFS: group.coverImage.startsWith('/api/image/')
+            });
             testImageUrl(imageUrl).then(isAccessible => {
               console.log(`📸 Image accessibility for "${group.name}":`, isAccessible);
             });
@@ -203,11 +214,23 @@ const GroupsManagement = () => {
 
       console.log('📝 Creating group with data:', groupData);
       console.log('🖼️ Cover image URL:', coverImageUrl);
+      console.log('📝 Data analysis:', {
+        name: { value: groupData.name, type: typeof groupData.name, length: groupData.name?.length },
+        description: { value: groupData.description, type: typeof groupData.description, length: groupData.description?.length },
+        coverImage: { value: groupData.coverImage, type: typeof groupData.coverImage, isUrl: groupData.coverImage?.startsWith('http') },
+        settings: { value: groupData.settings, type: typeof groupData.settings, isObject: typeof groupData.settings === 'object' }
+      });
       const response = await axiosInstance.post('/api/groups/admin/groups', groupData);
       
       if (response.data.success) {
         console.log('✅ Group created successfully:', response.data.data);
         console.log('🖼️ Created group cover image:', response.data.data.coverImage);
+        console.log('🖼️ Image URL analysis:', {
+          original: response.data.data.coverImage,
+          processed: response.data.data.coverImage ? getImageUrl(response.data.data.coverImage) : null,
+          isHttp: response.data.data.coverImage?.startsWith('http'),
+          isGridFS: response.data.data.coverImage?.startsWith('/api/image/')
+        });
         setGroups([response.data.data, ...groups]);
         setShowCreateModal(false);
         setFormData({
@@ -227,10 +250,21 @@ const GroupsManagement = () => {
         });
       }
     } catch (error) {
-      console.error('Error creating group:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Validation errors:', error.response?.data?.errors);
-      alert(`خطأ في إنشاء المجموعة: ${error.response?.data?.message || error.message}`);
+      console.error('❌ Error creating group:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Validation errors:', error.response?.data?.errors);
+      console.error('❌ Full error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      // Show detailed error message
+      const errorMessage = error.response?.data?.errors?.map(err => err.msg).join(', ') || 
+                          error.response?.data?.message || 
+                          error.message;
+      alert(`خطأ في إنشاء المجموعة: ${errorMessage}`);
     }
   };
 

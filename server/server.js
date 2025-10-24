@@ -169,9 +169,6 @@ app.use("/api/exams-old", examsRoutes); // Keep old routes for backward compatib
 app.use("/api/internal-exams", internalExamRoutes);
 app.use("/api/exam-results", examResultRoutes);
 app.use("/api/groups", groupRoutes);
-app.use("/api/upload", uploadRoutes);
-app.use("/api", gridfsUploadRoutes);
-
 // Debug middleware for image requests
 app.use('/api/image/:id', (req, res, next) => {
   console.log('🖼️ GridFS image request:', {
@@ -181,6 +178,9 @@ app.use('/api/image/:id', (req, res, next) => {
   });
   next();
 });
+
+app.use("/api/upload", uploadRoutes);
+app.use("/api", gridfsUploadRoutes);
 app.use("/api/user", userDashboardRoutes);
 app.use("/api/parent", parentRoutes);
 app.use("/api/parent", enhancedParentRoutes);
