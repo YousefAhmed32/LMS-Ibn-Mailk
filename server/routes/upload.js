@@ -46,7 +46,7 @@ const storage = new GridFsStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB - زيادة الحد لحل مشكلة 413
 }).single("image");
 
 // POST upload (public endpoint for testing)
@@ -56,7 +56,7 @@ router.post("/image", (req, res) => {
       if (err.code === "LIMIT_FILE_SIZE") {
         return res.status(413).json({ 
           success: false, 
-          message: "File too large. Max 5MB." 
+          message: "File too large. Max 10MB." 
         });
       }
       if (err.message === "INVALID_FILE_TYPE") {
