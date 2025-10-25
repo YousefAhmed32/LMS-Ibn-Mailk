@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../../contexts/ThemeContext';
-import { getImageUrl } from '../../utils/imageUtils';
+import { getImageUrl, getFallbackImage } from '../../utils/imageUtils';
 import {
   Users,
   MessageSquare,
@@ -91,6 +91,7 @@ const GroupCard = ({
                 processedSrc: e.target.src,
                 groupName: group.name
               });
+              // Show fallback image instead of hiding
               e.target.style.display = 'none';
               e.target.nextSibling.style.display = 'flex';
             }}
@@ -102,9 +103,16 @@ const GroupCard = ({
         
         {/* Fallback when no image or image fails to load */}
         <div 
-          className={`w-full ${styles.image} bg-gradient-to-br from-[#F97316]/20 to-[#EA580C]/20 rounded-xl flex items-center justify-center ${group.coverImage ? 'hidden' : 'flex'}`}
+          className={`w-full ${styles.image} rounded-xl flex items-center justify-center ${group.coverImage ? 'hidden' : 'flex'}`}
+          style={{
+            background: `linear-gradient(135deg, #F97316 0%, #EA580C 100%)`
+          }}
         >
-          <Users size={variant === 'detailed' ? 48 : 32} className="text-[#F97316]" />
+          <img
+            src={getFallbackImage('group')}
+            alt="Group placeholder"
+            className="w-16 h-16 opacity-80"
+          />
         </div>
         
         {/* Overlay Badges */}

@@ -33,7 +33,7 @@ import {
 import axiosInstance from '../../api/axiosInstance';
 import LuxuryCard from '../../components/ui/LuxuryCard';
 import LuxuryButton from '../../components/ui/LuxuryButton';
-import { getImageUrl, testImageUrl } from '../../utils/imageUtils';
+import { getImageUrl, testImageUrl, getFallbackImage } from '../../utils/imageUtils';
 
 const GroupsManagement = () => {
   const navigate = useNavigate();
@@ -614,6 +614,7 @@ const GroupsManagement = () => {
                       processedSrc: e.target.src,
                       groupName: group.name
                     });
+                    // Show fallback image instead of hiding
                     e.target.style.display = 'none';
                     e.target.nextSibling.style.display = 'flex';
                   }}
@@ -625,9 +626,16 @@ const GroupsManagement = () => {
               
               {/* Fallback when no image or image fails to load */}
               <div 
-                className={`w-full h-32 bg-gradient-to-br from-[#F97316]/20 to-[#EA580C]/20 rounded-xl flex items-center justify-center ${group.coverImage ? 'hidden' : 'flex'}`}
+                className={`w-full h-32 rounded-xl flex items-center justify-center ${group.coverImage ? 'hidden' : 'flex'}`}
+                style={{
+                  background: `linear-gradient(135deg, #F97316 0%, #EA580C 100%)`
+                }}
               >
-                <Users size={32} className="text-[#F97316]" />
+                <img
+                  src={getFallbackImage('group')}
+                  alt="Group placeholder"
+                  className="w-16 h-16 opacity-80"
+                />
               </div>
               <div className="absolute top-2 right-2">
                 <span className="px-2 py-1 bg-[#F97316]/90 text-white text-xs font-semibold rounded-lg">
@@ -787,7 +795,7 @@ const GroupsManagement = () => {
                 {/* Cover Image Section */}
                 <div>
                   <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
-                    صورة الغلاف
+                    صورة الغلاف <span className="text-xs text-gray-500">(اختيارية)</span>
                   </label>
                   
                   {/* Image Preview */}
@@ -806,6 +814,29 @@ const GroupsManagement = () => {
                       >
                         <X size={16} />
                       </motion.button>
+                    </div>
+                  )}
+
+                  {/* Show fallback preview when no image */}
+                  {!imageUpload.preview && !formData.coverImage && (
+                    <div className="mb-4 relative">
+                      <div 
+                        className="w-full h-32 rounded-xl flex items-center justify-center"
+                        style={{
+                          background: `linear-gradient(135deg, #F97316 0%, #EA580C 100%)`
+                        }}
+                      >
+                        <img
+                          src={getFallbackImage('group')}
+                          alt="Group placeholder preview"
+                          className="w-16 h-16 opacity-80"
+                        />
+                      </div>
+                      <div className="absolute top-2 right-2">
+                        <span className="px-2 py-1 bg-black/50 text-white text-xs font-semibold rounded-lg">
+                          صورة افتراضية
+                        </span>
+                      </div>
                     </div>
                   )}
 
@@ -969,7 +1000,7 @@ const GroupsManagement = () => {
                 {/* Cover Image Section */}
                 <div>
                   <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
-                    صورة الغلاف
+                    صورة الغلاف <span className="text-xs text-gray-500">(اختيارية)</span>
                   </label>
                   
                   {/* Image Preview */}
@@ -988,6 +1019,29 @@ const GroupsManagement = () => {
                       >
                         <X size={16} />
                       </motion.button>
+                    </div>
+                  )}
+
+                  {/* Show fallback preview when no image */}
+                  {!imageUpload.preview && !formData.coverImage && (
+                    <div className="mb-4 relative">
+                      <div 
+                        className="w-full h-32 rounded-xl flex items-center justify-center"
+                        style={{
+                          background: `linear-gradient(135deg, #F97316 0%, #EA580C 100%)`
+                        }}
+                      >
+                        <img
+                          src={getFallbackImage('group')}
+                          alt="Group placeholder preview"
+                          className="w-16 h-16 opacity-80"
+                        />
+                      </div>
+                      <div className="absolute top-2 right-2">
+                        <span className="px-2 py-1 bg-black/50 text-white text-xs font-semibold rounded-lg">
+                          صورة افتراضية
+                        </span>
+                      </div>
                     </div>
                   )}
 
