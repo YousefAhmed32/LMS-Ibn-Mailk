@@ -147,7 +147,9 @@ app.use('/uploads', (req, res, next) => {
     path: req.path,
     originalUrl: req.originalUrl,
     method: req.method,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    userAgent: req.get('User-Agent'),
+    referer: req.get('Referer')
   });
   next();
 }, express.static('uploads', {
@@ -158,18 +160,40 @@ app.use('/uploads', (req, res, next) => {
   setHeaders: (res, path) => {
     // Set CORS headers for images
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day cache
+    
+    // Add security headers
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    
+    console.log('📁 Serving file:', path, 'with headers:', {
+      'Content-Type': res.get('Content-Type'),
+      'Cache-Control': res.get('Cache-Control'),
+      'Access-Control-Allow-Origin': res.get('Access-Control-Allow-Origin')
+    });
   }
 }));
+
+// Handle OPTIONS requests for CORS
+app.options('/uploads/*', (req, res) => {
+  console.log('🔄 OPTIONS request for uploads:', req.path);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.status(200).end();
+});
 
 // Fallback for missing uploads
 app.use('/uploads', (req, res) => {
   console.log('❌ File not found:', req.path);
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.status(404).json({
     success: false,
     message: 'File not found',
-    path: req.path
+    path: req.path,
+    timestamp: new Date().toISOString()
   });
 });
 

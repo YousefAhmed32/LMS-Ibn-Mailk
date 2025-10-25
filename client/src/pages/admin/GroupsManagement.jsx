@@ -34,7 +34,7 @@ import axiosInstance from '../../api/axiosInstance';
 import LuxuryCard from '../../components/ui/LuxuryCard';
 import LuxuryButton from '../../components/ui/LuxuryButton';
 import { getImageUrl, testImageUrl, getFallbackImage } from '../../utils/imageUtils';
-import { testMultipleGroupImages, debugImageSystem } from '../../utils/testImageSystem';
+import { testMultipleGroupImages, debugImageSystem, testServerImageAccess, testImageInBrowser } from '../../utils/testImageSystem';
 
 const GroupsManagement = () => {
   const navigate = useNavigate();
@@ -478,6 +478,69 @@ const GroupsManagement = () => {
             >
               <Activity size={18} />
               اختبار الصور
+            </motion.button>
+            
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={async () => {
+                if (groups.length > 0 && groups[0].coverImage) {
+                  console.log('🔍 Testing server image access...');
+                  const result = await testServerImageAccess(groups[0].coverImage);
+                  console.log('📊 Server test result:', result);
+                  
+                  let message = `اختبار السيرفر:\n`;
+                  message += `URL: ${result.imageUrl}\n`;
+                  message += `نجح: ${result.success ? 'نعم' : 'لا'}\n`;
+                  
+                  if (result.results) {
+                    message += `HEAD: ${result.results.HEAD?.status || 'خطأ'}\n`;
+                    message += `GET: ${result.results.GET?.status || 'خطأ'}`;
+                  }
+                  
+                  alert(message);
+                } else {
+                  alert('لا توجد صور لاختبارها');
+                }
+              }}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-[#10B981]/20"
+              style={{
+                backgroundColor: colors.surfaceElevated,
+                borderColor: colors.border,
+                color: '#10B981'
+              }}
+            >
+              <Search size={18} />
+              اختبار السيرفر
+            </motion.button>
+            
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                if (groups.length > 0 && groups[0].coverImage) {
+                  console.log('🌐 Opening image in browser...');
+                  const result = testImageInBrowser(groups[0].coverImage);
+                  console.log('📊 Browser test result:', result);
+                  
+                  if (result.success) {
+                    alert(`تم فتح الصورة في تبويب جديد:\n${result.url}`);
+                  } else {
+                    alert(`فشل في فتح الصورة (قد يكون popup محجوب):\n${result.url}`);
+                  }
+                } else {
+                  alert('لا توجد صور لاختبارها');
+                }
+              }}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-[#8B5CF6]/20"
+              style={{
+                backgroundColor: colors.surfaceElevated,
+                borderColor: colors.border,
+                color: '#8B5CF6'
+              }}
+            >
+              <ImageIcon size={18} />
+              فتح الصورة
             </motion.button>
             
             <motion.button

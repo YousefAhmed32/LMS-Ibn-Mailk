@@ -12,7 +12,8 @@ export const testGroupImages = async (group) => {
   console.log('🧪 Testing group images:', {
     groupName: group.name,
     coverImage: group.coverImage,
-    hasImage: !!group.coverImage
+    hasImage: !!group.coverImage,
+    timestamp: new Date().toISOString()
   });
 
   if (!group.coverImage) {
@@ -27,12 +28,39 @@ export const testGroupImages = async (group) => {
   const imageUrl = getImageUrl(group.coverImage);
   console.log('🔗 Generated image URL:', imageUrl);
 
+  // Test with fetch first to get more detailed error info
+  let fetchResult = null;
+  try {
+    console.log('🌐 Testing with fetch...');
+    const response = await fetch(imageUrl, { 
+      method: 'HEAD',
+      mode: 'cors',
+      cache: 'no-cache'
+    });
+    
+    fetchResult = {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      headers: Object.fromEntries(response.headers.entries())
+    };
+    
+    console.log('📡 Fetch result:', fetchResult);
+  } catch (fetchError) {
+    console.error('❌ Fetch error:', fetchError);
+    fetchResult = {
+      error: fetchError.message,
+      name: fetchError.name
+    };
+  }
+
   try {
     const isAccessible = await testImageUrl(imageUrl);
     console.log('✅ Image accessibility test:', {
       accessible: isAccessible,
       url: imageUrl,
-      groupName: group.name
+      groupName: group.name,
+      fetchResult: fetchResult
     });
 
     return {
@@ -41,7 +69,8 @@ export const testGroupImages = async (group) => {
       processedUrl: imageUrl,
       accessible: isAccessible,
       fallbackUsed: !isAccessible,
-      fallbackUrl: getFallbackImage('group')
+      fallbackUrl: getFallbackImage('group'),
+      fetchResult: fetchResult
     };
   } catch (error) {
     console.error('❌ Error testing image:', error);
@@ -52,7 +81,8 @@ export const testGroupImages = async (group) => {
       accessible: false,
       error: error.message,
       fallbackUsed: true,
-      fallbackUrl: getFallbackImage('group')
+      fallbackUrl: getFallbackImage('group'),
+      fetchResult: fetchResult
     };
   }
 };
@@ -115,6 +145,82 @@ export const testImageUrlPatterns = () => {
       type: typeof testCase
     });
   });
+};
+
+/**
+ * Test direct server image access
+ */
+export const testServerImageAccess = async (imagePath) => {
+  console.log('🔍 Testing direct server access for:', imagePath);
+  
+  const imageUrl = getImageUrl(imagePath);
+  console.log('Generated URL:', imageUrl);
+  
+  try {
+    // Test with different methods
+    const methods = ['HEAD', 'GET'];
+    const results = {};
+    
+    for (const method of methods) {
+      try {
+        console.log(`Testing ${method} request...`);
+        const response = await fetch(imageUrl, { 
+          method: method,
+          mode: 'cors',
+          cache: 'no-cache'
+        });
+        
+        results[method] = {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+          headers: Object.fromEntries(response.headers.entries())
+        };
+        
+        console.log(`${method} result:`, results[method]);
+      } catch (error) {
+        results[method] = {
+          error: error.message,
+          name: error.name
+        };
+        console.error(`${method} error:`, error);
+      }
+    }
+    
+    return {
+      imagePath,
+      imageUrl,
+      results,
+      success: Object.values(results).some(r => r.ok)
+    };
+  } catch (error) {
+    console.error('❌ Server test error:', error);
+    return {
+      imagePath,
+      imageUrl,
+      error: error.message,
+      success: false
+    };
+  }
+};
+
+/**
+ * Test image in browser directly
+ */
+export const testImageInBrowser = (imagePath) => {
+  const imageUrl = getImageUrl(imagePath);
+  console.log('🌐 Opening image in new tab:', imageUrl);
+  
+  // Open image in new tab
+  const newWindow = window.open(imageUrl, '_blank');
+  
+  if (newWindow) {
+    console.log('✅ Image opened in new tab');
+    return { success: true, url: imageUrl };
+  } else {
+    console.log('❌ Failed to open image in new tab (popup blocked?)');
+    return { success: false, url: imageUrl };
+  }
 };
 
 /**
