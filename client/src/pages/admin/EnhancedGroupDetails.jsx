@@ -43,7 +43,7 @@ import {
 import axiosInstance from '../../api/axiosInstance';
 import LuxuryCard from '../../components/ui/LuxuryCard';
 import socketService from '../../services/socketService';
-import { getImageUrl } from '../../utils/imageUtils';
+import { getImageUrl, getFallbackImage } from '../../utils/imageUtils';
 
 const EnhancedGroupDetails = () => {
   const { id } = useParams();
@@ -438,13 +438,42 @@ const EnhancedGroupDetails = () => {
             </motion.button>
             
             <div className="flex items-center gap-4">
-              {group.coverImage && (
+              {group.coverImage ? (
                 <img
                   src={getImageUrl(group.coverImage)}
                   alt={group.name}
                   className="w-12 h-12 object-cover rounded-xl"
+                  onError={(e) => {
+                    console.error('❌ Group image failed to load in header:', {
+                      originalSrc: group.coverImage,
+                      processedSrc: e.target.src,
+                      groupName: group.name,
+                      timestamp: new Date().toISOString(),
+                      location: 'header'
+                    });
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                  onLoad={(e) => {
+                    console.log('✅ Group image loaded successfully in header:', e.target.src);
+                  }}
                 />
-              )}
+              ) : null}
+              
+              {/* Fallback when no image or image fails to load */}
+              <div 
+                className={`w-12 h-12 rounded-xl flex items-center justify-center ${group.coverImage ? 'hidden' : 'flex'}`}
+                style={{
+                  background: `linear-gradient(135deg, #F97316 0%, #EA580C 100%)`
+                }}
+              >
+                <img
+                  src={getFallbackImage('group')}
+                  alt="Group placeholder"
+                  className="w-8 h-8 opacity-80"
+                />
+              </div>
+              
               <div>
                 <h1 className="text-2xl font-bold" style={{ color: colors.text }}>
                   {group.name}
@@ -1166,13 +1195,42 @@ const OverviewTab = ({ group, colors }) => (
     {/* Group Info */}
     <LuxuryCard className="p-6">
       <div className="flex items-start gap-6">
-        {group.coverImage && (
+        {group.coverImage ? (
           <img
-            src={group.coverImage}
+            src={getImageUrl(group.coverImage)}
             alt={group.name}
             className="w-24 h-24 object-cover rounded-xl"
+            onError={(e) => {
+              console.error('❌ Group image failed to load in overview:', {
+                originalSrc: group.coverImage,
+                processedSrc: e.target.src,
+                groupName: group.name,
+                timestamp: new Date().toISOString(),
+                location: 'overview'
+              });
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'flex';
+            }}
+            onLoad={(e) => {
+              console.log('✅ Group image loaded successfully in overview:', e.target.src);
+            }}
           />
-        )}
+        ) : null}
+        
+        {/* Fallback when no image or image fails to load */}
+        <div 
+          className={`w-24 h-24 rounded-xl flex items-center justify-center ${group.coverImage ? 'hidden' : 'flex'}`}
+          style={{
+            background: `linear-gradient(135deg, #F97316 0%, #EA580C 100%)`
+          }}
+        >
+          <img
+            src={getFallbackImage('group')}
+            alt="Group placeholder"
+            className="w-16 h-16 opacity-80"
+          />
+        </div>
+        
         <div className="flex-1">
           <h2 className="text-2xl font-bold mb-2" style={{ color: colors.text }}>
             {group.name}
@@ -1396,15 +1454,40 @@ const ChatTab = ({ group, colors, chatMessages, newMessage, setNewMessage, handl
       <div className="flex items-center gap-3">
         {group.coverImage ? (
           <img
-            src={group.coverImage}
+            src={getImageUrl(group.coverImage)}
             alt={group.name}
             className="w-10 h-10 object-cover rounded-lg"
+            onError={(e) => {
+              console.error('❌ Group image failed to load in chat:', {
+                originalSrc: group.coverImage,
+                processedSrc: e.target.src,
+                groupName: group.name,
+                timestamp: new Date().toISOString(),
+                location: 'chat'
+              });
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'flex';
+            }}
+            onLoad={(e) => {
+              console.log('✅ Group image loaded successfully in chat:', e.target.src);
+            }}
           />
-        ) : (
-          <div className="w-10 h-10 bg-gradient-to-br from-[#F97316] to-[#EA580C] rounded-lg flex items-center justify-center">
-            <Users size={16} className="text-white" />
-          </div>
-        )}
+        ) : null}
+        
+        {/* Fallback when no image or image fails to load */}
+        <div 
+          className={`w-10 h-10 rounded-lg flex items-center justify-center ${group.coverImage ? 'hidden' : 'flex'}`}
+          style={{
+            background: `linear-gradient(135deg, #F97316 0%, #EA580C 100%)`
+          }}
+        >
+          <img
+            src={getFallbackImage('group')}
+            alt="Group placeholder"
+            className="w-6 h-6 opacity-80"
+          />
+        </div>
+        
         <h2 className="text-xl font-bold" style={{ color: colors.text }}>
           محادثة المجموعة
         </h2>

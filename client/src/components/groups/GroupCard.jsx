@@ -89,7 +89,8 @@ const GroupCard = ({
               console.error('❌ Image failed to load:', {
                 originalSrc: group.coverImage,
                 processedSrc: e.target.src,
-                groupName: group.name
+                groupName: group.name,
+                timestamp: new Date().toISOString()
               });
               // Show fallback image instead of hiding
               e.target.style.display = 'none';

@@ -16,8 +16,22 @@ export const getImageUrl = (imagePath) => {
   // Get base URL from axios instance or use current origin
   const baseURL = axiosInstance.defaults.baseURL || window.location.origin;
   
-  // Ensure the path starts with /
-  const normalizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+  // Handle different path types
+  let normalizedPath;
+  
+  if (imagePath.startsWith('/uploads/')) {
+    // Already has /uploads/ prefix
+    normalizedPath = imagePath;
+  } else if (imagePath.startsWith('/api/image/')) {
+    // GridFS path (if used in future)
+    normalizedPath = imagePath;
+  } else if (imagePath.startsWith('/')) {
+    // Other absolute paths
+    normalizedPath = imagePath;
+  } else {
+    // Relative path - assume it's a filename in uploads folder
+    normalizedPath = `/uploads/${imagePath}`;
+  }
   
   const fullUrl = `${baseURL}${normalizedPath}`;
   
@@ -27,7 +41,8 @@ export const getImageUrl = (imagePath) => {
     normalizedPath: normalizedPath,
     fullUrl: fullUrl,
     isGridFS: imagePath.startsWith('/api/image/'),
-    isLocal: imagePath.startsWith('/uploads/')
+    isLocal: imagePath.startsWith('/uploads/') || !imagePath.startsWith('/'),
+    isFullURL: imagePath.startsWith('http')
   });
   
   return fullUrl;
@@ -42,6 +57,27 @@ export const getImageUrlWithFallback = (imagePath, fallbackType = 'group') => {
   
   const imageUrl = getImageUrl(imagePath);
   return imageUrl || getFallbackImage(fallbackType);
+};
+
+/**
+ * Get image URL with smart fallback
+ * Tests the image URL and returns fallback if it fails
+ */
+export const getImageUrlWithSmartFallback = async (imagePath, fallbackType = 'group') => {
+  if (!imagePath) return getFallbackImage(fallbackType);
+  
+  const imageUrl = getImageUrl(imagePath);
+  if (!imageUrl) return getFallbackImage(fallbackType);
+  
+  // Test if the image is accessible
+  const isAccessible = await testImageUrlWithTimeout(imageUrl, 3000);
+  
+  if (isAccessible) {
+    return imageUrl;
+  } else {
+    console.log('🔄 Image not accessible, using fallback:', imageUrl);
+    return getFallbackImage(fallbackType);
+  }
 };
 
 /**
@@ -83,6 +119,52 @@ export const testImageUrl = (url) => {
       console.log('❌ Image test failed:', url);
       resolve(false);
     };
+    img.src = url;
+  });
+};
+
+/**
+ * Test image URL with timeout
+ */
+export const testImageUrlWithTimeout = (url, timeout = 5000) => {
+  return new Promise((resolve) => {
+    if (!url) {
+      resolve(false);
+      return;
+    }
+    
+    const img = new Image();
+    let resolved = false;
+    
+    const cleanup = () => {
+      if (!resolved) {
+        resolved = true;
+        img.onload = null;
+        img.onerror = null;
+      }
+    };
+    
+    img.onload = () => {
+      cleanup();
+      console.log('✅ Image test successful:', url);
+      resolve(true);
+    };
+    
+    img.onerror = () => {
+      cleanup();
+      console.log('❌ Image test failed:', url);
+      resolve(false);
+    };
+    
+    // Set timeout
+    setTimeout(() => {
+      if (!resolved) {
+        cleanup();
+        console.log('⏰ Image test timeout:', url);
+        resolve(false);
+      }
+    }, timeout);
+    
     img.src = url;
   });
 };

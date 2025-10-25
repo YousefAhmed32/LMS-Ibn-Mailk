@@ -34,6 +34,7 @@ import axiosInstance from '../../api/axiosInstance';
 import LuxuryCard from '../../components/ui/LuxuryCard';
 import LuxuryButton from '../../components/ui/LuxuryButton';
 import { getImageUrl, testImageUrl, getFallbackImage } from '../../utils/imageUtils';
+import { testMultipleGroupImages, debugImageSystem } from '../../utils/testImageSystem';
 
 const GroupsManagement = () => {
   const navigate = useNavigate();
@@ -100,7 +101,7 @@ const GroupsManagement = () => {
           imageType: g.coverImage ? (g.coverImage.startsWith('http') ? 'HTTP' : g.coverImage.startsWith('/api/image/') ? 'GRIDFS' : 'LOCAL') : 'NONE'
         })));
         
-        // Test image URLs
+        // Test image URLs with enhanced logging
         for (const group of groupsData) {
           if (group.coverImage) {
             const imageUrl = getImageUrl(group.coverImage);
@@ -108,15 +109,32 @@ const GroupsManagement = () => {
               original: group.coverImage,
               processed: imageUrl,
               isHttp: group.coverImage.startsWith('http'),
-              isGridFS: group.coverImage.startsWith('/api/image/')
+              isGridFS: group.coverImage.startsWith('/api/image/'),
+              isLocal: group.coverImage.startsWith('/uploads/') || !group.coverImage.startsWith('/')
             });
+            
+            // Test image accessibility with timeout
             testImageUrl(imageUrl).then(isAccessible => {
-              console.log(`📸 Image accessibility for "${group.name}":`, isAccessible);
+              console.log(`📸 Image accessibility for "${group.name}":`, {
+                accessible: isAccessible,
+                url: imageUrl,
+                groupName: group.name
+              });
+            }).catch(error => {
+              console.error(`❌ Error testing image for "${group.name}":`, error);
             });
           }
         }
         
         setGroups(groupsData);
+        
+        // Test all group images
+        if (groupsData.length > 0) {
+          console.log('🧪 Running comprehensive image tests...');
+          testMultipleGroupImages(groupsData).then(({ results, summary }) => {
+            console.log('📊 Image test results:', { results, summary });
+          });
+        }
       }
 
       if (statsResponse.data.success) {
@@ -434,6 +452,32 @@ const GroupsManagement = () => {
                 className={`transition-transform duration-300 ${refreshing ? 'animate-spin' : ''}`}
               />
               تحديث
+            </motion.button>
+            
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                console.log('🔍 Running image system debug...');
+                debugImageSystem();
+                if (groups.length > 0) {
+                  testMultipleGroupImages(groups).then(({ results, summary }) => {
+                    console.log('📊 Manual image test results:', { results, summary });
+                    alert(`تم اختبار ${summary.total} مجموعة. ${summary.accessible} صورة تعمل، ${summary.usingFallback} تستخدم الصورة البديلة.`);
+                  });
+                } else {
+                  alert('لا توجد مجموعات لاختبارها');
+                }
+              }}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-[#3B82F6]/20"
+              style={{
+                backgroundColor: colors.surfaceElevated,
+                borderColor: colors.border,
+                color: '#3B82F6'
+              }}
+            >
+              <Activity size={18} />
+              اختبار الصور
             </motion.button>
             
             <motion.button

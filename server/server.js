@@ -141,15 +141,37 @@ if (!fs.existsSync(uploadsDir)){
     console.log('📁 Created uploads directory');
 }
 
-// Serve uploaded files with debugging
+// Serve uploaded files with enhanced debugging and error handling
 app.use('/uploads', (req, res, next) => {
   console.log('📁 Static file request:', {
     path: req.path,
     originalUrl: req.originalUrl,
-    method: req.method
+    method: req.method,
+    timestamp: new Date().toISOString()
   });
   next();
-}, express.static('uploads'));
+}, express.static('uploads', {
+  // Enhanced static file serving options
+  maxAge: '1d', // Cache for 1 day
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, path) => {
+    // Set CORS headers for images
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day cache
+  }
+}));
+
+// Fallback for missing uploads
+app.use('/uploads', (req, res) => {
+  console.log('❌ File not found:', req.path);
+  res.status(404).json({
+    success: false,
+    message: 'File not found',
+    path: req.path
+  });
+});
 
 // Routes
 app.use("/api/auth", authRoutes);
