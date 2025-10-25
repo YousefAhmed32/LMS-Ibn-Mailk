@@ -20,8 +20,8 @@ export const getImageUrl = (imagePath) => {
     return imagePath;
   }
   
-  // Get base URL from axios instance or use current origin
-  let baseURL = axiosInstance.defaults.baseURL || window.location.origin;
+  // Get production-safe base URL
+  let baseURL = getProductionBaseURL();
   
   // Ensure HTTPS for production
   if (window.location.protocol === 'https:' && baseURL.startsWith('http:')) {
@@ -124,6 +124,19 @@ export const fixMixedContent = (url) => {
 export const getImageUrlSafe = (imagePath) => {
   const url = getImageUrl(imagePath);
   return fixMixedContent(url);
+};
+
+/**
+ * Get production-safe base URL
+ */
+export const getProductionBaseURL = () => {
+  // In production, always use current origin
+  if (window.location.hostname !== 'localhost') {
+    return window.location.origin;
+  }
+  
+  // In development, use axios baseURL or fallback to localhost
+  return axiosInstance.defaults.baseURL || 'http://localhost:5000';
 };
 
 /**

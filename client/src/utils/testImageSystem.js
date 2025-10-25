@@ -3,7 +3,7 @@
  * This utility helps debug image loading issues
  */
 
-import { getImageUrlSafe, testImageUrl, getFallbackImage } from './imageUtils';
+import { getImageUrlSafe, testImageUrl, getFallbackImage, getProductionBaseURL } from './imageUtils';
 
 /**
  * Test all image URLs in a group
@@ -247,6 +247,22 @@ export const testHTTPSCompliance = () => {
 };
 
 /**
+ * Test environment detection
+ */
+export const testEnvironmentDetection = () => {
+  console.log('🌍 Environment Detection:');
+  console.log('Hostname:', window.location.hostname);
+  console.log('Protocol:', window.location.protocol);
+  console.log('Origin:', window.location.origin);
+  console.log('Is localhost:', window.location.hostname === 'localhost');
+  console.log('Is production:', window.location.hostname !== 'localhost');
+  
+  // Test base URL detection
+  const baseURL = getProductionBaseURL();
+  console.log('Detected base URL:', baseURL);
+};
+
+/**
  * Debug image system
  */
 export const debugImageSystem = () => {
@@ -254,6 +270,9 @@ export const debugImageSystem = () => {
   console.log('Base URL:', window.location.origin);
   console.log('Current path:', window.location.pathname);
   console.log('User agent:', navigator.userAgent);
+  
+  // Test environment detection
+  testEnvironmentDetection();
   
   // Test HTTPS compliance
   testHTTPSCompliance();

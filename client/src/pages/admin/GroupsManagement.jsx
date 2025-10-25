@@ -34,7 +34,7 @@ import axiosInstance from '../../api/axiosInstance';
 import LuxuryCard from '../../components/ui/LuxuryCard';
 import LuxuryButton from '../../components/ui/LuxuryButton';
 import { getImageUrlSafe, testImageUrl, getFallbackImage } from '../../utils/imageUtils';
-import { testMultipleGroupImages, debugImageSystem, testServerImageAccess, testImageInBrowser } from '../../utils/testImageSystem';
+import { testMultipleGroupImages, debugImageSystem, testServerImageAccess, testImageInBrowser, testEnvironmentDetection } from '../../utils/testImageSystem';
 
 const GroupsManagement = () => {
   const navigate = useNavigate();
@@ -460,6 +460,7 @@ const GroupsManagement = () => {
               onClick={() => {
                 console.log('🔍 Running image system debug...');
                 debugImageSystem();
+                testEnvironmentDetection();
                 if (groups.length > 0) {
                   testMultipleGroupImages(groups).then(({ results, summary }) => {
                     console.log('📊 Manual image test results:', { results, summary });
@@ -539,7 +540,7 @@ const GroupsManagement = () => {
                 color: '#8B5CF6'
               }}
             >
-              <ImageIcon size={18} />
+              <Image size={18} />
               فتح الصورة
             </motion.button>
             
