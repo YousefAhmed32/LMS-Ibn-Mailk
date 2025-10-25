@@ -43,7 +43,7 @@ import {
 import axiosInstance from '../../api/axiosInstance';
 import LuxuryCard from '../../components/ui/LuxuryCard';
 import socketService from '../../services/socketService';
-import { getImageUrl, getFallbackImage } from '../../utils/imageUtils';
+import { getImageUrlSafe, getFallbackImage } from '../../utils/imageUtils';
 
 const EnhancedGroupDetails = () => {
   const { id } = useParams();
@@ -440,7 +440,7 @@ const EnhancedGroupDetails = () => {
             <div className="flex items-center gap-4">
               {group.coverImage ? (
                 <img
-                  src={getImageUrl(group.coverImage)}
+                  src={getImageUrlSafe(group.coverImage)}
                   alt={group.name}
                   className="w-12 h-12 object-cover rounded-xl"
                   onError={(e) => {

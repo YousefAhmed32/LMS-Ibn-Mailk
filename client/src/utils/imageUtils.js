@@ -3,18 +3,31 @@ import axiosInstance from '../api/axiosInstance';
 /**
  * Get full image URL for any image path
  * Works in both development and production
+ * Ensures HTTPS for production environments
  */
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return null;
   
-  // If it's already a full URL, return as is
+  // If it's already a full URL, ensure it's HTTPS in production
   if (imagePath.startsWith('http')) {
+    // Force HTTPS in production
+    if (window.location.protocol === 'https:' && imagePath.startsWith('http:')) {
+      const httpsUrl = imagePath.replace('http:', 'https:');
+      console.log('🔒 Forced HTTPS for production:', { original: imagePath, https: httpsUrl });
+      return httpsUrl;
+    }
     console.log('✅ Full URL detected:', imagePath);
     return imagePath;
   }
   
   // Get base URL from axios instance or use current origin
-  const baseURL = axiosInstance.defaults.baseURL || window.location.origin;
+  let baseURL = axiosInstance.defaults.baseURL || window.location.origin;
+  
+  // Ensure HTTPS for production
+  if (window.location.protocol === 'https:' && baseURL.startsWith('http:')) {
+    baseURL = baseURL.replace('http:', 'https:');
+    console.log('🔒 Forced HTTPS baseURL:', baseURL);
+  }
   
   // Handle different path types
   let normalizedPath;
@@ -43,6 +56,7 @@ export const getImageUrl = (imagePath) => {
     isGridFS: imagePath.startsWith('/api/image/'),
     isLocal: imagePath.startsWith('/uploads/') || !imagePath.startsWith('/'),
     isFullURL: imagePath.startsWith('http'),
+    isHTTPS: fullUrl.startsWith('https:'),
     timestamp: new Date().toISOString()
   });
   
@@ -86,6 +100,30 @@ export const getImageUrlWithSmartFallback = async (imagePath, fallbackType = 'gr
  */
 export const getServerBaseUrl = () => {
   return axiosInstance.defaults.baseURL || window.location.origin;
+};
+
+/**
+ * Fix mixed content issues by ensuring HTTPS
+ */
+export const fixMixedContent = (url) => {
+  if (!url) return null;
+  
+  // If we're on HTTPS and the URL is HTTP, fix it
+  if (window.location.protocol === 'https:' && url.startsWith('http:')) {
+    const httpsUrl = url.replace('http:', 'https:');
+    console.log('🔒 Fixed mixed content:', { original: url, fixed: httpsUrl });
+    return httpsUrl;
+  }
+  
+  return url;
+};
+
+/**
+ * Get image URL with mixed content fix
+ */
+export const getImageUrlSafe = (imagePath) => {
+  const url = getImageUrl(imagePath);
+  return fixMixedContent(url);
 };
 
 /**

@@ -3,7 +3,7 @@
  * This utility helps debug image loading issues
  */
 
-import { getImageUrl, testImageUrl, getFallbackImage } from './imageUtils';
+import { getImageUrlSafe, testImageUrl, getFallbackImage } from './imageUtils';
 
 /**
  * Test all image URLs in a group
@@ -25,7 +25,7 @@ export const testGroupImages = async (group) => {
     };
   }
 
-  const imageUrl = getImageUrl(group.coverImage);
+  const imageUrl = getImageUrlSafe(group.coverImage);
   console.log('🔗 Generated image URL:', imageUrl);
 
   // Test with fetch first to get more detailed error info
@@ -138,7 +138,7 @@ export const testImageUrlPatterns = () => {
   console.log('🧪 Testing image URL patterns:');
   
   testCases.forEach((testCase, index) => {
-    const result = getImageUrl(testCase);
+    const result = getImageUrlSafe(testCase);
     console.log(`Test ${index + 1}:`, {
       input: testCase,
       output: result,
@@ -153,7 +153,7 @@ export const testImageUrlPatterns = () => {
 export const testServerImageAccess = async (imagePath) => {
   console.log('🔍 Testing direct server access for:', imagePath);
   
-  const imageUrl = getImageUrl(imagePath);
+  const imageUrl = getImageUrlSafe(imagePath);
   console.log('Generated URL:', imageUrl);
   
   try {
@@ -208,7 +208,7 @@ export const testServerImageAccess = async (imagePath) => {
  * Test image in browser directly
  */
 export const testImageInBrowser = (imagePath) => {
-  const imageUrl = getImageUrl(imagePath);
+  const imageUrl = getImageUrlSafe(imagePath);
   console.log('🌐 Opening image in new tab:', imageUrl);
   
   // Open image in new tab
@@ -224,6 +224,29 @@ export const testImageInBrowser = (imagePath) => {
 };
 
 /**
+ * Test HTTPS compliance
+ */
+export const testHTTPSCompliance = () => {
+  console.log('🔒 HTTPS Compliance Test:');
+  console.log('Current protocol:', window.location.protocol);
+  console.log('Is HTTPS:', window.location.protocol === 'https:');
+  console.log('Mixed content blocked:', window.location.protocol === 'https:');
+  
+  // Test if we can detect mixed content
+  const testUrls = [
+    'http://example.com/image.jpg',
+    'https://example.com/image.jpg',
+    'http://ibnmailku.cloud/uploads/test.jpg',
+    'https://ibnmailku.cloud/uploads/test.jpg'
+  ];
+  
+  testUrls.forEach(url => {
+    const isMixed = window.location.protocol === 'https:' && url.startsWith('http:');
+    console.log(`URL: ${url} - Mixed Content: ${isMixed ? '❌ YES' : '✅ NO'}`);
+  });
+};
+
+/**
  * Debug image system
  */
 export const debugImageSystem = () => {
@@ -231,6 +254,9 @@ export const debugImageSystem = () => {
   console.log('Base URL:', window.location.origin);
   console.log('Current path:', window.location.pathname);
   console.log('User agent:', navigator.userAgent);
+  
+  // Test HTTPS compliance
+  testHTTPSCompliance();
   
   // Test fallback images
   console.log('Fallback images:');

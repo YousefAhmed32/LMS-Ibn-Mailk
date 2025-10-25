@@ -10,7 +10,10 @@ const uploadImage = async (req, res) => {
     }
 
     // Return the full URL for the uploaded image
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    // Force HTTPS in production
+    const protocol = req.get('x-forwarded-proto') || req.protocol;
+    const host = req.get('host');
+    const baseUrl = `${protocol}://${host}`;
     const fileUrl = `${baseUrl}/uploads/${req.file.filename}`;
     
     console.log('📤 Image uploaded successfully:', {

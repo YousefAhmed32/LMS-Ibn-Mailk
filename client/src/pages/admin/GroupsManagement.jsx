@@ -33,7 +33,7 @@ import {
 import axiosInstance from '../../api/axiosInstance';
 import LuxuryCard from '../../components/ui/LuxuryCard';
 import LuxuryButton from '../../components/ui/LuxuryButton';
-import { getImageUrl, testImageUrl, getFallbackImage } from '../../utils/imageUtils';
+import { getImageUrlSafe, testImageUrl, getFallbackImage } from '../../utils/imageUtils';
 import { testMultipleGroupImages, debugImageSystem, testServerImageAccess, testImageInBrowser } from '../../utils/testImageSystem';
 
 const GroupsManagement = () => {
@@ -104,7 +104,7 @@ const GroupsManagement = () => {
         // Test image URLs with enhanced logging
         for (const group of groupsData) {
           if (group.coverImage) {
-            const imageUrl = getImageUrl(group.coverImage);
+            const imageUrl = getImageUrlSafe(group.coverImage);
             console.log(`🖼️ Testing image for group "${group.name}":`, {
               original: group.coverImage,
               processed: imageUrl,
@@ -712,7 +712,7 @@ const GroupsManagement = () => {
             <div className="relative mb-4">
               {group.coverImage ? (
                 <img
-                  src={getImageUrl(group.coverImage)}
+                  src={getImageUrlSafe(group.coverImage)}
                   alt={group.name}
                   className="w-full h-32 object-cover rounded-xl"
                   onError={(e) => {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../../contexts/ThemeContext';
-import { getImageUrl, getFallbackImage } from '../../utils/imageUtils';
+import { getImageUrlSafe, getFallbackImage } from '../../utils/imageUtils';
 import {
   Users,
   MessageSquare,
@@ -82,7 +82,7 @@ const GroupCard = ({
       <div className="relative mb-4">
         {group.coverImage ? (
           <img
-            src={getImageUrl(group.coverImage)}
+            src={getImageUrlSafe(group.coverImage)}
             alt={group.name}
             className={`w-full ${styles.image} object-cover rounded-xl`}
             onError={(e) => {

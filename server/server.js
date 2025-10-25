@@ -116,6 +116,14 @@ app.use('/api/', limiter);
 app.use(configureCSP());
 app.use(configureSecurityHeaders());
 
+// Force HTTPS in production
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && req.get('x-forwarded-proto') !== 'https') {
+    return res.redirect(301, `https://${req.get('host')}${req.url}`);
+  }
+  next();
+});
+
 // Middleware
 app.use(cors({
     origin: [
