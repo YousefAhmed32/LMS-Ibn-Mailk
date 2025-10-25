@@ -35,8 +35,8 @@ export const getImageUrl = (imagePath) => {
   if (imagePath.startsWith('/uploads/')) {
     // Already has /uploads/ prefix
     normalizedPath = imagePath;
-  } else if (imagePath.startsWith('/api/image/')) {
-    // GridFS path (if used in future)
+  } else if (imagePath.startsWith('/api/uploads/')) {
+    // GridFS path
     normalizedPath = imagePath;
   } else if (imagePath.startsWith('/')) {
     // Other absolute paths
@@ -53,7 +53,7 @@ export const getImageUrl = (imagePath) => {
     baseURL: baseURL,
     normalizedPath: normalizedPath,
     fullUrl: fullUrl,
-    isGridFS: imagePath.startsWith('/api/image/'),
+    isGridFS: imagePath.startsWith('/api/uploads/'),
     isLocal: imagePath.startsWith('/uploads/') || !imagePath.startsWith('/'),
     isFullURL: imagePath.startsWith('http'),
     isHTTPS: fullUrl.startsWith('https:'),
@@ -323,8 +323,8 @@ export const uploadImageToGridFS = async (file, compress = true) => {
     const formData = new FormData();
     formData.append('image', fileToUpload);
     
-    console.log('📤 Sending upload request to /api/upload/image');
-    const response = await axiosInstance.post('/api/upload/image', formData, {
+    console.log('📤 Sending upload request to /api/uploads/image');
+    const response = await axiosInstance.post('/api/uploads/image', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

@@ -56,7 +56,7 @@ console.log('🔧 Server Configuration:');
 console.log(`   Port: ${PORT}`);
 console.log(`   MongoDB: ${MONGO_URL}`);
 console.log(`   JWT Secret: ${process.env.JWT_SECRET ? '✅ Set' : '❌ Not set'}`);
-console.log(`   Cloudinary: ${process.env.CLOUDINARY_CLOUD_NAME ? '✅ Configured' : '⚠️ Not configured'}`);
+console.log(`   GridFS: ✅ Configured for local image storage`);
 console.log('');
 
 // Configure multer for file uploads
@@ -233,8 +233,7 @@ app.use('/api/image/:id', (req, res, next) => {
   next();
 });
 
-app.use("/api/upload", uploadRoutes);
-app.use("/api", gridfsUploadRoutes);
+app.use("/api/uploads", uploadRoutes);
 app.use("/api/user", userDashboardRoutes);
 app.use("/api/parent", parentRoutes);
 app.use("/api/parent", enhancedParentRoutes);

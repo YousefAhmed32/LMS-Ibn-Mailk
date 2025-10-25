@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const { authenticateToken } = require('../../middleware/auth');
+const { uploadSingle } = require('../../utils/simpleGridfsUpload');
 const {
   createGroup,
   getAdminGroups,
@@ -69,7 +70,7 @@ const announcementValidation = [
 // Admin routes
 router.get('/admin/stats', authenticateToken, getGroupStats);
 router.get('/admin/groups', authenticateToken, getAdminGroups);
-router.post('/admin/groups', authenticateToken, groupValidation, createGroup);
+router.post('/admin/groups', authenticateToken, uploadSingle, groupValidation, createGroup);
 router.get('/admin/groups/:id', authenticateToken, getGroupById);
 router.put('/admin/groups/:id', authenticateToken, groupValidation, updateGroup);
 router.delete('/admin/groups/:id', authenticateToken, deleteGroup);

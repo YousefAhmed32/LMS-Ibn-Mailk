@@ -1,7 +1,7 @@
 const Payment = require('../../models/Payment');
 const Course = require('../../models/Course');
 const User = require('../../models/User');
-const { uploadToCloudinary } = require('../../utils/cloudinaryUpload');
+const { uploadImageToGridFS } = require('../../utils/simpleGridfsUpload');
 const NotificationService = require('../../services/notificationService');
 const MongoDBErrorHandler = require('../../utils/mongoErrorHandler');
 
@@ -117,10 +117,10 @@ const submitPayment = async (req, res) => {
 
     let screenshotUrl;
     try {
-      const result = await uploadToCloudinary(req.file.buffer);
-      screenshotUrl = result.secure_url;
+      const result = await uploadImageToGridFS(req.file, req.user?._id);
+      screenshotUrl = result.url;
     } catch (uploadError) {
-      console.error('Cloudinary upload error:', uploadError);
+      console.error('GridFS upload error:', uploadError);
       return res.status(500).json({
         success: false,
         error: 'Failed to upload payment screenshot'

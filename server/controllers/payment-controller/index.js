@@ -45,18 +45,18 @@ const uploadPaymentProof = async (req, res) => {
       });
     }
 
-    // Upload to Cloudinary
-    const { uploadToCloudinary } = require('../../utils/cloudinaryUpload');
+    // Upload to GridFS
+    const { uploadImageToGridFS } = require('../../utils/simpleGridfsUpload');
     let proofImageUrl;
     
     try {
-      const result = await uploadToCloudinary(req.file.buffer);
-      proofImageUrl = result.secure_url;
-    } catch (cloudinaryError) {
-      console.error('Cloudinary upload error:', cloudinaryError);
+      const result = await uploadImageToGridFS(req.file, userId);
+      proofImageUrl = result.url;
+    } catch (gridfsError) {
+      console.error('GridFS upload error:', gridfsError);
       return res.status(500).json({
         success: false,
-        error: "فشل في رفع الصورة إلى التخزين السحابي"
+        error: "فشل في رفع الصورة إلى التخزين المحلي"
       });
     }
 

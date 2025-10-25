@@ -6,34 +6,8 @@ const updateCourse = require('../../controllers/admin-controller/updateCourse');
 const adminPaymentController = require('../../controllers/payment-controller/adminPaymentController');
 const { authenticateToken, requireAdmin } = require('../../middleware/auth');
 const { validateCourseCreation, handleValidationErrors } = require('../../middleware/courseValidation');
-const multer = require('multer');
-const path = require('path');
+const { uploadSingle } = require('../../utils/simpleGridfsUpload');
 const Course = require('../../models/Course');
-
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  },
-  fileFilter: function (req, file, cb) {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'), false);
-    }
-  }
-});
 
 // Apply authentication and admin role middleware to all admin routes
 router.use(authenticateToken);
@@ -104,7 +78,7 @@ router.get('/courses/:id', adminController.getCourseById);
 router.post('/courses', 
   authenticateToken, 
   requireAdmin, 
-  upload.any(), 
+  uploadSingle, 
   validateCourseCreation, 
   handleValidationErrors, 
   createCourse
@@ -114,7 +88,7 @@ router.post('/courses',
 router.patch('/courses/:id', 
   authenticateToken, 
   requireAdmin, 
-  upload.single('image'), 
+  uploadSingle, 
   validateCourseCreation, 
   handleValidationErrors, 
   updateCourse
@@ -182,7 +156,7 @@ router.post('/courses/:courseId/videos', adminController.addVideoToCourse);
 router.patch('/courses/:courseId/content-order', adminController.updateContentOrder);
 
 // Update video in course
-router.patch('/courses/:courseId/videos/:videoId', upload.single('thumbnail'), adminController.updateVideoInCourse);
+router.patch('/courses/:courseId/videos/:videoId', uploadSingle, adminController.updateVideoInCourse);
 
 // Delete video from course
 router.delete('/courses/:courseId/videos/:videoId', adminController.deleteVideoFromCourse);

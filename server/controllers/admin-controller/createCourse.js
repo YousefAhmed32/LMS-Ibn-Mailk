@@ -1,5 +1,5 @@
 const Course = require('../../models/Course');
-const { uploadToCloudinary } = require('../../utils/cloudinaryUpload');
+const { uploadImageToGridFS } = require('../../utils/simpleGridfsUpload');
 
 // Create new course with comprehensive error handling
 const createCourse = async (req, res) => {
@@ -17,19 +17,18 @@ const createCourse = async (req, res) => {
     const courseData = { ...req.body };
 
     // Handle image upload if present
-    if (req.files && req.files.length > 0) {
-      // Find the image file
-      const imageFile = req.files.find(file => file.fieldname === 'image');
-      if (imageFile) {
-        try {
-          const result = await uploadToCloudinary(imageFile.path);
-          courseData.imageUrl = result.secure_url;
-          console.log('✅ Image uploaded to Cloudinary:', result.secure_url);
-        } catch (error) {
-          console.error('❌ Cloudinary upload error:', error);
-          // Fallback to local storage
-          courseData.imageUrl = `/uploads/${imageFile.filename}`;
-        }
+    if (req.file) {
+      try {
+        const result = await uploadImageToGridFS(req.file, req.user?._id);
+        courseData.imageUrl = result.url;
+        console.log('✅ Image uploaded to GridFS:', result.url);
+      } catch (error) {
+        console.error('❌ GridFS upload error:', error);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to upload image',
+          error: error.message
+        });
       }
     }
 

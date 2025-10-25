@@ -4,7 +4,7 @@ const Course = require('../../models/Course');
 const Payment = require('../../models/Payment');
 const Notification = require('../../models/Notification');
 const { getStudentEnrolledCourses, checkCourseAccess } = require('./courseAccess');
-const { uploadToCloudinary, deleteFromCloudinary } = require('../../utils/cloudinaryUpload');
+const { uploadImageToGridFS, deleteImageFromGridFS } = require('../../utils/simpleGridfsUpload');
 const NotificationService = require('../../services/notificationService');
 
 // ==================== ANALYTICS CONTROLLERS ====================
@@ -1120,11 +1120,11 @@ const createCourse = async (req, res) => {
     // Handle image upload if present
     if (req.file) {
       try {
-        const result = await uploadToCloudinary(req.file.path);
-        courseData.imageUrl = result.secure_url;
-        console.log('Image uploaded to Cloudinary:', result.secure_url);
+        const result = await uploadImageToGridFS(req.file, req.user?._id);
+        courseData.imageUrl = result.url;
+        console.log('Image uploaded to GridFS:', result.url);
       } catch (error) {
-        console.error('Error uploading image to Cloudinary:', error);
+        console.error('Error uploading image to GridFS:', error);
         // Fallback to local storage
         courseData.imageUrl = `/uploads/${req.file.filename}`;
       }
@@ -1181,10 +1181,10 @@ const createCourse = async (req, res) => {
     
     // Handle cover image
     if (req.file) {
-      // Upload cover image to Cloudinary
-      const result = await uploadToCloudinary(req.file.path);
-      courseData.coverImage = result.secure_url;
-      courseData.imageUrl = result.secure_url; // Also set imageUrl for backward compatibility
+      // Upload cover image to GridFS
+      const result = await uploadImageToGridFS(req.file, req.user?._id);
+      courseData.coverImage = result.url;
+      courseData.imageUrl = result.url; // Also set imageUrl for backward compatibility
     }
 
     // Handle videos - could be array or JSON string from FormData
@@ -1424,11 +1424,11 @@ const updateCourse = async (req, res) => {
     // Handle image upload if present
     if (req.file) {
       try {
-        const result = await uploadToCloudinary(req.file.path);
-        updateData.imageUrl = result.secure_url;
-        console.log('Image uploaded to Cloudinary:', result.secure_url);
+        const result = await uploadImageToGridFS(req.file, req.user?._id);
+        updateData.imageUrl = result.url;
+        console.log('Image uploaded to GridFS:', result.url);
       } catch (error) {
-        console.error('Error uploading image to Cloudinary:', error);
+        console.error('Error uploading image to GridFS:', error);
         // Fallback to local storage
         updateData.imageUrl = `/uploads/${req.file.filename}`;
       }
@@ -2101,9 +2101,9 @@ const addVideoToCourse = async (req, res) => {
     // Handle thumbnail - either from file upload or from request body
     let thumbnailUrl = null;
     if (req.file) {
-      // Upload file to Cloudinary
-      const result = await uploadToCloudinary(req.file.path);
-      thumbnailUrl = result.secure_url;
+      // Upload file to GridFS
+      const result = await uploadImageToGridFS(req.file, req.user?._id);
+      thumbnailUrl = result.url;
     } else if (req.body.thumbnail) {
       // Use thumbnail URL from request body
       thumbnailUrl = req.body.thumbnail;
@@ -2177,14 +2177,12 @@ const updateVideoInCourse = async (req, res) => {
 
     // Upload new thumbnail to Cloudinary if provided
     if (req.file) {
-      // Delete old thumbnail from Cloudinary if it exists
-      if (course.videos[videoIndex].thumbnail) {
-        await deleteFromCloudinary(course.videos[videoIndex].thumbnail);
-      }
+      // Note: GridFS doesn't require manual deletion of old thumbnails
+      // The old thumbnail will be replaced by the new one
       
       // Upload new thumbnail
-      const result = await uploadToCloudinary(req.file.path);
-      course.videos[videoIndex].thumbnail = result.secure_url;
+      const result = await uploadImageToGridFS(req.file, req.user?._id);
+      course.videos[videoIndex].thumbnail = result.url;
     }
 
     // Update other video fields

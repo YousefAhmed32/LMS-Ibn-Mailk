@@ -2,6 +2,7 @@ const Group = require('../../models/Group');
 const User = require('../../models/User');
 const mongoose = require('mongoose');
 const { validationResult } = require('express-validator');
+const { uploadImageToGridFS } = require('../../utils/simpleGridfsUpload');
 
 // Create a new group
 const createGroup = async (req, res) => {
@@ -26,13 +27,32 @@ const createGroup = async (req, res) => {
       description,
       coverImage,
       settings,
-      createdBy
+      createdBy,
+      hasFile: !!req.file
     });
+
+    let finalCoverImage = coverImage;
+
+    // Handle image upload if present
+    if (req.file) {
+      try {
+        const result = await uploadImageToGridFS(req.file, createdBy);
+        finalCoverImage = result.url;
+        console.log('✅ Group image uploaded to GridFS:', result.url);
+      } catch (error) {
+        console.error('❌ GridFS upload error:', error);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to upload image',
+          error: error.message
+        });
+      }
+    }
 
     const group = new Group({
       name,
       description,
-      coverImage,
+      coverImage: finalCoverImage,
       createdBy,
       settings: settings || {}
     });

@@ -32,7 +32,7 @@ function configureCSP() {
         "data:",
         "https://i.ytimg.com", // YouTube thumbnails
         "https://img.youtube.com", // YouTube thumbnails
-        "https://res.cloudinary.com" // Cloudinary images
+        "http://localhost:5000/api/uploads" // GridFS images
       ],
       mediaSrc: [
         "'self'",

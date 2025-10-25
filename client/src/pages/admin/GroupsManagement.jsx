@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { getImageUrl } from '../../utils/imageUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users,

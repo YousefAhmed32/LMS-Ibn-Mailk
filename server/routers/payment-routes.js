@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const upload = require('../middleware/upload');
-const { upload: memoryUpload } = require('../utils/cloudinaryUpload');
+const { uploadSingle } = require('../utils/simpleGridfsUpload');
 const {
   submitPayment,
   getAllPayments,
@@ -15,7 +15,7 @@ const {
 // Student routes
 router.post('/submit', 
   authenticateToken,
-  memoryUpload.single('screenshot'),
+  uploadSingle,
   submitPayment
 );
 
