@@ -3,12 +3,14 @@ module.exports = {
   // Socket.IO production settings
   socket: {
     cors: {
-      origin: [
-        process.env.CLIENT_URL || "http://localhost:5173",
-        "http://localhost:3000",
-        "http://localhost:5174",
-        "https://your-domain.com"
-      ],
+      origin: process.env.CORS_ORIGIN 
+        ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+        : [
+            process.env.CLIENT_URL || "http://localhost:5173",
+            "http://localhost:3000",
+            "http://localhost:5174",
+            "https://ibnmailku.cloud"
+          ],
       methods: ["GET", "POST"],
       credentials: true
     },

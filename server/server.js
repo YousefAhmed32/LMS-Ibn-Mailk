@@ -92,24 +92,29 @@ app.use('/api/', limiter);
 app.use(configureCSP());
 app.use(configureSecurityHeaders());
 
-// Force HTTPS in production
-app.use((req, res, next) => {
-  if (process.env.NODE_ENV === 'production' && req.get('x-forwarded-proto') !== 'https') {
-    return res.redirect(301, `https://${req.get('host')}${req.url}`);
-  }
-  next();
-});
+// Trust proxy - Required for proper handling behind Nginx reverse proxy
+app.set('trust proxy', 1);
 
-// Middleware
-app.use(cors({
-    origin: [
-        process.env.CLIENT_URL || "http://localhost:3000",
-        "http://localhost:5173",
+// NO HTTPS redirect middleware here - Nginx handles HTTP → HTTPS
+// Backend should NOT redirect to avoid redirect loops
+
+// CORS Configuration
+const corsOrigins = process.env.CORS_ORIGIN 
+    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+    : [
+        process.env.CLIENT_URL || "http://localhost:5173",
+        "http://localhost:3000",
         "http://localhost:5174"
-    ],
-    methods: ["GET", "POST", "DELETE", "PUT", "PATCH"],
+    ];
+
+console.log('🌐 CORS Origins:', corsOrigins);
+
+app.use(cors({
+    origin: corsOrigins,
+    methods: ["GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true
+    credentials: true,
+    optionsSuccessStatus: 200
 }));
 
 // Body parsing with size limits - زيادة الحدود لحل مشكلة 413
