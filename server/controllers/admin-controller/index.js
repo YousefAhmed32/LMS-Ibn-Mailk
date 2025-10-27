@@ -2175,7 +2175,7 @@ const updateVideoInCourse = async (req, res) => {
       });
     }
 
-    // Upload new thumbnail to Cloudinary if provided
+    // Upload new thumbnail to GridFS if provided
     if (req.file) {
       // Note: GridFS doesn't require manual deletion of old thumbnails
       // The old thumbnail will be replaced by the new one
@@ -2235,9 +2235,10 @@ const deleteVideoFromCourse = async (req, res) => {
       });
     }
 
-    // Delete thumbnail from Cloudinary if it exists
+    // Delete thumbnail from GridFS if it exists
     if (course.videos[videoIndex].thumbnail) {
-      await deleteFromCloudinary(course.videos[videoIndex].thumbnail);
+      // Note: GridFS deletion can be implemented if needed
+      console.log('Thumbnail to be deleted:', course.videos[videoIndex].thumbnail);
     }
 
     const deletedVideo = course.videos.splice(videoIndex, 1)[0];

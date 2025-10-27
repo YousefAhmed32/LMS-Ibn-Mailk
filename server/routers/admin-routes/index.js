@@ -6,7 +6,7 @@ const updateCourse = require('../../controllers/admin-controller/updateCourse');
 const adminPaymentController = require('../../controllers/payment-controller/adminPaymentController');
 const { authenticateToken, requireAdmin } = require('../../middleware/auth');
 const { validateCourseCreation, handleValidationErrors } = require('../../middleware/courseValidation');
-const { uploadSingle } = require('../../utils/simpleGridfsUpload');
+const { uploadSingle } = require('../../utils/unifiedGridfsUpload');
 const Course = require('../../models/Course');
 
 // Apply authentication and admin role middleware to all admin routes

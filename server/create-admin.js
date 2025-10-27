@@ -10,10 +10,10 @@ async function createAdminUser() {
     console.log('✅ Connected to MongoDB');
     
     // Check if admin user already exists
-    const existingAdmin = await User.findOne({ userEmail: 'admin@example.com' });
+    const existingAdmin = await User.findOne({ email: 'admin@example.com' });
     if (existingAdmin) {
       console.log('✅ Admin user already exists');
-      console.log('Email:', existingAdmin.userEmail);
+      console.log('Email:', existingAdmin.email);
       console.log('Role:', existingAdmin.role);
     } else {
       // Hash password
@@ -25,7 +25,7 @@ async function createAdminUser() {
         secondName: 'User',
         thirdName: 'Admin',
         fourthName: 'User',
-        userEmail: 'admin@example.com',
+        email: 'admin@example.com',
         password: hashedPassword,
         role: 'admin',
         grade: 'grade12',
@@ -42,10 +42,10 @@ async function createAdminUser() {
     }
     
     // Check if test student user already exists
-    const existingStudent = await User.findOne({ userEmail: 'student@example.com' });
+    const existingStudent = await User.findOne({ email: 'student@example.com' });
     if (existingStudent) {
       console.log('✅ Test student user already exists');
-      console.log('Email:', existingStudent.userEmail);
+      console.log('Email:', existingStudent.email);
       console.log('Role:', existingStudent.role);
     } else {
       // Hash password
@@ -57,7 +57,7 @@ async function createAdminUser() {
         secondName: 'Student',
         thirdName: 'User',
         fourthName: 'Student',
-        userEmail: 'student@example.com',
+        email: 'student@example.com',
         password: hashedPassword,
         role: 'student',
         grade: 'grade10',

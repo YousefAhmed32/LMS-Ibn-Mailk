@@ -323,8 +323,8 @@ export const uploadImageToGridFS = async (file, compress = true) => {
     const formData = new FormData();
     formData.append('image', fileToUpload);
     
-    console.log('📤 Sending upload request to /api/uploads/image');
-    const response = await axiosInstance.post('/api/uploads/image', formData, {
+    console.log('📤 Sending upload request to /api/upload/image');
+    const response = await axiosInstance.post('/api/upload/image', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

@@ -22,7 +22,7 @@ const SystemStatus = () => {
   const [systemStats, setSystemStats] = useState({
     server: { status: 'online', uptime: '99.9%', responseTime: '45ms' },
     database: { status: 'online', connections: 12, queries: 156 },
-    cloudinary: { status: 'online', uploads: 23, storage: '2.3GB' },
+    gridfs: { status: 'online', uploads: 23, storage: '2.3GB' },
     users: { online: 45, total: 1250, newToday: 8 }
   });
 
@@ -66,13 +66,13 @@ const SystemStatus = () => {
       ]
     },
     {
-      id: 'cloudinary',
-      title: 'Cloudinary',
+      id: 'gridfs',
+      title: 'GridFS',
       icon: Cloud,
-      status: systemStats.cloudinary.status,
+      status: systemStats.gridfs.status,
       details: [
-        { label: 'الرفوعات اليوم', value: systemStats.cloudinary.uploads },
-        { label: 'المساحة المستخدمة', value: systemStats.cloudinary.storage }
+        { label: 'الرفوعات اليوم', value: systemStats.gridfs.uploads },
+        { label: 'المساحة المستخدمة', value: systemStats.gridfs.storage }
       ]
     },
     {

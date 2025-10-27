@@ -1,17 +1,18 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Get auth token from localStorage
 const getAuthToken = () => {
   return localStorage.getItem('token');
 };
 
-// Create axios instance with auth header
+// Create axios instance with auth header and proper timeout
 const createAuthInstance = () => {
   const token = getAuthToken();
   return axios.create({
     baseURL: API_BASE_URL,
+    timeout: 60000, // 60 seconds timeout
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
@@ -270,6 +271,7 @@ const adminService = {
       const token = getAuthToken();
       const formInstance = axios.create({
         baseURL: API_BASE_URL,
+        timeout: 60000, // 60 seconds timeout
         headers: {
           'Authorization': `Bearer ${token}`
           // Don't set Content-Type for FormData - let browser set it with boundary
@@ -288,6 +290,7 @@ const adminService = {
       const token = getAuthToken();
       const formInstance = axios.create({
         baseURL: API_BASE_URL,
+        timeout: 60000, // 60 seconds timeout
         headers: {
           'Authorization': `Bearer ${token}`
           // Don't set Content-Type for FormData - let browser set it with boundary
@@ -323,6 +326,7 @@ const adminService = {
     const token = getAuthToken();
     const formInstance = axios.create({
       baseURL: API_BASE_URL,
+      timeout: 60000, // 60 seconds timeout
       headers: {
         'Authorization': `Bearer ${token}`
         // Don't set Content-Type for FormData - let browser set it with boundary
@@ -336,6 +340,7 @@ const adminService = {
     const token = getAuthToken();
     const formInstance = axios.create({
       baseURL: API_BASE_URL,
+      timeout: 60000, // 60 seconds timeout
       headers: {
         'Authorization': `Bearer ${token}`
         // Don't set Content-Type for FormData - let browser set it with boundary

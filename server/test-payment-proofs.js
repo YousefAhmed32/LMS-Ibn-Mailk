@@ -62,7 +62,7 @@ async function testPaymentProofs() {
     testStudent.enrolledCourses.push({
       courseId: testCourse._id,
       paymentStatus: 'pending',
-      proofImage: 'https://res.cloudinary.com/dfzgiebus/image/upload/v1234567890/test-payment-proof.jpg',
+      proofImage: 'https://example.com/test-payment-proof.jpg',
       enrolledAt: new Date()
     });
 

@@ -1,5 +1,5 @@
 const Course = require('../../models/Course');
-const { uploadImageToGridFS } = require('../../utils/simpleGridfsUpload');
+const { uploadImageToGridFS } = require('../../utils/unifiedGridfsUpload');
 
 // Create new course with comprehensive error handling
 const createCourse = async (req, res) => {
@@ -19,17 +19,24 @@ const createCourse = async (req, res) => {
     // Handle image upload if present
     if (req.file) {
       try {
+        console.log('📸 Uploading image to GridFS...', {
+          originalName: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size
+        });
         const result = await uploadImageToGridFS(req.file, req.user?._id);
         courseData.imageUrl = result.url;
         console.log('✅ Image uploaded to GridFS:', result.url);
       } catch (error) {
         console.error('❌ GridFS upload error:', error);
-        return res.status(500).json({
-          success: false,
-          message: 'Failed to upload image',
-          error: error.message
-        });
+        // Don't fail the entire request if image upload fails
+        console.warn('⚠️ Continuing without image...');
+        courseData.imageUrl = null;
       }
+    } else if (req.body.imageUrl) {
+      // Handle direct imageUrl from frontend (already uploaded)
+      courseData.imageUrl = req.body.imageUrl;
+      console.log('✅ Using provided imageUrl:', req.body.imageUrl);
     }
 
     // Input validation with detailed error messages
@@ -88,7 +95,13 @@ const createCourse = async (req, res) => {
     courseData.level = courseData.level || 'beginner';
     courseData.duration = duration || 0;
     courseData.price = price;
-    courseData.isActive = courseData.isActive !== 'false' && courseData.isActive !== false;
+    
+    // Handle isActive - convert string to boolean if needed
+    if (typeof courseData.isActive === 'string') {
+      courseData.isActive = courseData.isActive === 'true';
+    } else {
+      courseData.isActive = courseData.isActive !== false;
+    }
 
     // Handle videos - parse JSON string if present
     if (courseData.videos) {
@@ -231,6 +244,10 @@ const createCourse = async (req, res) => {
     // Set the creator
     if (req.user && req.user._id) {
       courseData.createdBy = req.user._id;
+      console.log('👤 Setting createdBy:', req.user._id);
+    } else {
+      console.warn('⚠️ No user found in request. Setting createdBy to null.');
+      courseData.createdBy = null;
     }
 
     console.log('✅ Processed course data:', {
@@ -244,6 +261,7 @@ const createCourse = async (req, res) => {
     });
 
     // Create and save course
+    console.log('📝 Creating Course instance with data:', JSON.stringify(courseData, null, 2));
     const course = new Course(courseData);
     
     // Validate the course model
@@ -264,11 +282,12 @@ const createCourse = async (req, res) => {
     }
 
     // Save to database
+    console.log('💾 Saving course to database...');
     const savedCourse = await course.save();
     console.log('✅ Course saved successfully:', savedCourse._id);
 
     // Return success response
-    res.status(201).json({
+    res.status(200).json({
       success: true,
       message: 'Course created successfully',
       data: savedCourse
@@ -279,6 +298,7 @@ const createCourse = async (req, res) => {
     console.error('Error name:', error.name);
     console.error('Error message:', error.message);
     console.error('Error stack:', error.stack);
+    console.error('Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     console.error('Request data:', req.body);
     console.error('================================');
 

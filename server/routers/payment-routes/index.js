@@ -5,7 +5,7 @@ const path = require('path');
 const { authenticateToken } = require('../../middleware/auth');
 const { uploadPaymentProof } = require('../../controllers/payment-controller');
 
-// Configure multer for memory storage (for Cloudinary upload)
+// Configure multer for memory storage (for GridFS upload)
 const storage = multer.memoryStorage();
 
 const upload = multer({ 

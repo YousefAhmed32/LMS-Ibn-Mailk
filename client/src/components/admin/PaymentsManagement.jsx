@@ -331,7 +331,7 @@ const PaymentsManagement = ({ payments }) => {
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100 font-mono">01090385390</p>
+                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100 font-mono">01022880651</p>
                 <p className="text-sm text-blue-600 dark:text-blue-400">رقم الهاتف</p>
               </div>
             </div>

@@ -5,7 +5,7 @@ const path = require('path');
 
 // Create GridFS storage engine
 const storage = new GridFsStorage({
-  url: process.env.MONGODB_URI || 'mongodb://localhost:27017/lms_media',
+  url: process.env.MONGO_URL || 'mongodb://localhost:27017/lms_media',
   options: {
     useNewUrlParser: true,
     useUnifiedTopology: true,

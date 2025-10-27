@@ -428,7 +428,7 @@ const CourseDetail = () => {
                       <span className="text-sm text-gray-600 dark:text-gray-300">Vodafone Cash Number</span>
                     </div>
                     <div className="text-3xl font-bold text-green-600 font-mono tracking-wider">
-                      01090385390
+                      01022880651
                     </div>
                   </motion.div>
 
@@ -824,7 +824,7 @@ const CourseDetail = () => {
                   <span className="text-sm text-gray-600">رقم فودافون كاش</span>
                 </div>
                 <div className="text-2xl font-bold text-green-600 font-mono">
-                  01090385390
+                  01022880651
                 </div>
               </div>
               <div className="text-center">

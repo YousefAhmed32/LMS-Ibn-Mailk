@@ -24,6 +24,8 @@ const registerUser = async (req, res) => {
   try {
     console.log('🚀 Registration request received');
     console.log('📥 Incoming body:', JSON.stringify(req.body, null, 2));
+    console.log('📋 Request body keys:', Object.keys(req.body));
+    console.log('📧 Email field:', req.body.email);
     
     const {
       firstName,
@@ -158,11 +160,11 @@ const loginUser = async (req, res) => {
     console.log('🔐 Login attempt started:', {
       timestamp: new Date().toISOString(),
       requestBody: {
-        userEmail: req.body.userEmail ? '***@' + req.body.userEmail.split('@')[1] : 'missing',
+        email: req.body.email ? '***@' + req.body.email.split('@')[1] : 'missing',
         password: req.body.password ? '[PROVIDED]' : '[MISSING]',
         passwordLength: req.body.password ? req.body.password.length : 0,
         allFields: Object.keys(req.body),
-        hasOtherFields: Object.keys(req.body).filter(k => !['userEmail', 'password'].includes(k))
+        hasOtherFields: Object.keys(req.body).filter(k => !['email', 'password'].includes(k))
       },
       headers: {
         contentType: req.headers['content-type'],
@@ -170,8 +172,7 @@ const loginUser = async (req, res) => {
       }
     });
 
-    const { userEmail, password } = req.body;
-    const email = userEmail; // Map userEmail to email for consistency
+    const { email, password } = req.body;
 
     // Validate input
     if (!email || !password) {
@@ -307,7 +308,7 @@ const getCurrentUser = async (req, res) => {
     console.log('✅ GetCurrentUser: User validated:', {
       userId: req.user._id,
       role: req.user.role,
-      email: req.user.userEmail || req.user.email
+      email: req.user.email
     });
     
     // User is already fetched by middleware, but let's populate additional data if needed
@@ -376,7 +377,7 @@ const updateUserProfile = async (req, res) => {
 
     // Remove fields that shouldn't be updated
     delete updateData.password;
-    delete updateData.userEmail;
+    delete updateData.email;
     delete updateData.role;
     delete updateData.enrolledCourses;
 
@@ -545,7 +546,7 @@ const refreshToken = async (req, res) => {
         secondName: user.secondName,
         thirdName: user.thirdName,
         fourthName: user.fourthName,
-        userEmail: user.userEmail,
+        email: user.email,
         role: user.role,
         studentId: user.studentId,
         phoneStudent: user.phoneStudent,

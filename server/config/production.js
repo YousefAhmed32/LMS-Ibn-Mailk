@@ -3,7 +3,12 @@ module.exports = {
   // Socket.IO production settings
   socket: {
     cors: {
-      origin: process.env.CLIENT_URL || "https://your-domain.com",
+      origin: [
+        process.env.CLIENT_URL || "http://localhost:5173",
+        "http://localhost:3000",
+        "http://localhost:5174",
+        "https://your-domain.com"
+      ],
       methods: ["GET", "POST"],
       credentials: true
     },
@@ -27,12 +32,16 @@ module.exports = {
 
   // Database settings
   database: {
-    url: process.env.MONGODB_URI || process.env.DATABASE_URL
+    url: process.env.MONGO_URL || process.env.DATABASE_URL
   },
 
   // CORS settings
   cors: {
-    origin: process.env.CLIENT_URL || "https://your-domain.com",
+    origin: [
+      process.env.CLIENT_URL || "http://localhost:5173",
+      "http://localhost:3000",
+      "http://localhost:5174"
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']

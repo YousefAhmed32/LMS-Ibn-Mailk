@@ -47,6 +47,12 @@ const validateCourseCreation = [
 
   body('isActive')
     .optional()
+    .customSanitizer((value) => {
+      if (typeof value === 'string') {
+        return value === 'true';
+      }
+      return value === true || value === 'true';
+    })
     .isBoolean()
     .withMessage('isActive must be a boolean value'),
 

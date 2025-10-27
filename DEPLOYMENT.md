@@ -14,7 +14,7 @@ VITE_CLIENT_URL=https://your-domain.com
 #### للخادم (Server):
 ```env
 CLIENT_URL=https://your-domain.com
-MONGODB_URI=your-mongodb-connection-string
+MONGO_URL=your-mongodb-connection-string
 PORT=5000
 HOST=0.0.0.0
 ```
@@ -25,7 +25,7 @@ HOST=0.0.0.0
 ```bash
 # إضافة متغيرات البيئة
 heroku config:set CLIENT_URL=https://your-app.herokuapp.com
-heroku config:set MONGODB_URI=your-mongodb-uri
+heroku config:set MONGO_URL=your-mongodb-uri
 ```
 
 #### Vercel:

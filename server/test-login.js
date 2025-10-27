@@ -1,34 +1,25 @@
 const axios = require('axios');
 
-const BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'http://localhost:5000';
 
 async function testLogin() {
   try {
-    console.log('🔐 اختبار تسجيل الدخول...\n');
+    console.log('🧪 Testing Login...');
     
-    const loginResponse = await axios.post(`${BASE_URL}/api/auth/login`, {
-      userEmail: 'parant@gmail.com',
-      password: '11112006My25'
-    }, {
-      timeout: 10000,
-      headers: {
-        'Content-Type': 'application/json'
-      }
+    // Test login with admin credentials
+    console.log('1. Testing admin login...');
+    const loginResponse = await axios.post(`${API_BASE_URL}/api/auth/login`, {
+      userEmail: 'admin@example.com',
+      password: 'admin123'
     });
     
-    console.log('✅ تم تسجيل الدخول بنجاح');
-    console.log('📊 استجابة تسجيل الدخول:', JSON.stringify(loginResponse.data, null, 2));
+    console.log('✅ Admin login successful:', loginResponse.data);
     
   } catch (error) {
-    console.error('❌ خطأ في تسجيل الدخول:');
-    console.log('🔍 كود الخطأ:', error.code);
-    console.log('🔍 رسالة الخطأ:', error.message);
-    
+    console.error('❌ Login failed:', error.message);
     if (error.response) {
-      console.log('📊 حالة الخطأ:', error.response.status);
-      console.log('📊 بيانات الخطأ:', JSON.stringify(error.response.data, null, 2));
-    } else if (error.request) {
-      console.log('📊 لم يتم إرسال الطلب:', error.request);
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', error.response.data);
     }
   }
 }

@@ -50,7 +50,7 @@ const SubscriptionFlow = () => {
   const [errors, setErrors] = useState({});
   const [showVodafoneNumber, setShowVodafoneNumber] = useState(false);
 
-  const vodafoneNumber = "01090385390";
+  const vodafoneNumber = "01022880651";
 
   useEffect(() => {
     fetchCourseData();

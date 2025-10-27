@@ -44,7 +44,7 @@ nano .env
 ```
 NODE_ENV=production
 PORT=5000
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database
+MONGO_URL=mongodb+srv://username:password@cluster.mongodb.net/database
 JWT_SECRET=your-secret-key
 ```
 

@@ -239,7 +239,7 @@ const CourseDetail = ({ userRole, userId, onEdit, onDelete, onDeactivate }) => {
                   <div className="bg-orange-100 p-4 rounded-lg border-2 border-orange-400 mb-4">
                     <p className="text-sm text-orange-700 mb-2">Send payment to:</p>
                     <p className="text-3xl font-bold text-orange-800 tracking-wider">
-                      01090385390
+                      01022880651
                     </p>
                   </div>
                   <Dialog open={isUploadModalOpen} onOpenChange={setIsUploadModalOpen}>
@@ -507,7 +507,7 @@ const CourseDetail = ({ userRole, userId, onEdit, onDelete, onDeactivate }) => {
                   <p className="mb-2">To access this course:</p>
                   <ol className="list-decimal list-inside space-y-1">
                     <li>Send {formatCoursePrice(course.price)} via Vodafone Cash</li>
-                    <li>Use the number: <span className="font-bold">01090385390</span></li>
+                    <li>Use the number: <span className="font-bold">01022880651</span></li>
                     <li>Take a screenshot of the payment</li>
                     <li>Upload the screenshot here</li>
                     <li>Wait for admin approval</li>

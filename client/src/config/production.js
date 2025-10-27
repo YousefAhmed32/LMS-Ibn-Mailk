@@ -2,6 +2,16 @@
 export const productionConfig = {
   // WebSocket settings for production
   socket: {
+    cors: {
+      origin: [
+        import.meta.env.VITE_API_URL || 'http://localhost:5000',
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'http://localhost:5174'
+      ],
+      methods: ["GET", "POST"],
+      credentials: true
+    },
     transports: ['polling', 'websocket'],
     timeout: 30000,
     reconnection: true,

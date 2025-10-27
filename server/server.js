@@ -25,8 +25,7 @@ const internalExamRoutes = require("./routes/internalExamRoutes");
 const examRoutesNew = require("./routers/exam-routes");
 const examResultRoutes = require("./routers/examResultRoutes");
 const groupRoutes = require("./routers/group-routes");
-const uploadRoutes = require("./routers/upload-routes");
-const gridfsUploadRoutes = require("./routes/upload");
+const unifiedUploadRoutes = require("./routers/unified-upload-routes");
 const userDashboardRoutes = require("./routers/user-dashboard-routes");
 const parentRoutes = require("./routers/parent-routes");
 const enhancedParentRoutes = require("./routes/enhanced-parent-routes");
@@ -59,30 +58,7 @@ console.log(`   JWT Secret: ${process.env.JWT_SECRET ? '✅ Set' : '❌ Not set'
 console.log(`   GridFS: ✅ Configured for local image storage`);
 console.log('');
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit - زيادة الحد لحل مشكلة 413
-  },
-  fileFilter: function (req, file, cb) {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'), false);
-    }
-  }
-});
+// Note: File uploads are now handled by GridFS through unified-upload-routes
 
 // Performance middleware
 app.use(compression({
@@ -141,69 +117,8 @@ app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
 
-// Create uploads directory if it doesn't exist
-const fs = require('fs');
-const uploadsDir = './uploads';
-if (!fs.existsSync(uploadsDir)){
-    fs.mkdirSync(uploadsDir);
-    console.log('📁 Created uploads directory');
-}
-
-// Serve uploaded files with enhanced debugging and error handling
-app.use('/uploads', (req, res, next) => {
-  console.log('📁 Static file request:', {
-    path: req.path,
-    originalUrl: req.originalUrl,
-    method: req.method,
-    timestamp: new Date().toISOString(),
-    userAgent: req.get('User-Agent'),
-    referer: req.get('Referer')
-  });
-  next();
-}, express.static('uploads', {
-  // Enhanced static file serving options
-  maxAge: '1d', // Cache for 1 day
-  etag: true,
-  lastModified: true,
-  setHeaders: (res, path) => {
-    // Set CORS headers for images
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day cache
-    
-    // Add security headers
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    
-    console.log('📁 Serving file:', path, 'with headers:', {
-      'Content-Type': res.get('Content-Type'),
-      'Cache-Control': res.get('Cache-Control'),
-      'Access-Control-Allow-Origin': res.get('Access-Control-Allow-Origin')
-    });
-  }
-}));
-
-// Handle OPTIONS requests for CORS
-app.options('/uploads/*', (req, res) => {
-  console.log('🔄 OPTIONS request for uploads:', req.path);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.status(200).end();
-});
-
-// Fallback for missing uploads
-app.use('/uploads', (req, res) => {
-  console.log('❌ File not found:', req.path);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.status(404).json({
-    success: false,
-    message: 'File not found',
-    path: req.path,
-    timestamp: new Date().toISOString()
-  });
-});
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -233,7 +148,9 @@ app.use('/api/image/:id', (req, res, next) => {
   next();
 });
 
-app.use("/api/uploads", uploadRoutes);
+// Upload routes - use unified GridFS system
+app.use("/api/upload", unifiedUploadRoutes);
+app.use("/api/uploads", unifiedUploadRoutes);
 app.use("/api/user", userDashboardRoutes);
 app.use("/api/parent", parentRoutes);
 app.use("/api/parent", enhancedParentRoutes);

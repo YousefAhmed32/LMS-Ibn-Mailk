@@ -17,17 +17,12 @@ export const registerService = async (userData) => {
     // Map frontend data to backend schema
     const mappedData = { ...userData };
     
-    // Map email to userEmail for backend compatibility
-    if (mappedData.email && !mappedData.userEmail) {
-      mappedData.userEmail = mappedData.email;
-    }
-    
     // Remove fields not needed on server
     delete mappedData.confirmPassword;
     delete mappedData.age;
     
     // Validate required fields on frontend
-    const requiredFields = ['firstName', 'secondName', 'thirdName', 'fourthName', 'userEmail', 'password'];
+    const requiredFields = ['firstName', 'secondName', 'thirdName', 'fourthName', 'email', 'password'];
     const missingFields = requiredFields.filter(field => !mappedData[field] || mappedData[field].trim() === '');
     
     if (missingFields.length > 0) {
@@ -36,7 +31,7 @@ export const registerService = async (userData) => {
     
     // Validate email format
     const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
-    if (!emailRegex.test(mappedData.userEmail)) {
+    if (!emailRegex.test(mappedData.email)) {
       throw new Error('Please enter a valid email address');
     }
     
@@ -107,13 +102,13 @@ export const loginService = async (email, password) => {
     });
 
     const requestPayload = {
-      userEmail: email.toLowerCase().trim(), // Backend validation expects userEmail
+      email: email.toLowerCase().trim(), // Backend expects 'email', not 'userEmail'
       password
     };
 
     // Debug: Print outgoing payload to help troubleshoot login issues
     console.log('📤 Login service - sending payload:', {
-      userEmail: requestPayload.userEmail.substring(0, 3) + '***@' + requestPayload.userEmail.split('@')[1],
+      email: requestPayload.email.substring(0, 3) + '***@' + requestPayload.email.split('@')[1],
       hasPassword: !!requestPayload.password,
       passwordLength: requestPayload.password ? requestPayload.password.length : 0,
       payloadKeys: Object.keys(requestPayload)

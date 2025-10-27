@@ -34,7 +34,7 @@ const {
   handleCourseValidationErrors
 } = require("../../middleware/course-validation");
 
-// Configure multer for payment proof uploads (using memory storage for Cloudinary)
+// Configure multer for payment proof uploads (using memory storage for GridFS)
 const storage = multer.memoryStorage();
 
 const upload = multer({ 

@@ -78,7 +78,9 @@ const uploadImageToGridFS = async (file, userId = null) => {
 
       uploadStream.on('finish', () => {
         const fileId = uploadStream.id;
-        const imageUrl = `/api/uploads/${filename}`;
+        // Use a proper URL that works with GridFS
+        const baseUrl = process.env.BASE_URL || process.env.CLIENT_URL || '';
+        const imageUrl = baseUrl ? `${baseUrl}/api/uploads/${filename}` : `/api/uploads/${filename}`;
         
         console.log('✅ Image uploaded to GridFS:', {
           fileId: fileId,

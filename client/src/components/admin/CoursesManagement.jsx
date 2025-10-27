@@ -11,7 +11,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from '../../hooks/use-toast';
 import { useDispatch } from 'react-redux';
 import { createCourse, updateCourse, deleteCourse, fetchAllCourses } from '../../store/slices/adminSlice';
-import { formatCurrency, formatDate } from '../../services/adminService';
+import imageUploadService from '../../services/imageUploadService';
 import { Textarea } from '../ui/textarea';
 import VideoManagement from './VideoManagement';
 import ExamManagement from './ExamManagement';
@@ -71,6 +71,7 @@ const CoursesManagement = ({ courses }) => {
     level: 'beginner',
     description: '',
     image: null,
+    imageUrl: null,
     videos: [],
     exams: []
   });
@@ -140,6 +141,7 @@ const CoursesManagement = ({ courses }) => {
       duration: '',
       level: 'beginner',
       image: null,
+      imageUrl: null,
       videos: [],
       exams: []
     });
@@ -159,6 +161,7 @@ const CoursesManagement = ({ courses }) => {
       duration: course.duration || '',
       level: course.level || 'beginner',
       image: null,
+      imageUrl: course.imageUrl || null,
       videos: course.videos || [],
       exams: course.exams || []
     });
@@ -167,29 +170,49 @@ const CoursesManagement = ({ courses }) => {
     setShowAddModal(true);
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        alert('يرجى اختيار ملف صورة صحيح');
-        return;
-      }
-      
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('حجم الصورة يجب أن يكون أقل من 5 ميجابايت');
+      // Validate file using the service
+      const validation = imageUploadService.validateImageFile(file);
+      if (!validation.isValid) {
+        toast({
+          title: "❌ خطأ في الملف",
+          description: validation.errors.join(' '),
+          variant: "destructive"
+        });
         return;
       }
 
-      setCourseForm({ ...courseForm, image: file });
-      
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target.result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Upload image to GridFS
+        const uploadResult = await imageUploadService.uploadImage(file);
+        
+        if (uploadResult.success) {
+          setCourseForm({ ...courseForm, image: file, imageUrl: uploadResult.data.url });
+          
+          // Create preview
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            setImagePreview(e.target.result);
+          };
+          reader.readAsDataURL(file);
+          
+          toast({
+            title: "✅ تم رفع الصورة بنجاح",
+            description: "تم رفع الصورة إلى النظام"
+          });
+        } else {
+          throw new Error(uploadResult.message || 'Upload failed');
+        }
+      } catch (error) {
+        console.error('Image upload error:', error);
+        toast({
+          title: "❌ خطأ في رفع الصورة",
+          description: error.message || "حدث خطأ أثناء رفع الصورة",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -306,7 +329,7 @@ const CoursesManagement = ({ courses }) => {
         return;
       }
 
-      // Create FormData for image upload
+      // Create FormData for course data
       const formData = new FormData();
       formData.append('title', courseForm.title);
       formData.append('description', courseForm.description);
@@ -315,6 +338,7 @@ const CoursesManagement = ({ courses }) => {
       formData.append('price', courseForm.price);
       formData.append('duration', courseForm.duration);
       formData.append('level', courseForm.level);
+      formData.append('isActive', courseForm.isActive !== undefined ? courseForm.isActive : true);
       
       // Add videos if present
       if (courseForm.videos && courseForm.videos.length > 0) {
@@ -326,8 +350,12 @@ const CoursesManagement = ({ courses }) => {
         formData.append('exams', JSON.stringify(courseForm.exams));
       }
       
+      // Add image if present (either file or URL)
       if (courseForm.image) {
         formData.append('image', courseForm.image);
+      } else if (courseForm.imageUrl) {
+        // If we have an imageUrl but no file, we can pass the URL directly
+        formData.append('imageUrl', courseForm.imageUrl);
       }
 
       if (editingCourse) {
@@ -358,6 +386,7 @@ const CoursesManagement = ({ courses }) => {
         duration: '',
         level: 'beginner',
         image: null,
+        imageUrl: null,
         videos: [],
         exams: []
       });

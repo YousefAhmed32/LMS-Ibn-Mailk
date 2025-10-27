@@ -1137,7 +1137,7 @@ const AdminPaymentsPage = () => {
                           onClick={() => handleViewImage(payment)}
                           className="h-10 w-10 p-0 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg"
                         >
-                          <Eye size={18} className="text-blue-600 dark:text-blue-400" />
+                          <Eye size={24} className="text-blue-600 dark:text-blue-400" />
                         </LuxuryButton>
                         
                         {payment.status === 'pending' ? (
@@ -1350,7 +1350,7 @@ const AdminPaymentsPage = () => {
                         onClick={() => handleViewImage(payment)}
                         className="h-10 w-10 p-0 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg"
                       >
-                        <Eye size={18} className="text-blue-600 dark:text-blue-400" />
+                        <Eye size={24} className="text-blue-600 dark:text-blue-400" />
                       </LuxuryButton>
                     </div>
 

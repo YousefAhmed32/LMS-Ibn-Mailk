@@ -50,7 +50,7 @@ const PaymentPage = () => {
   const [transactionIdStatus, setTransactionIdStatus] = useState(null); // 'valid', 'invalid', 'checking'
 
   // Vodafone Cash number
-  const VODAFONE_NUMBER = '01090385390';
+  const VODAFONE_NUMBER = '01022880651';
 
   useEffect(() => {
     if (courseId) {
@@ -263,7 +263,7 @@ const PaymentPage = () => {
       if (formData.transactionId.trim()) {
         formDataToSend.append('transactionId', formData.transactionId.trim());
       }
-      formDataToSend.append('screenshot', screenshot);
+      formDataToSend.append('image', screenshot);
 
       const response = await axiosInstance.post('/api/submit', formDataToSend, {
         headers: {

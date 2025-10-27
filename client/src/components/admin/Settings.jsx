@@ -57,7 +57,7 @@ const Settings = () => {
   
   // Payment Settings
   const [paymentSettings, setPaymentSettings] = useState({
-    vodafoneCashNumber: '01090385390',
+    vodafoneCashNumber: '01022880651',
     bankAccount: '',
     paypalEmail: '',
     stripeKey: '',
@@ -401,7 +401,7 @@ const Settings = () => {
                   id="vodafoneCash"
                   value={paymentSettings.vodafoneCashNumber}
                   onChange={(e) => setPaymentSettings({...paymentSettings, vodafoneCashNumber: e.target.value})}
-                  placeholder="01090385390"
+                  placeholder="01022880651"
                   className="font-mono"
                 />
               </div>
