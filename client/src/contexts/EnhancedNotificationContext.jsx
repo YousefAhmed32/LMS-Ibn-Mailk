@@ -24,7 +24,17 @@ export const NotificationProvider = ({ children }) => {
   // Initialize Socket.IO connection
   useEffect(() => {
     const initializeSocket = () => {
-      const serverUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
+      // In production, use the base URL from env, in dev use localhost
+      const getServerUrl = () => {
+        if (import.meta.env.PROD) {
+          // In production, use the full domain URL
+          return import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_SERVER_URL || window.location.origin;
+        }
+        // In development, use localhost
+        return 'http://localhost:5000';
+      };
+      
+      const serverUrl = getServerUrl();
       const isProduction = import.meta.env.PROD;
       
       const connectionOptions = {

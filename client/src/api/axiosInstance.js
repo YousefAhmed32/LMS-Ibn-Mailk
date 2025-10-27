@@ -1,8 +1,23 @@
 import axios from "axios";
 
+// Get the base URL - in production it should be the domain root without /api
+const getBaseURL = () => {
+  // In production, use the full domain
+  const prodBase = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
+  
+  if (import.meta.env.PROD && prodBase) {
+    // In production, baseURL should be just the domain (e.g., https://ibnmailku.cloud)
+    // The API calls will add /api/ themselves
+    return prodBase;
+  }
+  
+  // In development, use localhost
+  return "http://localhost:5000";
+};
+
 // Create axios instance with proper configuration
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "http://localhost:5000",
+  baseURL: getBaseURL(),
   timeout: 30000, // 30 second timeout
   headers: {
     'Content-Type': 'application/json',
