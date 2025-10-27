@@ -15,7 +15,7 @@ const fs = require('fs');
 const connectDB = require('./config/database');
 
 // Import routes
-const authRoutes = require('./routes/auth');
+const authRoutes = require('./server/routers/auth-routes');
 const examRoutes = require('./server/routers/exam-routes');
 const courseRoutes = require('./server/routers/course-routes');
 const uploadRoutes = require('./server/routes/upload');
