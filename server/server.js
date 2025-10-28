@@ -9,14 +9,43 @@ const { Server } = require('socket.io');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 
-// Try to load auth routes with explicit path
+// Import centralized error handler (✅ moved up)
+const errorHandler = require('./middleware/errorHandler');
+
+// Security middleware
+const { configureCSP, configureSecurityHeaders } = require('./middleware/security');
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+const MONGO_URL = process.env.MONGO_URL || "mongodb://localhost:27017/lms-ebn";
+
+// Disable x-powered-by for security
+app.disable('x-powered-by');
+
+// Set JWT secret with fallback
+process.env.JWT_SECRET = process.env.JWT_SECRET || "your-super-secret-jwt-key-change-this-in-production";
+
+// Validate critical environment variables
+if (!process.env.JWT_SECRET) {
+  console.error("❌ Critical error: JWT_SECRET is not set");
+  process.exit(1);
+}
+
+// Log configuration
+console.log('🔧 Server Configuration:');
+console.log(`   Port: ${PORT}`);
+console.log(`   MongoDB: ${MONGO_URL}`);
+console.log(`   JWT Secret: ${process.env.JWT_SECRET ? '✅ Set' : '❌ Not set'}`);
+console.log(`   GridFS: ✅ Configured for local image storage`);
+console.log('');
+
+// Import all routes
 let authRoutes;
 try {
     authRoutes = require("./routers/auth-routes/index");
     console.log('✅ Auth routes loaded successfully');
 } catch (error) {
     console.error('❌ Error loading auth routes:', error.message);
-    // Try alternative path
     authRoutes = require("./routers/auth-routes");
 }
 const courseRoutes = require("./routers/course-routes");
@@ -43,75 +72,36 @@ const adminDashboardRoutes = require("./routes/admin-dashboard-routes");
 const uploadRoutes = require("./routes/upload");
 const uploadRoutesOld = require("./routers/upload-routes");
 
-// Security middleware
-const { configureCSP, configureSecurityHeaders } = require('./middleware/security');
-
-
-const app = express();
-const PORT = process.env.PORT || 5000;
-
-const MONGO_URL = process.env.MONGO_URL || "mongodb://localhost:27017/lms-ebn";
-
-// Set JWT secret with fallback
-process.env.JWT_SECRET = process.env.JWT_SECRET || "your-super-secret-jwt-key-change-this-in-production";
-
-// Validate critical environment variables
-if (!process.env.JWT_SECRET) {
-  console.error("❌ Critical error: JWT_SECRET is not set");
-  process.exit(1);
-}
-
-// Log configuration
-console.log('🔧 Server Configuration:');
-console.log(`   Port: ${PORT}`);
-console.log(`   MongoDB: ${MONGO_URL}`);
-console.log(`   JWT Secret: ${process.env.JWT_SECRET ? '✅ Set' : '❌ Not set'}`);
-console.log(`   GridFS: ✅ Configured for local image storage`);
-console.log('');
-
-// Note: File uploads are now handled by GridFS through unified-upload-routes
-
 // Performance middleware
 app.use(compression({
-    level: 6, // Compression level (1-9, 6 is good balance)
-    threshold: 1024, // Only compress responses larger than 1KB
+    level: 6,
+    threshold: 1024,
     filter: (req, res) => {
-        // Don't compress if client doesn't support it
-        if (req.headers['x-no-compression']) {
-            return false;
-        }
-        // Use compression for all other requests
+        if (req.headers['x-no-compression']) return false;
         return compression.filter(req, res);
     }
 }));
 
 // Rate limiting
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
-    message: {
-        success: false,
-        error: 'Too many requests from this IP, please try again later.'
-    },
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: { success: false, error: 'Too many requests from this IP, please try again later.' },
     standardHeaders: true,
     legacyHeaders: false,
 });
-
 app.use('/api/', limiter);
 
 // Security middleware
 app.use(configureCSP());
 app.use(configureSecurityHeaders());
 
-// Trust proxy - Required for proper handling behind Nginx reverse proxy
+// Trust proxy (behind Nginx)
 app.set('trust proxy', 1);
 
-// NO HTTPS redirect middleware here - Nginx handles HTTP → HTTPS
-// Backend should NOT redirect to avoid redirect loops
-
-// CORS Configuration
-const corsOrigins = process.env.CORS_ORIGIN 
-    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+// CORS setup
+const corsOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
     : [
         process.env.CLIENT_URL || "http://localhost:5173",
         "http://localhost:3000",
@@ -128,99 +118,54 @@ app.use(cors({
     optionsSuccessStatus: 200
 }));
 
-// Body parsing with size limits - زيادة الحدود لحل مشكلة 413
+// Body parsing
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
-
-// Serve static files from uploads directory
+// Serve uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Request logging middleware for debugging (only for API routes)
+// Request logging
 app.use('/api', (req, res, next) => {
     console.log(`📨 ${req.method} ${req.originalUrl}`, {
         ip: req.ip,
         origin: req.get('origin'),
         userAgent: req.get('user-agent')?.substring(0, 50),
-        path: req.path,
-        baseUrl: req.baseUrl,
-        url: req.url
     });
-    
-    // Special logging for auth routes
-    if (req.path.includes('auth')) {
-        console.log('🔐 Auth route detected:', {
-            originalUrl: req.originalUrl,
-            path: req.path,
-            baseUrl: req.baseUrl,
-            method: req.method
-        });
-    }
-    
     next();
 });
 
-// Routes with debugging
-console.log('📦 Loading routes...');
-
-// Verify auth routes is loaded
-if (!authRoutes || typeof authRoutes !== 'function') {
-    console.error('❌ CRITICAL: Auth routes failed to load!');
-    throw new Error('Auth routes module failed to load');
-}
-
-console.log('   ✅ Auth routes loaded, mounting at /api/auth');
+// Mount routes
 app.use("/api/auth", authRoutes);
-console.log('   ✅ Auth routes mounted successfully');
-
-// Test route mounting by printing router stack
-setTimeout(() => {
-    const authRouter = authRoutes;
-    console.log('   🔍 Auth router stack length:', authRouter?.stack?.length || 'no stack');
-}, 1000);
-
 app.use("/api/courses", courseRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/admin", adminDashboardRoutes);  // Admin dashboard statistics - mount after main admin routes
-app.use("/api/admin/payments", adminPaymentRoutes);  // Mount specific routes before general ones
+app.use("/api/admin", adminDashboardRoutes);
+app.use("/api/admin/payments", adminPaymentRoutes);
 app.use("/api", paymentRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/youtube", youtubeVideoRoutes);
 app.use("/api/video", videoRoutes);
-app.use("/api/progress", progressRoutes);        // VideoProgress - للمسارات القديمة
-app.use("/api/user-progress", userProgressRoutes); // UserCourseProgress - للمسارات الجديدة
+app.use("/api/progress", progressRoutes);
+app.use("/api/user-progress", userProgressRoutes);
 app.use("/api/exam", examRoutes);
-app.use("/api/exams", examRoutesNew); // Use the new exam routes for /api/exams
-app.use("/api/exams-old", examsRoutes); // Keep old routes for backward compatibility
+app.use("/api/exams", examRoutesNew);
+app.use("/api/exams-old", examsRoutes);
 app.use("/api/internal-exams", internalExamRoutes);
 app.use("/api/exam-results", examResultRoutes);
 app.use("/api/groups", groupRoutes);
-// Debug middleware for image requests
-app.use('/api/image/:id', (req, res, next) => {
-  console.log('🖼️ GridFS image request:', {
-    id: req.params.id,
-    method: req.method,
-    url: req.originalUrl
-  });
-  next();
-});
-
-// Upload routes - use unified GridFS system
 app.use("/api/upload", unifiedUploadRoutes);
 app.use("/api/uploads", unifiedUploadRoutes);
 app.use("/api/user", userDashboardRoutes);
 app.use("/api/parent", parentRoutes);
 app.use("/api/parent-enhanced", enhancedParentRoutes);
 app.use("/api/debug", debugRoutes);
-
-// Additional upload routes
 app.use("/api/upload-old", uploadRoutes);
 app.use("/api/files", uploadRoutesOld);
 
-// Health check endpoint
+// Health check
 app.get("/health", (req, res) => {
-    res.json({ 
-        status: "OK", 
+    res.json({
+        status: "OK",
         message: "Server is running",
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
@@ -228,18 +173,31 @@ app.get("/health", (req, res) => {
     });
 });
 
-// 404 handler - must be after all routes but before error handler
+// ✅ Move this above 404
+app.get("/api/routes", (req, res) => {
+    const routes = [];
+    app._router.stack.forEach((middleware) => {
+        if (middleware.route) {
+            routes.push({
+                path: middleware.route.path,
+                methods: Object.keys(middleware.route.methods)
+            });
+        } else if (middleware.name === 'router' && middleware.regexp) {
+            const basePath = middleware.regexp.source.replace(/\\\//g, '/').replace(/\^|\$|\?/g, '');
+            routes.push({ path: basePath, methods: ['*'], type: 'router' });
+        }
+    });
+    res.json({
+        success: true,
+        totalRoutes: routes.length,
+        routes: routes.sort((a, b) => a.path.localeCompare(b.path))
+    });
+});
+
+// 404 handler
 app.use("*", (req, res) => {
-    // Don't log 404 for static assets or socket.io
     if (!req.originalUrl.startsWith('/socket.io') && !req.originalUrl.startsWith('/uploads')) {
         console.log(`⚠️ 404 - Route not found: ${req.method} ${req.originalUrl}`);
-        console.log(`   📍 Request details:`, {
-            originalUrl: req.originalUrl,
-            baseUrl: req.baseUrl,
-            path: req.path,
-            url: req.url,
-            method: req.method
-        });
     }
     res.status(404).json({
         success: false,
@@ -249,164 +207,88 @@ app.use("*", (req, res) => {
     });
 });
 
-// Global error handler - must be last
+// Global error handler
 app.use(errorHandler);
 
-// Routes debug endpoint
-app.get("/api/routes", (req, res) => {
-    const routes = [];
-    app._router.stack.forEach((middleware) => {
-        if (middleware.route) {
-            routes.push({
-                path: middleware.route.path,
-                methods: Object.keys(middleware.route.methods)
-            });
-        } else if (middleware.name === 'router') {
-            // Handle mounted routers
-            if (middleware.regexp) {
-                const basePath = middleware.regexp.source.replace(/\\\//g, '/').replace(/\^|\$|\?/g, '');
-                routes.push({
-                    path: basePath,
-                    methods: ['*'],
-                    type: 'router'
-                });
-            }
-        }
-    });
-    res.json({ 
-        success: true,
-        totalRoutes: routes.length,
-        routes: routes.sort((a, b) => a.path.localeCompare(b.path))
-    });
-});
-
-// Database connection
+// Connect to MongoDB before starting server
 mongoose.connect(MONGO_URL)
-.then(() => {
-    console.log(`✔️  MongoDB is connected to ${MONGO_URL}`);
-    console.log(`   Database: ${mongoose.connection.name}`);
-    console.log(`   Collections: ${Object.keys(mongoose.connection.collections).length}`);
-})
-.catch((e) => {
-  console.log("❌ MongoDB connection error:", e.message);
-  console.log("💡 Make sure MongoDB is running on your system");
-  console.log("💡 You can install MongoDB from: https://docs.mongodb.com/manual/installation/");
-  console.log("💡 Or use MongoDB Atlas: https://www.mongodb.com/cloud/atlas");
-});
+    .then(() => {
+        console.log(`✔️ MongoDB connected to ${MONGO_URL}`);
+        console.log('   Collections:', Object.keys(mongoose.connection.collections));
+        startServer();
+    })
+    .catch((e) => {
+        console.log("❌ MongoDB connection error:", e.message);
+        process.exit(1);
+    });
 
-// Import centralized error handler
-const errorHandler = require('./middleware/errorHandler');
+// Start server in a function
+function startServer() {
+    const server = http.createServer(app);
+    const productionConfig = require('./config/production');
+    const io = new Server(server, productionConfig.socket);
+    app.set('io', io);
+    global.io = io;
 
-// Create HTTP server
-const server = http.createServer(app);
+    io.on('connection', (socket) => {
+        console.log(`🔌 User connected: ${socket.id}`);
+        
+        socket.on('join', (userId) => {
+            if (userId) {
+                socket.join(`user_${userId}`);
+                console.log(`👤 User ${userId} joined room: user_${userId}`);
+            }
+        });
+        
+        socket.on('join-group', (groupId) => {
+            if (groupId) {
+                socket.join(`group_${groupId}`);
+                console.log(`👥 User ${socket.id} joined group: group_${groupId}`);
+            }
+        });
+        
+        socket.on('leave-group', (groupId) => {
+            if (groupId) {
+                socket.leave(`group_${groupId}`);
+                console.log(`👥 User ${socket.id} left group: group_${groupId}`);
+            }
+        });
+        
+        socket.on('error', (error) => {
+            console.error(`❌ Socket error for ${socket.id}:`, error);
+        });
+        
+        socket.on('disconnect', (reason) => {
+            console.log(`🔌 User disconnected: ${socket.id} (reason: ${reason})`);
+        });
+    });
 
-// Import production config
-const productionConfig = require('./config/production');
+    // Handle Socket.IO connection errors
+    io.engine.on('connection_error', (err) => {
+        console.error('❌ Socket.IO connection error:', {
+            message: err.message,
+            description: err.description,
+            type: err.type
+        });
+    });
 
-// Configure Socket.IO with production-ready settings
-const io = new Server(server, productionConfig.socket);
+    server.listen(PORT, '0.0.0.0', () => {
+        console.log(`🚀 Server running on port ${PORT}`);
+        console.log(`   Listening on: 0.0.0.0:${PORT}`);
+        console.log(`   Health check: http://localhost:${PORT}/health`);
+        console.log(`   API base: http://localhost:${PORT}/api`);
+        console.log(`   Socket.IO: http://localhost:${PORT}`);
+        console.log('✅ Server ready to accept connections');
+    });
 
-// Store io instance in app for use in controllers
-app.set('io', io);
-
-// Set global io instance for notification service
-global.io = io;
-
-// Socket.IO connection handling with error handling
-io.on('connection', (socket) => {
-  console.log(`🔌 User connected: ${socket.id}`);
-
-  // Handle user joining their room
-  socket.on('join', (userId) => {
-    try {
-      if (userId) {
-        socket.join(`user_${userId}`);
-        console.log(`👤 User ${userId} joined room: user_${userId}`);
-      }
-    } catch (error) {
-      console.error(`❌ Error joining room for user ${userId}:`, error.message);
-      socket.emit('error', { message: 'Failed to join room' });
-    }
-  });
-
-  // Handle joining group chat room
-  socket.on('join-group', (groupId) => {
-    try {
-      if (groupId) {
-        socket.join(`group_${groupId}`);
-        console.log(`👥 User ${socket.id} joined group room: group_${groupId}`);
-      }
-    } catch (error) {
-      console.error(`❌ Error joining group ${groupId}:`, error.message);
-      socket.emit('error', { message: 'Failed to join group' });
-    }
-  });
-
-  // Handle leaving group chat room
-  socket.on('leave-group', (groupId) => {
-    try {
-      if (groupId) {
-        socket.leave(`group_${groupId}`);
-        console.log(`👥 User ${socket.id} left group room: group_${groupId}`);
-      }
-    } catch (error) {
-      console.error(`❌ Error leaving group ${groupId}:`, error.message);
-    }
-  });
-
-  // Handle errors on socket
-  socket.on('error', (error) => {
-    console.error(`❌ Socket error for ${socket.id}:`, error);
-  });
-
-  // Handle disconnection
-  socket.on('disconnect', (reason) => {
-    console.log(`🔌 User disconnected: ${socket.id} (reason: ${reason})`);
-  });
-});
-
-// Handle Socket.IO connection errors
-io.engine.on('connection_error', (err) => {
-  console.error('❌ Socket.IO connection error:', {
-    message: err.message,
-    description: err.description,
-    context: err.context,
-    type: err.type
-  });
-});
-
-// Start server with error handling
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server is now running on port ${PORT}`);
-    console.log(`   Listening on: 0.0.0.0:${PORT}`);
-    console.log(`   Health check: http://localhost:${PORT}/health`);
-    console.log(`   API base: http://localhost:${PORT}/api`);
-    console.log(`   Uploads: http://localhost:${PORT}/uploads`);
-    console.log(`   Socket.IO: http://localhost:${PORT}`);
-    console.log('');
-    console.log('📚 Available endpoints:');
-    console.log(`   - POST /api/auth/register`);
-    console.log(`   - POST /api/auth/login`);
-    console.log(`   - GET /api/courses`);
-    console.log(`   - GET /api/courses/:id`);
-    console.log(`   - POST /api/courses/:courseId/upload-proof`);
-    console.log(`   - POST /api/payment-proof`);
-    console.log(`   - GET /api/admin/payment-proofs/pending`);
-    console.log(`   - PATCH /api/admin/payment-proofs/:id/approve`);
-    console.log(`   - PATCH /api/admin/payment-proofs/:id/reject`);
-    console.log(`   - POST /api/admin/orders/:orderId/approve`);
-    console.log(`   - GET /api/courses/:courseId/access`);
-    console.log('');
-    console.log('✅ Server ready to accept connections');
-});
-
-// Handle server errors
-server.on('error', (error) => {
-    if (error.code === 'EADDRINUSE') {
-        console.error(`❌ Port ${PORT} is already in use`);
-        console.error('   Please stop the other process or use a different port');
-    } else {
-        console.error('❌ Server error:', error);
-    }
-    process.exit(1);
-});
+    // Handle server errors
+    server.on('error', (error) => {
+        if (error.code === 'EADDRINUSE') {
+            console.error(`❌ Port ${PORT} is already in use`);
+            console.error('   Please stop the other process or use a different port');
+        } else {
+            console.error('❌ Server error:', error);
+        }
+        process.exit(1);
+    });
+}
