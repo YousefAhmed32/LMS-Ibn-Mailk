@@ -375,8 +375,10 @@ io.engine.on('connection_error', (err) => {
   });
 });
 
-server.listen(PORT, () => {
+// Start server with error handling
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server is now running on port ${PORT}`);
+    console.log(`   Listening on: 0.0.0.0:${PORT}`);
     console.log(`   Health check: http://localhost:${PORT}/health`);
     console.log(`   API base: http://localhost:${PORT}/api`);
     console.log(`   Uploads: http://localhost:${PORT}/uploads`);
@@ -394,4 +396,17 @@ server.listen(PORT, () => {
     console.log(`   - PATCH /api/admin/payment-proofs/:id/reject`);
     console.log(`   - POST /api/admin/orders/:orderId/approve`);
     console.log(`   - GET /api/courses/:courseId/access`);
+    console.log('');
+    console.log('✅ Server ready to accept connections');
+});
+
+// Handle server errors
+server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use`);
+        console.error('   Please stop the other process or use a different port');
+    } else {
+        console.error('❌ Server error:', error);
+    }
+    process.exit(1);
 });
