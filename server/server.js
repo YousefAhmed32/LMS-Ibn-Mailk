@@ -9,7 +9,16 @@ const { Server } = require('socket.io');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 
-const authRoutes = require("./routers/auth-routes");
+// Try to load auth routes with explicit path
+let authRoutes;
+try {
+    authRoutes = require("./routers/auth-routes/index");
+    console.log('✅ Auth routes loaded successfully');
+} catch (error) {
+    console.error('❌ Error loading auth routes:', error.message);
+    // Try alternative path
+    authRoutes = require("./routers/auth-routes");
+}
 const courseRoutes = require("./routers/course-routes");
 const adminRoutes = require("./routers/admin-routes");
 const paymentRoutes = require("./routers/payment-routes");
@@ -132,16 +141,43 @@ app.use('/api', (req, res, next) => {
     console.log(`📨 ${req.method} ${req.originalUrl}`, {
         ip: req.ip,
         origin: req.get('origin'),
-        userAgent: req.get('user-agent')?.substring(0, 50)
+        userAgent: req.get('user-agent')?.substring(0, 50),
+        path: req.path,
+        baseUrl: req.baseUrl,
+        url: req.url
     });
+    
+    // Special logging for auth routes
+    if (req.path.includes('auth')) {
+        console.log('🔐 Auth route detected:', {
+            originalUrl: req.originalUrl,
+            path: req.path,
+            baseUrl: req.baseUrl,
+            method: req.method
+        });
+    }
+    
     next();
 });
 
 // Routes with debugging
 console.log('📦 Loading routes...');
 
+// Verify auth routes is loaded
+if (!authRoutes || typeof authRoutes !== 'function') {
+    console.error('❌ CRITICAL: Auth routes failed to load!');
+    throw new Error('Auth routes module failed to load');
+}
+
+console.log('   ✅ Auth routes loaded, mounting at /api/auth');
 app.use("/api/auth", authRoutes);
-console.log('   ✅ Auth routes mounted at /api/auth');
+console.log('   ✅ Auth routes mounted successfully');
+
+// Test route mounting by printing router stack
+setTimeout(() => {
+    const authRouter = authRoutes;
+    console.log('   🔍 Auth router stack length:', authRouter?.stack?.length || 'no stack');
+}, 1000);
 
 app.use("/api/courses", courseRoutes);
 app.use("/api/admin", adminRoutes);
@@ -192,6 +228,30 @@ app.get("/health", (req, res) => {
     });
 });
 
+// 404 handler - must be after all routes but before error handler
+app.use("*", (req, res) => {
+    // Don't log 404 for static assets or socket.io
+    if (!req.originalUrl.startsWith('/socket.io') && !req.originalUrl.startsWith('/uploads')) {
+        console.log(`⚠️ 404 - Route not found: ${req.method} ${req.originalUrl}`);
+        console.log(`   📍 Request details:`, {
+            originalUrl: req.originalUrl,
+            baseUrl: req.baseUrl,
+            path: req.path,
+            url: req.url,
+            method: req.method
+        });
+    }
+    res.status(404).json({
+        success: false,
+        error: "Route not found",
+        path: req.originalUrl,
+        method: req.method
+    });
+});
+
+// Global error handler - must be last
+app.use(errorHandler);
+
 // Routes debug endpoint
 app.get("/api/routes", (req, res) => {
     const routes = [];
@@ -236,23 +296,6 @@ mongoose.connect(MONGO_URL)
 
 // Import centralized error handler
 const errorHandler = require('./middleware/errorHandler');
-
-// 404 handler - must be before error handler
-app.use("*", (req, res) => {
-    // Don't log 404 for static assets or socket.io
-    if (!req.originalUrl.startsWith('/socket.io') && !req.originalUrl.startsWith('/uploads')) {
-        console.log(`⚠️ 404 - Route not found: ${req.method} ${req.originalUrl}`);
-    }
-    res.status(404).json({
-        success: false,
-        error: "Route not found",
-        path: req.originalUrl,
-        method: req.method
-    });
-});
-
-// Global error handler - must be last
-app.use(errorHandler);
 
 // Create HTTP server
 const server = http.createServer(app);
