@@ -40,20 +40,57 @@ class SocketService {
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('❌ Socket connection error:', error);
+      console.error('❌ Socket connection error:', {
+        message: error.message,
+        type: error.type,
+        description: error.description,
+        context: error.context
+      });
       this.isConnected = false;
       
-      // Try to reconnect with different transport
-      if (error.type === 'TransportError') {
-        console.log('🔄 Trying to reconnect with different transport...');
+      // Handle server errors and transport errors
+      if (error.type === 'TransportError' || error.message === 'server error') {
+        console.warn('⚠️ Server error detected, will retry with polling only');
+        // Retry with polling only as fallback
         setTimeout(() => {
-          this.socket.disconnect();
-          this.socket = null;
+          if (this.socket) {
+            this.socket.disconnect();
+            this.socket = null;
+          }
           this.isConnected = false;
-          // Retry connection
-          this.connect(userId);
-        }, 2000);
+          // Retry connection with polling only
+          const serverUrl = getServerUrl();
+          const fallbackSocket = io(serverUrl, {
+            ...productionConfig.socket,
+            transports: ['polling'], // Use polling only as fallback
+            forceNew: true
+          });
+          
+          // Setup basic events for fallback socket
+          fallbackSocket.on('connect', () => {
+            console.log('🔌 Fallback connection established:', fallbackSocket.id);
+            this.socket = fallbackSocket;
+            this.isConnected = true;
+            if (userId) {
+              fallbackSocket.emit('join', userId);
+            }
+          });
+          
+          fallbackSocket.on('disconnect', () => {
+            console.log('🔌 Fallback socket disconnected');
+            this.isConnected = false;
+          });
+          
+          fallbackSocket.on('error', (err) => {
+            console.error('❌ Fallback socket error:', err);
+          });
+        }, 3000);
       }
+    });
+    
+    // Handle general errors
+    this.socket.on('error', (error) => {
+      console.error('❌ Socket error event:', error);
     });
 
     // Handle reconnection events

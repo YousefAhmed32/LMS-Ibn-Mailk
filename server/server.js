@@ -127,8 +127,22 @@ app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Routes
+// Request logging middleware for debugging (only for API routes)
+app.use('/api', (req, res, next) => {
+    console.log(`📨 ${req.method} ${req.originalUrl}`, {
+        ip: req.ip,
+        origin: req.get('origin'),
+        userAgent: req.get('user-agent')?.substring(0, 50)
+    });
+    next();
+});
+
+// Routes with debugging
+console.log('📦 Loading routes...');
+
 app.use("/api/auth", authRoutes);
+console.log('   ✅ Auth routes mounted at /api/auth');
+
 app.use("/api/courses", courseRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin", adminDashboardRoutes);  // Admin dashboard statistics - mount after main admin routes
@@ -223,11 +237,12 @@ mongoose.connect(MONGO_URL)
 // Import centralized error handler
 const errorHandler = require('./middleware/errorHandler');
 
-// Global error handler
-app.use(errorHandler);
-
-// 404 handler
+// 404 handler - must be before error handler
 app.use("*", (req, res) => {
+    // Don't log 404 for static assets or socket.io
+    if (!req.originalUrl.startsWith('/socket.io') && !req.originalUrl.startsWith('/uploads')) {
+        console.log(`⚠️ 404 - Route not found: ${req.method} ${req.originalUrl}`);
+    }
     res.status(404).json({
         success: false,
         error: "Route not found",
@@ -235,6 +250,9 @@ app.use("*", (req, res) => {
         method: req.method
     });
 });
+
+// Global error handler - must be last
+app.use(errorHandler);
 
 // Create HTTP server
 const server = http.createServer(app);
@@ -251,37 +269,66 @@ app.set('io', io);
 // Set global io instance for notification service
 global.io = io;
 
-// Socket.IO connection handling
+// Socket.IO connection handling with error handling
 io.on('connection', (socket) => {
   console.log(`🔌 User connected: ${socket.id}`);
 
   // Handle user joining their room
   socket.on('join', (userId) => {
-    if (userId) {
-      socket.join(`user_${userId}`);
-      console.log(`👤 User ${userId} joined room: user_${userId}`);
+    try {
+      if (userId) {
+        socket.join(`user_${userId}`);
+        console.log(`👤 User ${userId} joined room: user_${userId}`);
+      }
+    } catch (error) {
+      console.error(`❌ Error joining room for user ${userId}:`, error.message);
+      socket.emit('error', { message: 'Failed to join room' });
     }
   });
 
   // Handle joining group chat room
   socket.on('join-group', (groupId) => {
-    if (groupId) {
-      socket.join(`group_${groupId}`);
-      console.log(`👥 User ${socket.id} joined group room: group_${groupId}`);
+    try {
+      if (groupId) {
+        socket.join(`group_${groupId}`);
+        console.log(`👥 User ${socket.id} joined group room: group_${groupId}`);
+      }
+    } catch (error) {
+      console.error(`❌ Error joining group ${groupId}:`, error.message);
+      socket.emit('error', { message: 'Failed to join group' });
     }
   });
 
   // Handle leaving group chat room
   socket.on('leave-group', (groupId) => {
-    if (groupId) {
-      socket.leave(`group_${groupId}`);
-      console.log(`👥 User ${socket.id} left group room: group_${groupId}`);
+    try {
+      if (groupId) {
+        socket.leave(`group_${groupId}`);
+        console.log(`👥 User ${socket.id} left group room: group_${groupId}`);
+      }
+    } catch (error) {
+      console.error(`❌ Error leaving group ${groupId}:`, error.message);
     }
   });
 
+  // Handle errors on socket
+  socket.on('error', (error) => {
+    console.error(`❌ Socket error for ${socket.id}:`, error);
+  });
+
   // Handle disconnection
-  socket.on('disconnect', () => {
-    console.log(`🔌 User disconnected: ${socket.id}`);
+  socket.on('disconnect', (reason) => {
+    console.log(`🔌 User disconnected: ${socket.id} (reason: ${reason})`);
+  });
+});
+
+// Handle Socket.IO connection errors
+io.engine.on('connection_error', (err) => {
+  console.error('❌ Socket.IO connection error:', {
+    message: err.message,
+    description: err.description,
+    context: err.context,
+    type: err.type
   });
 });
 

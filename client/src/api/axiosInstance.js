@@ -5,14 +5,18 @@ const getBaseURL = () => {
   // In production, use the full domain
   const prodBase = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
   
-  if (import.meta.env.PROD && prodBase) {
+  if (import.meta.env.PROD) {
     // In production, baseURL should be just the domain (e.g., https://ibnmailku.cloud)
-    // The API calls will add /api/ themselves
-    return prodBase;
+    // If env var is not set, use window.location.origin as fallback
+    const baseUrl = prodBase || window.location.origin;
+    console.log('🌐 Production API Base URL:', baseUrl);
+    return baseUrl;
   }
   
   // In development, use localhost
-  return "http://localhost:5000";
+  const devUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  console.log('🔧 Development API Base URL:', devUrl);
+  return devUrl;
 };
 
 // Create axios instance with proper configuration

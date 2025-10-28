@@ -20,22 +20,13 @@ module.exports = {
     pingInterval: 25000,
     upgradeTimeout: 10000,
     maxHttpBufferSize: 1e6,
-    // Allow requests from behind nginx proxy
-    allowRequest: (req, fn) => {
-      // Allow all requests in production
-      fn(null, true);
-    },
     // Important for working behind nginx/proxy
     path: '/socket.io/',
     addTrailingSlash: false,
-    handlePreflightRequest: (req, res) => {
-      res.writeHead(200, {
-        'Access-Control-Allow-Origin': req.headers.origin || '*',
-        'Access-Control-Allow-Methods': 'GET, POST',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'Access-Control-Allow-Credentials': 'true'
-      });
-      res.end();
+    // Allow requests from behind nginx proxy
+    allowRequest: (req, callback) => {
+      // Allow all requests
+      callback(null, true);
     }
   },
 
