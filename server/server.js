@@ -31,6 +31,8 @@ const parentRoutes = require("./routers/parent-routes");
 const enhancedParentRoutes = require("./routes/enhanced-parent-routes");
 const debugRoutes = require("./routes/debug-routes");
 const adminDashboardRoutes = require("./routes/admin-dashboard-routes");
+const uploadRoutes = require("./routes/upload");
+const uploadRoutesOld = require("./routers/upload-routes");
 
 // Security middleware
 const { configureCSP, configureSecurityHeaders } = require('./middleware/security');
@@ -158,8 +160,12 @@ app.use("/api/upload", unifiedUploadRoutes);
 app.use("/api/uploads", unifiedUploadRoutes);
 app.use("/api/user", userDashboardRoutes);
 app.use("/api/parent", parentRoutes);
-app.use("/api/parent", enhancedParentRoutes);
+app.use("/api/parent-enhanced", enhancedParentRoutes);
 app.use("/api/debug", debugRoutes);
+
+// Additional upload routes
+app.use("/api/upload-old", uploadRoutes);
+app.use("/api/files", uploadRoutesOld);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
@@ -169,6 +175,34 @@ app.get("/health", (req, res) => {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         environment: process.env.NODE_ENV || 'development'
+    });
+});
+
+// Routes debug endpoint
+app.get("/api/routes", (req, res) => {
+    const routes = [];
+    app._router.stack.forEach((middleware) => {
+        if (middleware.route) {
+            routes.push({
+                path: middleware.route.path,
+                methods: Object.keys(middleware.route.methods)
+            });
+        } else if (middleware.name === 'router') {
+            // Handle mounted routers
+            if (middleware.regexp) {
+                const basePath = middleware.regexp.source.replace(/\\\//g, '/').replace(/\^|\$|\?/g, '');
+                routes.push({
+                    path: basePath,
+                    methods: ['*'],
+                    type: 'router'
+                });
+            }
+        }
+    });
+    res.json({ 
+        success: true,
+        totalRoutes: routes.length,
+        routes: routes.sort((a, b) => a.path.localeCompare(b.path))
     });
 });
 
