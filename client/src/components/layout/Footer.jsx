@@ -116,21 +116,21 @@ const Footer = () => {
     {
       name: 'YouTube',
       icon: Youtube,
-      href: 'https://youtube.com/@yansy_platform',
+      href: 'http://youtube.com/channel/UCQZZYZSnK-y0OjGBWbKAz-w',
       color: 'text-red-500 hover:text-red-400',
       glowColor: 'hover:shadow-red-500/50'
     },
-    {
-      name: 'Twitter',
-      icon: Twitter,
-      href: 'https://twitter.com/yansy_platform',
-      color: 'text-sky-500 hover:text-sky-400',
-      glowColor: 'hover:shadow-sky-500/50'
-    },
+    // {
+    //   name: 'Twitter',
+    //   icon: Twitter,
+    //   href: 'https://twitter.com/yansy_platform',
+    //   color: 'text-sky-500 hover:text-sky-400',
+    //   glowColor: 'hover:shadow-sky-500/50'
+    // },
     {
       name: 'Facebook',
       icon: Facebook,
-      href: 'https://facebook.com/yansy-platform',
+      href: 'https://www.facebook.com/profile.php?id=61579112995364&locale=ar_AR',
       color: 'text-blue-600 hover:text-blue-500',
       glowColor: 'hover:shadow-blue-600/50'
     }

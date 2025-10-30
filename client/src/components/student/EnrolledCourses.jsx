@@ -308,7 +308,8 @@ const EnrolledCourses = () => {
                   <Card className="h-full bg-white dark:bg-gray-800 border-0 shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
                     <div className="relative">
                       <img
-                        src={course.thumbnail || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop'}
+                        src={course.thumbnail || ''}
+                      //  src={course.thumbnail || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop'}
                         alt={course.title}
                         className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                       />
