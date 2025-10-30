@@ -84,7 +84,7 @@ const validateRegistration = [
 
 // Validation rules for user login
 const validateLogin = [
-  body('userEmail')
+  body('email')
     .isEmail()
     .normalizeEmail()
     .withMessage('Please provide a valid email address'),

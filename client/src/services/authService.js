@@ -147,4 +147,6 @@ export const loginService = async (email, password) => {
       };
     }
   }
+  console.log("🧩 Login Body:", req.body);
+
 };
