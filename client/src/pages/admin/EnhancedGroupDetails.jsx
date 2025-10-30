@@ -1197,7 +1197,7 @@ const OverviewTab = ({ group, colors }) => (
       <div className="flex items-start gap-6">
         {group.coverImage ? (
           <img
-            src={getImageUrl(group.coverImage)}
+            src={getImageUrlSafe(group.coverImage)}
             alt={group.name}
             className="w-24 h-24 object-cover rounded-xl"
             onError={(e) => {
@@ -1454,7 +1454,7 @@ const ChatTab = ({ group, colors, chatMessages, newMessage, setNewMessage, handl
       <div className="flex items-center gap-3">
         {group.coverImage ? (
           <img
-            src={getImageUrl(group.coverImage)}
+            src={getImageUrlSafe(group.coverImage)}
             alt={group.name}
             className="w-10 h-10 object-cover rounded-lg"
             onError={(e) => {

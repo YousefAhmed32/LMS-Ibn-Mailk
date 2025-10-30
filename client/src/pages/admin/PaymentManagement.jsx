@@ -44,6 +44,7 @@ import {
 import axiosInstance from '../../api/axiosInstance';
 import LuxuryCard from '../../components/ui/LuxuryCard';
 import LuxuryButton from '../../components/ui/LuxuryButton';
+import { getImageUrlSafe } from '../../utils/imageUtils';
 
 const PaymentManagement = () => {
   const navigate = useNavigate();
@@ -277,7 +278,7 @@ const PaymentManagement = () => {
         'الحالة': getStatusText(payment.status),
         'تاريخ الطلب': formatDate(payment.createdAt),
         'تاريخ الاعتماد': payment.approvedAt ? formatDate(payment.approvedAt) : '',
-        'إثبات الدفع': payment.paymentProof ? 'متوفر' : 'غير متوفر'
+        'إثبات الدفع': payment.screenshot ? 'متوفر' : 'غير متوفر'
       }));
 
       console.log('📋 البيانات المحضرة:', exportData);
@@ -335,7 +336,7 @@ const PaymentManagement = () => {
         'الحالة': getStatusText(payment.status),
         'تاريخ الطلب': formatDate(payment.createdAt),
         'تاريخ الاعتماد': payment.approvedAt ? formatDate(payment.approvedAt) : '',
-        'إثبات الدفع': payment.paymentProof ? 'متوفر' : 'غير متوفر'
+        'إثبات الدفع': payment.screenshot ? 'متوفر' : 'غير متوفر'
       }));
 
       console.log('📋 البيانات المحضرة:', exportData);
@@ -760,10 +761,10 @@ const PaymentManagement = () => {
                 borderRadius: borderRadius.xl
               }}>
                 {/* Payment Proof Image */}
-                {payment.paymentProof && (
+                {payment.screenshot && (
                   <div className="relative overflow-hidden" style={{
                     height: '200px',
-                    background: `url(${payment.paymentProof})`,
+                    background: `url(${getImageUrlSafe(payment.screenshot)})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     borderRadius: `${borderRadius.xl} ${borderRadius.xl} 0 0`
@@ -792,7 +793,7 @@ const PaymentManagement = () => {
                           className="p-2 hover:scale-110 transition-transform duration-200 active:scale-95"
                           onClick={(e) => {
                             e.stopPropagation();
-                            openImageModal(payment.paymentProof);
+                            openImageModal(getImageUrlSafe(payment.screenshot));
                           }}
                           style={{
                             backgroundColor: colors.surfaceCard + 'CC',
@@ -810,7 +811,7 @@ const PaymentManagement = () => {
                           className="p-2 hover:scale-110 transition-transform duration-200 active:scale-95"
                           onClick={(e) => {
                             e.stopPropagation();
-                            downloadImage(payment.paymentProof, `payment-proof-${payment._id}.jpg`);
+                            downloadImage(getImageUrlSafe(payment.screenshot), `payment-proof-${payment._id}.jpg`);
                           }}
                           style={{
                             backgroundColor: colors.surfaceCard + 'CC',
@@ -1034,7 +1035,7 @@ const PaymentManagement = () => {
                     </td>
                     
                       <td className="p-4 text-center">
-                        {payment.paymentProof ? (
+                        {payment.screenshot ? (
                           <div className="flex items-center justify-center gap-1">
                             <button
                               className="p-2 rounded-lg border-2 transition-all duration-300 hover:scale-110 hover:shadow-lg active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-1 group"
@@ -1059,7 +1060,7 @@ const PaymentManagement = () => {
                               }}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                openImageModal(payment.paymentProof);
+                                openImageModal(getImageUrlSafe(payment.screenshot));
                               }}
                               title="عرض الصورة"
                             >
@@ -1088,7 +1089,7 @@ const PaymentManagement = () => {
                               }}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                downloadImage(payment.paymentProof, `payment-proof-${payment._id}.jpg`);
+                                downloadImage(getImageUrlSafe(payment.screenshot), `payment-proof-${payment._id}.jpg`);
                               }}
                               title="تحميل الصورة"
                             >
@@ -1326,7 +1327,7 @@ const PaymentManagement = () => {
                     </button>
 
                     {/* Payment Proof */}
-                    {payment.paymentProof && (
+                    {payment.screenshot && (
                       <button
                         className="p-2 rounded-lg border-2 transition-all duration-300 hover:scale-110 hover:shadow-lg active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-1 group"
                         style={{
@@ -1350,7 +1351,7 @@ const PaymentManagement = () => {
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          openImageModal(payment.paymentProof);
+                          openImageModal(getImageUrlSafe(payment.screenshot));
                         }}
                         title="عرض الصورة"
                       >
@@ -1726,7 +1727,7 @@ const PaymentManagement = () => {
                 </div>
                 
                 {/* Enhanced Payment Proof */}
-                {selectedPayment.paymentProof && (
+                {selectedPayment.screenshot && (
                   <div>
                     <h3 style={{
                       color: colors.text,
@@ -1745,10 +1746,10 @@ const PaymentManagement = () => {
                     }}>
                       <div className="relative group">
                       <img
-                        src={selectedPayment.paymentProof}
+                        src={getImageUrlSafe(selectedPayment.screenshot)}
                           alt="إثبات الدفع"
                           className="w-full max-h-80 object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={() => openImageModal(selectedPayment.paymentProof)}
+                          onClick={() => openImageModal(getImageUrlSafe(selectedPayment.screenshot))}
                         />
                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
@@ -1756,7 +1757,7 @@ const PaymentManagement = () => {
                               variant="outline"
                               size="sm"
                               className="p-2 bg-white bg-opacity-90 hover:bg-opacity-100"
-                              onClick={() => openImageModal(selectedPayment.paymentProof)}
+                              onClick={() => openImageModal(getImageUrlSafe(selectedPayment.screenshot))}
                             >
                               <ZoomIn size={16} />
                             </LuxuryButton>
@@ -1764,7 +1765,7 @@ const PaymentManagement = () => {
                               variant="outline"
                               size="sm"
                               className="p-2 bg-white bg-opacity-90 hover:bg-opacity-100"
-                              onClick={() => downloadImage(selectedPayment.paymentProof, `payment-proof-${selectedPayment._id}.jpg`)}
+                              onClick={() => downloadImage(getImageUrlSafe(selectedPayment.screenshot), `payment-proof-${selectedPayment._id}.jpg`)}
                             >
                               <DownloadIcon size={16} />
                             </LuxuryButton>
@@ -1777,7 +1778,7 @@ const PaymentManagement = () => {
                           variant="outline"
                           size="sm"
                           className="flex-1 flex items-center justify-center gap-2"
-                          onClick={() => openImageModal(selectedPayment.paymentProof)}
+                          onClick={() => openImageModal(getImageUrlSafe(selectedPayment.screenshot))}
                         >
                           <ZoomIn size={14} />
                           عرض بالحجم الكامل
@@ -1786,7 +1787,7 @@ const PaymentManagement = () => {
                           variant="outline"
                           size="sm"
                           className="flex-1 flex items-center justify-center gap-2"
-                          onClick={() => downloadImage(selectedPayment.paymentProof, `payment-proof-${selectedPayment._id}.jpg`)}
+                          onClick={() => downloadImage(getImageUrlSafe(selectedPayment.screenshot), `payment-proof-${selectedPayment._id}.jpg`)}
                         >
                           <DownloadIcon size={14} />
                           تحميل الصورة
