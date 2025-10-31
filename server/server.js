@@ -42,7 +42,9 @@ console.log('');
 // Import all routes
 let authRoutes;
 try {
-    authRoutes = require("./routers/auth-routes/index");
+//    authRoutes = require("./routers/auth-routes/index");
+    authRoutes = require("./routers/auth-routes");
+
     console.log('✅ Auth routes loaded successfully');
 } catch (error) {
     console.error('❌ Error loading auth routes:', error.message);
