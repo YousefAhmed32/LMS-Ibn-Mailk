@@ -40,16 +40,17 @@ console.log(`   GridFS: ✅ Configured for local image storage`);
 console.log('');
 
 // Import all routes
-let authRoutes;
-try {
-//    authRoutes = require("./routers/auth-routes/index");
-    authRoutes = require("./routers/auth-routes");
+// let authRoutes;
+// try {
+// //    authRoutes = require("./routers/auth-routes/index");
+//     authRoutes = require("./routers/auth-routes");
 
-    console.log('✅ Auth routes loaded successfully');
-} catch (error) {
-    console.error('❌ Error loading auth routes:', error.message);
-    authRoutes = require("./routers/auth-routes");
-}
+//     console.log('✅ Auth routes loaded successfully');
+// } catch (error) {
+//     console.error('❌ Error loading auth routes:', error.message);
+//     authRoutes = require("./routers/auth-routes");
+// }
+const authRoutes = require("./routes/api/auth-route");
 const courseRoutes = require("./routers/course-routes");
 const adminRoutes = require("./routers/admin-routes");
 const paymentRoutes = require("./routers/payment-routes");
