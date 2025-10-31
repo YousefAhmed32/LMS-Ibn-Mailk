@@ -4,6 +4,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from '../../hooks/use-toast';
 import adminService from '../../services/adminService';
 import LuxuryButton from '../ui/LuxuryButton';
+import { getImageUrl } from '../../utils/imageUtils';
 import { 
   Clock, 
   CheckCircle, 
@@ -171,7 +172,9 @@ const EnhancedPaymentApprovalDashboard = () => {
   };
 
   const openImageModal = (imageUrl) => {
-    setSelectedImage(imageUrl);
+    // Use getImageUrl to ensure proper URL construction
+    const fullImageUrl = getImageUrl(imageUrl);
+    setSelectedImage(fullImageUrl);
     setShowImageModal(true);
   };
 
@@ -1036,6 +1039,18 @@ const EnhancedPaymentApprovalDashboard = () => {
                 src={selectedImage}
                 alt="Payment proof"
                 className="w-full h-full object-contain"
+                onError={(e) => {
+                  console.error('❌ Failed to load payment proof image:', selectedImage);
+                  e.target.style.display = 'none';
+                  toast({
+                    title: "❌ خطأ في تحميل الصورة",
+                    description: "فشل في تحميل صورة إثبات الدفع",
+                    variant: "destructive"
+                  });
+                }}
+                onLoad={() => {
+                  console.log('✅ Payment proof image loaded successfully:', selectedImage);
+                }}
               />
             </motion.div>
           </motion.div>

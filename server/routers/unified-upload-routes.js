@@ -151,7 +151,7 @@ router.post("/images", (req, res) => {
   });
 });
 
-// GET /api/uploads/:id - Serve image by ID
+// GET /api/uploads/:id - Serve image by ID or filename
 router.get("/:id", async (req, res) => {
   try {
     console.log('🖼️ Requesting image:', req.params.id);
@@ -162,16 +162,6 @@ router.get("/:id", async (req, res) => {
       userAgent: req.get('User-Agent'),
       referer: req.get('Referer')
     });
-    
-    // Validate ObjectId format
-    if (!ObjectId.isValid(req.params.id)) {
-      console.log('❌ Invalid ObjectId format:', req.params.id);
-      return res.status(400).json({ 
-        success: false, 
-        message: "Invalid file ID format",
-        errorType: "INVALID_ID"
-      });
-    }
 
     // Ensure MongoDB connection is ready
     if (!mongoose.connection.db) {
@@ -186,18 +176,43 @@ router.get("/:id", async (req, res) => {
     const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { 
       bucketName: "uploads" 
     });
-    const id = new ObjectId(req.params.id);
     
-    console.log('🔍 Searching for image in database:', {
-      id: req.params.id,
-      objectId: id,
-      bucketName: "uploads"
-    });
+    let files;
+    let downloadStream;
     
-    // Check if file exists
-    const files = await mongoose.connection.db.collection("uploads.files").findOne({ _id: id });
+    // Check if it's a valid ObjectId
+    if (ObjectId.isValid(req.params.id)) {
+      // Try to find by ObjectId
+      const id = new ObjectId(req.params.id);
+      
+      console.log('🔍 Searching for image by ObjectId:', {
+        id: req.params.id,
+        objectId: id,
+        bucketName: "uploads"
+      });
+      
+      files = await mongoose.connection.db.collection("uploads.files").findOne({ _id: id });
+      
+      if (files) {
+        downloadStream = bucket.openDownloadStream(id);
+      }
+    }
     
+    // If not found by ObjectId, try to find by filename
     if (!files) {
+      console.log('🔍 Searching for image by filename:', {
+        filename: req.params.id,
+        bucketName: "uploads"
+      });
+      
+      files = await mongoose.connection.db.collection("uploads.files").findOne({ filename: req.params.id });
+      
+      if (files) {
+        downloadStream = bucket.openDownloadStreamByName(req.params.id);
+      }
+    }
+    
+    if (!files || !downloadStream) {
       console.log('❌ Image not found in database:', req.params.id);
       
       // Log available files for debugging
@@ -215,6 +230,7 @@ router.get("/:id", async (req, res) => {
 
     console.log('✅ Image found in database:', {
       id: req.params.id,
+      fileId: files._id,
       filename: files.filename,
       contentType: files.contentType,
       size: files.length,
@@ -231,8 +247,6 @@ router.get("/:id", async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    
-    const downloadStream = bucket.openDownloadStream(id);
     
     downloadStream.on("error", (error) => {
       console.error("❌ Download stream error:", error);

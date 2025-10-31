@@ -32,18 +32,27 @@ export const getImageUrl = (imagePath) => {
   // Handle different path types
   let normalizedPath;
   
-  if (imagePath.startsWith('/uploads/')) {
-    // Already has /uploads/ prefix
+  if (imagePath.startsWith('/api/uploads/')) {
+    // GridFS path - already has /api/uploads/ prefix
     normalizedPath = imagePath;
-  } else if (imagePath.startsWith('/api/uploads/')) {
-    // GridFS path
+  } else if (imagePath.startsWith('/uploads/')) {
+    // Static file path - already has /uploads/ prefix
     normalizedPath = imagePath;
   } else if (imagePath.startsWith('/')) {
     // Other absolute paths
     normalizedPath = imagePath;
   } else {
-    // Relative path - assume it's a filename in uploads folder
-    normalizedPath = `/uploads/${imagePath}`;
+    // Relative path - could be a filename for GridFS or static file
+    // Check if it looks like a GridFS filename (timestamp-number.ext format)
+    // or use /api/uploads/ for GridFS files (most payment proofs are in GridFS)
+    const isGridFSFilename = /^\d+-?\d+\.(jpg|jpeg|png|webp|gif)$/i.test(imagePath);
+    if (isGridFSFilename) {
+      // Assume it's a GridFS filename
+      normalizedPath = `/api/uploads/${imagePath}`;
+    } else {
+      // Fallback to static uploads folder
+      normalizedPath = `/uploads/${imagePath}`;
+    }
   }
   
   const fullUrl = `${baseURL}${normalizedPath}`;
