@@ -246,11 +246,54 @@ const EditCourse = () => {
     }
   };
 
+  // Validate exam questions
+  const validateExamQuestions = (questions) => {
+    if (!questions || questions.length === 0) {
+      return { valid: false, message: 'يرجى إضافة سؤال واحد على الأقل للامتحان الداخلي' };
+    }
+
+    for (let i = 0; i < questions.length; i++) {
+      const question = questions[i];
+      
+      if (!question.questionText || !question.questionText.trim()) {
+        return { valid: false, message: `يرجى إدخال نص السؤال ${i + 1}` };
+      }
+
+      if (question.type === 'multiple_choice') {
+        if (!question.options || question.options.length < 2) {
+          return { valid: false, message: `السؤال ${i + 1} يجب أن يحتوي على خيارين على الأقل` };
+        }
+        
+        // Validate all options are filled
+        const emptyOptions = question.options.filter(opt => !opt || !opt.trim());
+        if (emptyOptions.length > 0) {
+          return { valid: false, message: `السؤال ${i + 1}: يرجى ملء جميع الخيارات` };
+        }
+
+        if (question.correctAnswer === undefined || question.correctAnswer === null) {
+          return { valid: false, message: `يرجى اختيار الإجابة الصحيحة للسؤال ${i + 1}` };
+        }
+      }
+
+      if (question.type === 'true_false') {
+        if (question.correctAnswer === undefined || question.correctAnswer === null) {
+          return { valid: false, message: `يرجى اختيار الإجابة الصحيحة للسؤال ${i + 1}` };
+        }
+      }
+
+      if (!question.points || question.points < 1) {
+        return { valid: false, message: `السؤال ${i + 1}: عدد النقاط يجب أن يكون على الأقل 1` };
+      }
+    }
+
+    return { valid: true };
+  };
+
   // Exam management functions
   const handleAddExam = (examData = null) => {
     const exam = examData || newExam;
     
-    if (!exam.title.trim()) {
+    if (!exam.title || !exam.title.trim()) {
       toast({
         title: 'خطأ في البيانات',
         description: 'يرجى إدخال عنوان الامتحان',
@@ -260,17 +303,20 @@ const EditCourse = () => {
     }
 
     // For internal exams, validate questions
-    if (exam.type === 'internal_exam' && (!exam.questions || exam.questions.length === 0)) {
-      toast({
-        title: 'خطأ في البيانات',
-        description: 'يرجى إضافة سؤال واحد على الأقل للامتحان الداخلي',
-        variant: 'destructive'
-      });
-      return;
+    if (exam.type === 'internal_exam') {
+      const validation = validateExamQuestions(exam.questions);
+      if (!validation.valid) {
+        toast({
+          title: 'خطأ في البيانات',
+          description: validation.message,
+          variant: 'destructive'
+        });
+        return;
+      }
     }
 
     // For external exams, validate URL
-    if (exam.type !== 'internal_exam' && !exam.url.trim()) {
+    if (exam.type !== 'internal_exam' && (!exam.url || !exam.url.trim())) {
       toast({
         title: 'خطأ في البيانات',
         description: 'يرجى إدخال رابط الامتحان الخارجي',
@@ -279,10 +325,25 @@ const EditCourse = () => {
       return;
     }
 
+    // Calculate total marks and ensure proper structure
+    const totalMarks = exam.type === 'internal_exam' 
+      ? (exam.questions?.reduce((total, question) => total + (question.points || 1), 0) || 0)
+      : 0;
+
     const examToAdd = {
       ...exam,
       id: exam.id || `exam_${Date.now()}`,
-      totalMarks: exam.questions?.reduce((total, question) => total + (question.points || 1), 0) || 0 // حساب تلقائي
+      title: exam.title.trim(),
+      url: exam.url?.trim() || '',
+      totalMarks,
+      duration: exam.duration || 30,
+      passingScore: exam.passingScore || 60,
+      questions: exam.questions ? exam.questions.map(q => ({
+        ...q,
+        questionText: q.questionText?.trim() || '',
+        options: q.options?.map(opt => opt?.trim() || '') || [],
+        points: q.points || 1
+      })) : []
     };
 
     setExams(prev => [...prev, examToAdd]);
@@ -290,7 +351,7 @@ const EditCourse = () => {
       title: '', 
       url: '', 
       type: 'internal_exam',
-      totalMarks: 0, // سيتم حسابه تلقائياً
+      totalMarks: 0,
       duration: 30,
       passingScore: 60,
       questions: []
@@ -305,15 +366,24 @@ const EditCourse = () => {
   };
 
   const handleEditExam = (exam) => {
-    setEditingExam(exam);
+    // Deep clone exam to avoid reference issues
+    const clonedExam = {
+      ...exam,
+      questions: exam.questions ? exam.questions.map(q => ({
+        ...q,
+        options: q.options ? [...q.options] : []
+      })) : []
+    };
+    
+    setEditingExam(clonedExam);
     setNewExam({
-      title: exam.title,
-      url: exam.url || '',
-      type: exam.type || 'internal_exam',
-      totalMarks: exam.totalMarks || 100,
-      duration: exam.duration || 30,
-      passingScore: exam.passingScore || 60,
-      questions: exam.questions || []
+      title: clonedExam.title || '',
+      url: clonedExam.url || '',
+      type: clonedExam.type || 'internal_exam',
+      totalMarks: clonedExam.totalMarks || 0,
+      duration: clonedExam.duration || 30,
+      passingScore: clonedExam.passingScore || 60,
+      questions: clonedExam.questions || []
     });
     setShowExamModal(true);
   };
@@ -321,7 +391,7 @@ const EditCourse = () => {
   const handleUpdateExam = (examData = null) => {
     const exam = examData || newExam;
     
-    if (!exam.title.trim()) {
+    if (!exam.title || !exam.title.trim()) {
       toast({
         title: 'خطأ في البيانات',
         description: 'يرجى إدخال عنوان الامتحان',
@@ -331,17 +401,20 @@ const EditCourse = () => {
     }
 
     // For internal exams, validate questions
-    if (exam.type === 'internal_exam' && (!exam.questions || exam.questions.length === 0)) {
-      toast({
-        title: 'خطأ في البيانات',
-        description: 'يرجى إضافة سؤال واحد على الأقل للامتحان الداخلي',
-        variant: 'destructive'
-      });
-      return;
+    if (exam.type === 'internal_exam') {
+      const validation = validateExamQuestions(exam.questions);
+      if (!validation.valid) {
+        toast({
+          title: 'خطأ في البيانات',
+          description: validation.message,
+          variant: 'destructive'
+        });
+        return;
+      }
     }
 
     // For external exams, validate URL
-    if (exam.type !== 'internal_exam' && !exam.url.trim()) {
+    if (exam.type !== 'internal_exam' && (!exam.url || !exam.url.trim())) {
       toast({
         title: 'خطأ في البيانات',
         description: 'يرجى إدخال رابط الامتحان الخارجي',
@@ -350,21 +423,45 @@ const EditCourse = () => {
       return;
     }
 
+    if (!editingExam || !editingExam.id) {
+      toast({
+        title: 'خطأ',
+        description: 'لم يتم العثور على الامتحان للتحديث',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Calculate total marks and ensure proper structure
+    const totalMarks = exam.type === 'internal_exam' 
+      ? (exam.questions?.reduce((total, question) => total + (question.points || 1), 0) || 0)
+      : 0;
+
+    const updatedExam = {
+      ...editingExam,
+      ...exam,
+      title: exam.title.trim(),
+      url: exam.url?.trim() || '',
+      totalMarks,
+      duration: exam.duration || 30,
+      passingScore: exam.passingScore || 60,
+      questions: exam.questions ? exam.questions.map(q => ({
+        ...q,
+        questionText: q.questionText?.trim() || '',
+        options: q.options?.map(opt => opt?.trim() || '') || [],
+        points: q.points || 1
+      })) : []
+    };
+
     setExams(prev => prev.map(examItem => 
-      examItem.id === editingExam.id 
-        ? { 
-            ...examItem, 
-            ...exam,
-            totalMarks: exam.questions?.reduce((total, question) => total + (question.points || 1), 0) || 0 // حساب تلقائي
-          }
-        : examItem
+      examItem.id === editingExam.id ? updatedExam : examItem
     ));
 
     setNewExam({ 
       title: '', 
       url: '', 
       type: 'internal_exam',
-      totalMarks: 0, // سيتم حسابه تلقائياً
+      totalMarks: 0,
       duration: 30,
       passingScore: 60,
       questions: []
@@ -437,6 +534,24 @@ const EditCourse = () => {
         return;
       }
 
+      // Validate exams before saving
+      for (let i = 0; i < exams.length; i++) {
+        const exam = exams[i];
+        if (exam.type === 'internal_exam') {
+          const validation = validateExamQuestions(exam.questions);
+          if (!validation.valid) {
+            toast({
+              title: 'خطأ في التحقق من البيانات',
+              description: `الامتحان "${exam.title}": ${validation.message}`,
+              variant: 'destructive',
+              duration: 8000
+            });
+            setSaving(false);
+            return;
+          }
+        }
+      }
+
       // Prepare update data with proper structure
       const updateData = {
         title: courseForm.title.trim(),
@@ -444,26 +559,40 @@ const EditCourse = () => {
         subject: courseForm.subject.trim(),
         grade: courseForm.grade.trim(),
         price: parseFloat(courseForm.price),
-        videos: videos.map(video => ({
-          title: video.title || `Video ${videos.indexOf(video) + 1}`,
+        videos: videos.map((video, index) => ({
+          title: video.title || `Video ${index + 1}`,
           url: video.url || '',
-          order: video.order !== undefined ? parseInt(video.order) : videos.indexOf(video),
+          order: video.order !== undefined ? parseInt(video.order) : index,
           duration: video.duration ? Math.max(1, parseInt(video.duration)) : 1,
           thumbnail: video.thumbnail || '',
           ...video // Include any additional fields
         })),
-        exams: exams.map(exam => ({
-          id: exam.id || `exam_${Date.now()}_${exams.indexOf(exam)}`,
-          title: exam.title || `Exam ${exams.indexOf(exam) + 1}`,
-          type: exam.type || 'internal_exam',
-          url: exam.url || '',
-          totalMarks: exam.questions?.reduce((total, question) => total + (question.points || 1), 0) || 0, // حساب تلقائي
-          duration: exam.duration || 30,
-          passingScore: exam.passingScore || 60,
-          questions: exam.questions || [],
-          migratedFromGoogleForm: exam.migratedFromGoogleForm || false,
-          migrationNote: exam.migrationNote || ''
-        }))
+        exams: exams.map((exam, index) => {
+          const totalMarks = exam.type === 'internal_exam' 
+            ? (exam.questions?.reduce((total, question) => total + (question.points || 1), 0) || 0)
+            : 0;
+
+          return {
+            id: exam.id || `exam_${Date.now()}_${index}`,
+            title: exam.title || `Exam ${index + 1}`,
+            type: exam.type || 'internal_exam',
+            url: exam.url || '',
+            totalMarks,
+            duration: exam.duration || 30,
+            passingScore: exam.passingScore || 60,
+            questions: exam.type === 'internal_exam' && exam.questions 
+              ? exam.questions.map(q => ({
+                  ...q,
+                  questionText: q.questionText?.trim() || '',
+                  options: q.options?.map(opt => opt?.trim() || '') || [],
+                  points: q.points || 1,
+                  correctAnswer: q.correctAnswer
+                }))
+              : [],
+            migratedFromGoogleForm: exam.migratedFromGoogleForm || false,
+            migrationNote: exam.migrationNote || ''
+          };
+        })
       };
 
       console.log('📤 Sending update data:', updateData);
@@ -519,7 +648,15 @@ const EditCourse = () => {
   const closeExamModal = () => {
     setShowExamModal(false);
     setEditingExam(null);
-    setNewExam({ title: '', url: '', type: 'google_form' });
+    setNewExam({ 
+      title: '', 
+      url: '', 
+      type: 'internal_exam',
+      totalMarks: 0,
+      duration: 30,
+      passingScore: 60,
+      questions: []
+    });
   };
 
   if (loading) {
@@ -542,7 +679,7 @@ const EditCourse = () => {
           <p style={{ color: colors.textMuted }}>لم يتم العثور على الدورة المطلوبة</p>
           <LuxuryButton
             onClick={() => navigate('/admin/courses')}
-            className="mt-4 px-6 py-3 rounded-xl bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-0"
+            className="mt-4 px-6 py-3 rounded-xl bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white font-semibold shadow-lg hover:shadow-xl transform transition-all duration-300 border-0"
           >
             العودة إلى قائمة الدورات
           </LuxuryButton>
@@ -560,7 +697,7 @@ const EditCourse = () => {
             <LuxuryButton
               variant="ghost"
               onClick={() => navigate('/admin/courses')}
-              className="p-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 transition-all duration-200 hover:scale-110 shadow-md hover:shadow-lg"
+              className="p-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 transition-all duration-200  shadow-md hover:shadow-lg"
             >
               <ArrowLeft size={20} />
             </LuxuryButton>
@@ -577,7 +714,7 @@ const EditCourse = () => {
           <LuxuryButton
             onClick={handleSaveChanges}
             disabled={saving}
-            className="flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold shadow-xl hover:shadow-2xl transform hover:scale-105 disabled:scale-100 transition-all duration-300 border-0"
+            className="flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold shadow-xl hover:shadow-2xl transform  disabled:scale-100 transition-all duration-300 border-0"
           >
             {saving ? (
               <>
@@ -766,7 +903,7 @@ const EditCourse = () => {
                 
                 <LuxuryButton
                   onClick={() => setShowVideoModal(true)}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-0"
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transform  transition-all duration-300 border-0"
                 >
                   <Plus size={18} className="animate-pulse" />
                   إضافة فيديو
@@ -817,7 +954,7 @@ const EditCourse = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => window.open(video.url, '_blank')}
-                          className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all duration-200 hover:scale-110"
+                          className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all duration-200 "
                         >
                           <ExternalLink size={16} />
                         </LuxuryButton>
@@ -825,7 +962,7 @@ const EditCourse = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEditVideo(video)}
-                          className="p-2 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-yellow-600 hover:text-yellow-700 transition-all duration-200 hover:scale-110"
+                          className="p-2 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-yellow-600 hover:text-yellow-700 transition-all duration-200 "
                         >
                           <Edit size={16} />
                         </LuxuryButton>
@@ -833,7 +970,7 @@ const EditCourse = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteVideo(video.id)}
-                          className="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 transition-all duration-200 hover:scale-110"
+                          className="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 transition-all duration-200 "
                         >
                           <Trash2 size={16} />
                         </LuxuryButton>
@@ -861,7 +998,7 @@ const EditCourse = () => {
                 
                 <LuxuryButton
                   onClick={() => setShowExamModal(true)}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-0"
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold shadow-lg hover:shadow-xl transform  transition-all duration-300 border-0"
                 >
                   <Plus size={18} className="animate-pulse" />
                   إضافة امتحان
@@ -950,7 +1087,7 @@ const EditCourse = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => window.open(exam.url, '_blank')}
-                              className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all duration-200 hover:scale-110"
+                              className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all duration-200 "
                             >
                               <ExternalLink size={16} />
                             </LuxuryButton>
@@ -959,7 +1096,7 @@ const EditCourse = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleEditExam(exam)}
-                            className="p-2 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-yellow-600 hover:text-yellow-700 transition-all duration-200 hover:scale-110"
+                            className="p-2 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-yellow-600 hover:text-yellow-700 transition-all duration-200 "
                           >
                             <Edit size={16} />
                           </LuxuryButton>
@@ -967,7 +1104,7 @@ const EditCourse = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteExam(exam.id)}
-                            className="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 transition-all duration-200 hover:scale-110"
+                            className="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 transition-all duration-200 "
                           >
                             <Trash2 size={16} />
                           </LuxuryButton>
@@ -1194,13 +1331,13 @@ const EditCourse = () => {
                   <LuxuryButton
                     variant="ghost"
                     onClick={closeVideoModal}
-                    className="flex-1 px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 font-semibold transition-all duration-200 hover:scale-105"
+                    className="flex-1 px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 font-semibold transition-all duration-200 "
                   >
                     إلغاء
                   </LuxuryButton>
                   <LuxuryButton
                     onClick={editingVideo ? handleUpdateVideo : handleAddVideo}
-                    className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-0"
+                    className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transform  transition-all duration-300 border-0"
                   >
                     {editingVideo ? 'تحديث' : 'إضافة'}
                   </LuxuryButton>
@@ -1271,7 +1408,7 @@ const EditCourse = () => {
                   </label>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div
-                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                      className={`p-4 rounded-xl border-2 cursor-pointer transition-colors duration-150 ${
                         newExam.type === 'internal_exam'
                           ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
                           : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'
@@ -1279,7 +1416,7 @@ const EditCourse = () => {
                       onClick={() => setNewExam(prev => ({ ...prev, type: 'internal_exam' }))}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${
+                        <div className={`p-2 rounded-lg transition-colors duration-150 ${
                           newExam.type === 'internal_exam' ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'
                         }`}>
                           <BookOpen size={20} className={newExam.type === 'internal_exam' ? 'text-white' : 'text-gray-600'} />
@@ -1292,7 +1429,7 @@ const EditCourse = () => {
                     </div>
 
                     <div
-                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                      className={`p-4 rounded-xl border-2 cursor-pointer transition-colors duration-150 ${
                         newExam.type === 'google_form'
                           ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
                           : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'
@@ -1300,7 +1437,7 @@ const EditCourse = () => {
                       onClick={() => setNewExam(prev => ({ ...prev, type: 'google_form' }))}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${
+                        <div className={`p-2 rounded-lg transition-colors duration-150 ${
                           newExam.type === 'google_form' ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'
                         }`}>
                           <ExternalLink size={20} className={newExam.type === 'google_form' ? 'text-white' : 'text-gray-600'} />
@@ -1313,7 +1450,7 @@ const EditCourse = () => {
                     </div>
 
                     <div
-                      className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                      className={`p-4 rounded-xl border-2 cursor-pointer transition-colors duration-150 ${
                         newExam.type === 'external'
                           ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
                           : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'
@@ -1321,7 +1458,7 @@ const EditCourse = () => {
                       onClick={() => setNewExam(prev => ({ ...prev, type: 'external' }))}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${
+                        <div className={`p-2 rounded-lg transition-colors duration-150 ${
                           newExam.type === 'external' ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'
                         }`}>
                           <ExternalLink size={20} className={newExam.type === 'external' ? 'text-white' : 'text-gray-600'} />
@@ -1421,11 +1558,11 @@ const EditCourse = () => {
                         <LuxuryButton
                           onClick={() => {
                             const newQuestion = {
-                              id: `q_${Date.now()}`,
+                              id: `q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                               questionText: '',
                               type: 'multiple_choice',
                               options: ['', '', '', ''],
-                              correctAnswer: 0,
+                              correctAnswer: null,
                               points: 1
                             };
                             setNewExam(prev => ({
@@ -1433,7 +1570,7 @@ const EditCourse = () => {
                               questions: [...(prev.questions || []), newQuestion]
                             }));
                           }}
-                          className="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-semibold transition-all duration-200 hover:scale-105"
+                          className="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-semibold transition-colors duration-150"
                         >
                           <Plus size={16} className="mr-2" />
                           اختيار من متعدد
@@ -1441,11 +1578,11 @@ const EditCourse = () => {
                         <LuxuryButton
                           onClick={() => {
                             const newQuestion = {
-                              id: `q_${Date.now()}`,
+                              id: `q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                               questionText: '',
                               type: 'true_false',
                               options: ['صحيح', 'خطأ'],
-                              correctAnswer: 0,
+                              correctAnswer: null,
                               points: 1
                             };
                             setNewExam(prev => ({
@@ -1453,7 +1590,7 @@ const EditCourse = () => {
                               questions: [...(prev.questions || []), newQuestion]
                             }));
                           }}
-                          className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-semibold transition-all duration-200 hover:scale-105"
+                          className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-semibold transition-colors duration-150"
                         >
                           <Plus size={16} className="mr-2" />
                           صح وخطأ
@@ -1463,7 +1600,7 @@ const EditCourse = () => {
 
                     <div className="space-y-4">
                       {newExam.questions?.map((question, index) => (
-                        <div key={question.id} className="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                        <div key={question.id || `q_${index}`} className="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800/50">
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-3">
                               <h5 className="font-semibold text-gray-900 dark:text-white">سؤال {index + 1}</h5>
@@ -1482,7 +1619,7 @@ const EditCourse = () => {
                                   questions: prev.questions?.filter(q => q.id !== question.id) || []
                                 }));
                               }}
-                              className="p-1 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-all duration-200 hover:scale-110"
+                              className="p-1 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors duration-150"
                             >
                               <Trash2 size={14} />
                             </LuxuryButton>
@@ -1491,12 +1628,16 @@ const EditCourse = () => {
                           <div className="space-y-4">
                             <input
                               type="text"
-                              value={question.questionText}
-                              className="stable-field w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-200"
+                              value={question.questionText || ''}
+                              className="stable-field w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors duration-150"
                               onChange={(e) => {
-                                const updatedQuestions = [...(newExam.questions || [])];
-                                updatedQuestions[index].questionText = e.target.value;
-                                setNewExam(prev => ({ ...prev, questions: updatedQuestions }));
+                                const value = e.target.value;
+                                setNewExam(prev => {
+                                  const updatedQuestions = (prev.questions || []).map((q, i) => 
+                                    i === index ? { ...q, questionText: value } : q
+                                  );
+                                  return { ...prev, questions: updatedQuestions };
+                                });
                               }}
                               placeholder="نص السؤال..."
                             />
@@ -1508,26 +1649,47 @@ const EditCourse = () => {
                               </label>
                               {question.options?.map((option, optIndex) => (
                                 <div key={optIndex} className="flex items-center gap-3">
-                                  <div
-                                    className={`w-6 h-6 rounded-full border-2 cursor-pointer transition-all duration-200 flex items-center justify-center ${
+                                  <button
+                                    type="button"
+                                    className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors duration-150 flex-shrink-0 ${
                                       question.correctAnswer === optIndex
                                         ? 'border-emerald-500 bg-emerald-500'
-                                        : 'border-gray-300 dark:border-gray-600 hover:border-emerald-400'
+                                        : 'border-gray-300 dark:border-gray-600 hover:border-emerald-400 bg-white dark:bg-gray-800'
                                     }`}
-                                    onClick={() => {
-                                      const updatedQuestions = [...(newExam.questions || [])];
-                                      updatedQuestions[index].correctAnswer = optIndex;
-                                      setNewExam(prev => ({ ...prev, questions: updatedQuestions }));
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setNewExam(prev => {
+                                        const updatedQuestions = (prev.questions || []).map((q, i) => 
+                                          i === index ? { ...q, correctAnswer: optIndex } : q
+                                        );
+                                        return { ...prev, questions: updatedQuestions };
+                                      });
                                     }}
+                                    aria-label={`اختر الخيار ${optIndex + 1} كإجابة صحيحة`}
                                   >
                                     {question.correctAnswer === optIndex && (
                                       <div className="w-2 h-2 rounded-full bg-white"></div>
                                     )}
-                                  </div>
+                                  </button>
                                   <input
                                     type="text"
-                                    value={option}
-                                    className={`stable-field flex-1 px-3 py-2 rounded-lg border-2 transition-all duration-200 ${
+                                    value={option || ''}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      setNewExam(prev => {
+                                        const updatedQuestions = (prev.questions || []).map((q, i) => {
+                                          if (i === index) {
+                                            const updatedOptions = [...(q.options || [])];
+                                            updatedOptions[optIndex] = value;
+                                            return { ...q, options: updatedOptions };
+                                          }
+                                          return q;
+                                        });
+                                        return { ...prev, questions: updatedQuestions };
+                                      });
+                                    }}
+                                    className={`stable-field flex-1 px-3 py-2 rounded-lg border-2 transition-colors duration-150 ${
                                       question.correctAnswer === optIndex
                                         ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
                                         : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'
@@ -1536,7 +1698,7 @@ const EditCourse = () => {
                                     readOnly={question.type === 'true_false'}
                                   />
                                   {question.correctAnswer === optIndex && (
-                                    <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                                    <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 flex-shrink-0">
                                       <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
                                       <span className="text-xs font-medium">صحيح</span>
                                     </div>
@@ -1552,14 +1714,18 @@ const EditCourse = () => {
                               </label>
                               <input
                                 type="number"
-                                value={question.points}
+                                value={question.points || 1}
                                 onChange={(e) => {
-                                  const updatedQuestions = [...(newExam.questions || [])];
-                                  updatedQuestions[index].points = parseInt(e.target.value) || 1;
-                                  setNewExam(prev => ({ ...prev, questions: updatedQuestions }));
+                                  const value = parseInt(e.target.value) || 1;
+                                  setNewExam(prev => {
+                                    const updatedQuestions = (prev.questions || []).map((q, i) => 
+                                      i === index ? { ...q, points: Math.max(1, value) } : q
+                                    );
+                                    return { ...prev, questions: updatedQuestions };
+                                  });
                                 }}
                                 min="1"
-                                className="w-20 px-3 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-200"
+                                className="w-20 px-3 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors duration-150"
                                 placeholder="نقاط"
                               />
                             </div>
@@ -1594,7 +1760,7 @@ const EditCourse = () => {
                         questions: []
                       });
                     }}
-                    className="flex-1 px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold transition-all duration-200 hover:scale-105"
+                    className="flex-1 px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold transition-all duration-200 "
                   >
                     إلغاء
                   </LuxuryButton>
@@ -1606,7 +1772,7 @@ const EditCourse = () => {
                         handleAddExam(newExam);
                       }
                     }}
-                    className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-0"
+                    className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold shadow-lg hover:shadow-xl transform  transition-all duration-300 border-0"
                   >
                     {editingExam ? 'تحديث الامتحان' : 'إضافة الامتحان'}
                   </LuxuryButton>

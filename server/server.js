@@ -42,15 +42,14 @@ console.log('');
 // Import all routes
 // let authRoutes;
 // try {
-// //    authRoutes = require("./routers/auth-routes/index");
-//     authRoutes = require("./routers/auth-routes");
-
+//     authRoutes = require("./routers/auth-routes/index");
 //     console.log('✅ Auth routes loaded successfully');
 // } catch (error) {
 //     console.error('❌ Error loading auth routes:', error.message);
 //     authRoutes = require("./routers/auth-routes");
 // }
-const authRoutes = require("./routes/api/auth-route");
+const authRoutes = require("./routers/auth-routes/index");
+console.log('✅ Auth routes loaded successfully');
 const courseRoutes = require("./routers/course-routes");
 const adminRoutes = require("./routers/admin-routes");
 const paymentRoutes = require("./routers/payment-routes");
