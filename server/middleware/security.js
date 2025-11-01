@@ -75,40 +75,149 @@ function configureSecurityHeaders() {
 }
 
 /**
- * Rate limiting configuration for admin endpoints
+ * Rate limiting configuration based on user role
  */
 function configureRateLimit() {
   const rateLimit = require('express-rate-limit');
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  
+  // Create limiters for each role (reused for performance)
+  const adminLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: isDevelopment ? 5000 : 3000,
+    message: {
+      success: false,
+      error: 'Too many requests from this IP, please try again later.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => {
+      if (isDevelopment && (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1')) {
+        return true;
+      }
+      return false;
+    }
+  });
+  
+  const studentLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: isDevelopment ? 1000 : 500,
+    message: {
+      success: false,
+      error: 'Too many requests from this IP, please try again later.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => {
+      if (isDevelopment && (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1')) {
+        return true;
+      }
+      return false;
+    }
+  });
+  
+  const otherRoleLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: isDevelopment ? 1000 : 300,
+    message: {
+      success: false,
+      error: 'Too many requests from this IP, please try again later.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => {
+      if (isDevelopment && (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1')) {
+        return true;
+      }
+      return false;
+    }
+  });
+  
+  // Create a middleware function that applies role-based rate limiting
+  const createRoleBasedLimiter = () => {
+    return (req, res, next) => {
+      // Only apply if user is authenticated
+      if (!req.user || !req.user.role) {
+        return next();
+      }
+      
+      const role = req.user.role.toLowerCase();
+      
+      if (role === 'admin') {
+        return adminLimiter(req, res, next);
+      } else if (role === 'student') {
+        return studentLimiter(req, res, next);
+      } else {
+        return otherRoleLimiter(req, res, next);
+      }
+    };
+  };
   
   return {
-    // General rate limit
+    // General rate limit - applies to all routes
     general: rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 100, // Limit each IP to 100 requests per windowMs
+      max: isDevelopment ? 2000 : 300, // Default: 300 requests per 15 min
       message: {
         success: false,
         error: 'Too many requests from this IP, please try again later.'
       },
       standardHeaders: true,
       legacyHeaders: false,
+      skip: (req) => {
+        // Skip rate limiting for localhost in development
+        if (isDevelopment && (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1')) {
+          return true;
+        }
+        return false;
+      }
     }),
     
-    // Strict rate limit for admin endpoints
+    // Role-based rate limit - middleware that applies limits based on user role
+    roleBased: createRoleBasedLimiter(),
+    
+    // Admin rate limit - high limit for admin operations
     admin: rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 50, // Limit each IP to 50 requests per windowMs
+      max: isDevelopment ? 5000 : 3000, // Admin: 3000 requests per 15 min
       message: {
         success: false,
         error: 'Too many admin requests from this IP, please try again later.'
       },
       standardHeaders: true,
       legacyHeaders: false,
+      skip: (req) => {
+        // Skip rate limiting for localhost in development
+        if (isDevelopment && (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1')) {
+          return true;
+        }
+        return false;
+      }
+    }),
+    
+    // Student rate limit - moderate limit for students
+    student: rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: isDevelopment ? 1000 : 500, // Student: 500 requests per 15 min
+      message: {
+        success: false,
+        error: 'Too many requests from this IP, please try again later.'
+      },
+      standardHeaders: true,
+      legacyHeaders: false,
+      skip: (req) => {
+        // Skip rate limiting for localhost in development
+        if (isDevelopment && (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1')) {
+          return true;
+        }
+        return false;
+      }
     }),
     
     // Very strict rate limit for course creation
     courseCreation: rateLimit({
       windowMs: 60 * 60 * 1000, // 1 hour
-      max: 10, // Limit each IP to 10 course creations per hour
+      max: isDevelopment ? 100 : 10, // Limit each IP to 10 course creations per hour
       message: {
         success: false,
         error: 'Too many course creation attempts from this IP, please try again later.'

@@ -255,7 +255,8 @@ const EditCourse = () => {
     for (let i = 0; i < questions.length; i++) {
       const question = questions[i];
       
-      if (!question.questionText || !question.questionText.trim()) {
+      const questionText = question.questionText ? String(question.questionText).trim() : '';
+      if (!questionText) {
         return { valid: false, message: `يرجى إدخال نص السؤال ${i + 1}` };
       }
 
@@ -265,7 +266,7 @@ const EditCourse = () => {
         }
         
         // Validate all options are filled
-        const emptyOptions = question.options.filter(opt => !opt || !opt.trim());
+        const emptyOptions = question.options.filter(opt => !opt || !String(opt).trim());
         if (emptyOptions.length > 0) {
           return { valid: false, message: `السؤال ${i + 1}: يرجى ملء جميع الخيارات` };
         }
@@ -340,8 +341,8 @@ const EditCourse = () => {
       passingScore: exam.passingScore || 60,
       questions: exam.questions ? exam.questions.map(q => ({
         ...q,
-        questionText: q.questionText?.trim() || '',
-        options: q.options?.map(opt => opt?.trim() || '') || [],
+        questionText: (q.questionText ? String(q.questionText).trim() : '') || '',
+        options: q.options?.map(opt => (opt ? String(opt).trim() : '')) || [],
         points: q.points || 1
       })) : []
     };
@@ -447,8 +448,8 @@ const EditCourse = () => {
       passingScore: exam.passingScore || 60,
       questions: exam.questions ? exam.questions.map(q => ({
         ...q,
-        questionText: q.questionText?.trim() || '',
-        options: q.options?.map(opt => opt?.trim() || '') || [],
+        questionText: (q.questionText ? String(q.questionText).trim() : '') || '',
+        options: q.options?.map(opt => (opt ? String(opt).trim() : '')) || [],
         points: q.points || 1
       })) : []
     };
@@ -583,8 +584,8 @@ const EditCourse = () => {
             questions: exam.type === 'internal_exam' && exam.questions 
               ? exam.questions.map(q => ({
                   ...q,
-                  questionText: q.questionText?.trim() || '',
-                  options: q.options?.map(opt => opt?.trim() || '') || [],
+                  questionText: (q.questionText ? String(q.questionText).trim() : '') || '',
+                  options: q.options?.map(opt => (opt ? String(opt).trim() : '')) || [],
                   points: q.points || 1,
                   correctAnswer: q.correctAnswer
                 }))

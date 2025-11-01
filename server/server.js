@@ -85,15 +85,59 @@ app.use(compression({
     }
 }));
 
-// Rate limiting
-const limiter = rateLimit({
+// Rate limiting - Environment and route specific
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
+// Import rate limiters from security middleware
+const { configureRateLimit } = require('./middleware/security');
+const rateLimiters = configureRateLimit();
+
+// More lenient rate limiter for login/register endpoints
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: isDevelopment ? 100 : 50, // 50 login attempts per 15 min in production
+    message: { success: false, error: 'Too many login attempts from this IP, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => {
+        // Skip rate limiting for localhost in development
+        if (isDevelopment && (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1')) {
+            return true;
+        }
+        return false;
+    }
+});
+
+// Apply auth limiter to login/register routes first
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+
+// Apply general limiter to all API routes (skips authenticated users who will use role-based limiter)
+const generalLimiterWithSkip = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    max: isDevelopment ? 2000 : 300,
     message: { success: false, error: 'Too many requests from this IP, please try again later.' },
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => {
+        // Skip rate limiting for localhost in development
+        if (isDevelopment && (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1')) {
+            return true;
+        }
+        // Skip if user is authenticated (they will use role-based limiter)
+        // Check if user is already authenticated OR if authorization header exists (will be authenticated later)
+        if (req.user && req.user.role) {
+            return true;
+        }
+        // Skip if authorization header exists (authenticated users will use role-based limiter)
+        const authHeader = req.headers['authorization'];
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            return true;
+        }
+        return false;
+    }
 });
-app.use('/api/', limiter);
+app.use('/api/', generalLimiterWithSkip);
 
 // Security middleware
 app.use(configureCSP());
@@ -101,6 +145,16 @@ app.use(configureSecurityHeaders());
 
 // Trust proxy (behind Nginx)
 app.set('trust proxy', 1);
+
+// Middleware to apply role-based rate limiting after authentication
+app.use('/api', (req, res, next) => {
+    // Only apply role-based limiter if user is authenticated
+    // Otherwise, the general limiter already applied above will handle it
+    if (req.user && req.user.role) {
+        return rateLimiters.roleBased(req, res, next);
+    }
+    next();
+});
 
 // CORS setup
 const corsOrigins = process.env.CORS_ORIGIN
