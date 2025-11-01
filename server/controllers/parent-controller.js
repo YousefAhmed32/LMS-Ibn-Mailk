@@ -351,157 +351,178 @@ const linkStudent = async (req, res) => {
 
 // NEW: Robust parent-student linking endpoint with business rules
 const linkStudentRobust = async (req, res) => {
-  const session = await mongoose.startSession();
-  
   try {
-    await session.withTransaction(async () => {
-      const { studentUniqueId } = req.body;
-      const parentId = req.params.parentId || req.user?.id;
+    const { studentUniqueId } = req.body;
+    const parentId = req.params.parentId || req.user?.id;
 
-      // Validate input
-      if (!studentUniqueId || !studentUniqueId.trim()) {
-        return res.status(400).json({
-          status: 'validation_error',
-          message: 'Student unique ID is required'
-        });
-      }
+    // Validate input
+    if (!studentUniqueId || !studentUniqueId.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'معرف الطالب مطلوب'
+      });
+    }
 
-      // Validate parentId
-      if (!parentId || parentId === 'undefined') {
-        return res.status(400).json({
-          status: 'validation_error',
-          message: 'Parent ID is required'
-        });
-      }
+    // Validate parentId
+    if (!parentId || parentId === 'undefined') {
+      return res.status(400).json({
+        success: false,
+        message: 'معرف الوالد مطلوب'
+      });
+    }
 
-      // Validate ObjectId format for parentId
-      if (!mongoose.Types.ObjectId.isValid(parentId)) {
-        return res.status(400).json({
-          status: 'validation_error',
-          message: 'Invalid parent ID format'
-        });
-      }
+    // Validate ObjectId format for parentId
+    if (!mongoose.Types.ObjectId.isValid(parentId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'معرف الوالد غير صحيح'
+      });
+    }
 
-      // Find parent
-      const parent = await User.findById(parentId).session(session);
-      if (!parent || parent.role !== 'parent') {
-        return res.status(404).json({
-          status: 'not_found',
-          message: 'Parent not found'
-        });
-      }
+    // Validate studentUniqueId format (either ObjectId or studentId string)
+    const isValidObjectId = mongoose.Types.ObjectId.isValid(studentUniqueId);
+    const isValidStudentId = typeof studentUniqueId === 'string' && studentUniqueId.trim().length > 0;
+    
+    if (!isValidObjectId && !isValidStudentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'معرف الطالب غير صحيح'
+      });
+    }
 
-      // Find student by studentId or ObjectId
-      let student;
-      
-      // Check if input is a valid ObjectId
-      if (mongoose.Types.ObjectId.isValid(studentUniqueId)) {
-        student = await User.findOne({ 
-          _id: studentUniqueId,
-          role: 'student',
-          isActive: true 
-        }).session(session);
-      }
-      
-      // If not found by ObjectId, try by studentId
-      if (!student) {
-        student = await User.findOne({ 
-          studentId: studentUniqueId.toUpperCase(),
-          role: 'student',
-          isActive: true 
-        }).session(session);
-      }
+    // Find parent
+    const parent = await User.findById(parentId);
+    if (!parent || parent.role !== 'parent') {
+      return res.status(404).json({
+        success: false,
+        message: 'الوالد غير موجود'
+      });
+    }
 
-      if (!student) {
-        return res.status(404).json({
-          status: 'not_found',
-          message: 'Student not found'
-        });
-      }
+    // Find student by studentId or ObjectId
+    let student;
+    
+    // Check if input is a valid ObjectId
+    if (mongoose.Types.ObjectId.isValid(studentUniqueId)) {
+      student = await User.findOne({ 
+        _id: studentUniqueId,
+        role: 'student',
+        isActive: { $ne: false } // Handle both true and undefined
+      });
+    }
+    
+    // If not found by ObjectId, try by studentId
+    if (!student) {
+      student = await User.findOne({ 
+        studentId: studentUniqueId.toUpperCase().trim(),
+        role: 'student',
+        isActive: { $ne: false }
+      });
+    }
 
-      // Check if student is already linked to another parent
-      const existingParent = await User.findOne({
-        role: 'parent',
-        linkedStudents: student._id
-      }).session(session);
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'الطالب غير موجود. يرجى التحقق من معرف الطالب'
+      });
+    }
 
-      if (existingParent && existingParent._id.toString() !== parentId) {
-        return res.status(400).json({
-          status: 'already_linked',
-          message: 'Student is already linked to another parent',
-          student: {
-            _id: student._id,
-            firstName: student.firstName,
-            secondName: student.secondName,
-            studentId: student.studentId
-          }
-        });
-      }
+    // Check if student is already linked to another parent
+    const existingParent = await User.findOne({
+      role: 'parent',
+      linkedStudents: student._id,
+      _id: { $ne: parentId }
+    });
 
-      // Check if parent already has this student linked (idempotent)
-      if (parent.linkedStudents && parent.linkedStudents.includes(student._id)) {
-        return res.status(200).json({
-          status: 'already_linked',
-          message: 'Student is already linked to this parent',
-          student: {
-            _id: student._id,
-            firstName: student.firstName,
-            secondName: student.secondName,
-            thirdName: student.thirdName,
-            fourthName: student.fourthName,
-            userEmail: student.userEmail,
-            phoneStudent: student.phoneStudent,
-            studentId: student.studentId,
-            grade: student.grade,
-            governorate: student.governorate
-          }
-        });
-      }
+    if (existingParent) {
+      return res.status(400).json({
+        success: false,
+        message: 'الطالب مرتبط بالفعل بحساب والد آخر'
+      });
+    }
 
-      // Enforce max 3 students per parent
-      const currentLinkedCount = parent.linkedStudents ? parent.linkedStudents.length : 0;
-      if (currentLinkedCount >= 3) {
-        return res.status(403).json({
-          status: 'limit_reached',
-          message: 'Maximum of 3 students allowed per parent',
-          currentCount: currentLinkedCount
-        });
-      }
-
-      // Link student to parent atomically
-      await User.findByIdAndUpdate(
-        parentId, 
-        { $addToSet: { linkedStudents: student._id } },
-        { session }
-      );
-
-      // Return success with redirect URL
-      return res.status(201).json({
-        status: 'linked',
-        message: 'Student linked successfully',
+    // Check if parent already has this student linked (idempotent)
+    const isAlreadyLinked = parent.linkedStudents && parent.linkedStudents.some(
+      linkedId => linkedId.toString() === student._id.toString()
+    );
+    
+    if (isAlreadyLinked) {
+      // Return success data for already linked (idempotent operation)
+      return res.status(200).json({
+        success: true,
+        message: 'الطالب مرتبط بالفعل بحسابك',
         student: {
           _id: student._id,
           firstName: student.firstName,
           secondName: student.secondName,
           thirdName: student.thirdName,
           fourthName: student.fourthName,
-          userEmail: student.userEmail,
+          email: student.email || student.userEmail,
           phoneStudent: student.phoneStudent,
           studentId: student.studentId,
           grade: student.grade,
           governorate: student.governorate
-        },
-        redirectUrl: `/parent/stats/${student._id}`
+        }
       });
+    }
+
+    // Enforce max 3 students per parent
+    const currentLinkedCount = parent.linkedStudents ? parent.linkedStudents.length : 0;
+    if (currentLinkedCount >= 3) {
+      return res.status(403).json({
+        success: false,
+        message: 'لا يمكن ربط أكثر من 3 طلاب بحساب واحد'
+      });
+    }
+
+    // Link student to parent (atomic operation using $addToSet)
+    await User.findByIdAndUpdate(
+      parentId, 
+      { $addToSet: { linkedStudents: student._id } }
+    );
+
+    // Return success response
+    return res.status(201).json({
+      success: true,
+      message: 'تم ربط الطالب بنجاح',
+      student: {
+        _id: student._id,
+        firstName: student.firstName,
+        secondName: student.secondName,
+        thirdName: student.thirdName,
+        fourthName: student.fourthName,
+        email: student.email || student.userEmail,
+        phoneStudent: student.phoneStudent,
+        studentId: student.studentId,
+        grade: student.grade,
+        governorate: student.governorate
+      }
     });
+
   } catch (error) {
     console.error('Link student robust error:', error);
+    console.error('Error stack:', error.stack);
+    
+    // Provide specific error messages
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'خطأ في التحقق من البيانات: ' + error.message
+      });
+    }
+    
+    if (error.name === 'MongoError' && error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'الطالب مرتبط بالفعل'
+      });
+    }
+    
     res.status(500).json({
-      status: 'error',
-      message: 'Internal server error'
+      success: false,
+      message: 'حدث خطأ أثناء ربط الطالب. يرجى المحاولة مرة أخرى',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
-  } finally {
-    await session.endSession();
   }
 };
 
@@ -922,27 +943,17 @@ const getStudentStats = async (req, res) => {
     
     let student;
     try {
-      // First try to find the student without populate
-      student = await User.findById(studentId).lean();
+      // Find student and populate enrolledCourses.course
+      student = await User.findById(studentId)
+        .populate('enrolledCourses.course', 'title subject grade price videos exams')
+        .lean();
       
       if (!student) {
         console.log('❌ Student not found:', studentId);
         return res.status(404).json({
           success: false,
-          message: 'Student not found'
+          message: 'الطالب غير موجود'
         });
-      }
-      
-      console.log('✅ Student found, now populating courses...');
-      
-      // If student exists, try to populate courses
-      try {
-        student = await User.findById(studentId)
-          .populate('enrolledCourses.courseId')
-          .lean();
-      } catch (populateError) {
-        console.warn('⚠️ Populate failed, using student without courses:', populateError.message);
-        // Use the student without populated courses
       }
       
       console.log('👨‍🎓 Student query completed:', { 
@@ -959,17 +970,20 @@ const getStudentStats = async (req, res) => {
       
       return res.status(500).json({
         success: false,
-        message: 'Database error while fetching student data'
+        message: 'خطأ في قاعدة البيانات أثناء جلب بيانات الطالب'
       });
     }
 
-    // 7. Get exam results from separate collection
+    // 7. Get exam results from separate collection with course populated
     console.log('🔍 Attempting to fetch exam results for student:', studentId);
     
     let examResults = [];
     try {
       const ExamResult = require('../models/ExamResult');
-      examResults = await ExamResult.find({ studentId: studentId }).lean();
+      examResults = await ExamResult.find({ studentId: studentId })
+        .populate('courseId', 'title subject grade')
+        .sort({ submittedAt: -1 })
+        .lean();
       console.log('📊 Exam results found:', examResults.length);
     } catch (examError) {
       console.error('💥 Error fetching exam results:', {
@@ -981,97 +995,143 @@ const getStudentStats = async (req, res) => {
     }
 
     // 8. Calculate comprehensive statistics
-    const enrolledCourses = student.enrolledCourses || [];
+    // Handle enrolledCourses structure - it can be an array of objects with course field
+    const enrolledCourses = (student.enrolledCourses || []).map(enrollment => {
+      // Handle both nested course object and direct course reference
+      const course = enrollment.course || enrollment.courseId || enrollment;
+      return {
+        ...enrollment,
+        course: course,
+        courseId: course?._id || course
+      };
+    }).filter(enrollment => enrollment.course); // Filter out any invalid enrollments
     
     // Basic stats
     const totalCourses = enrolledCourses.length;
     const completedCourses = enrolledCourses.filter(c => c.paymentStatus === 'approved').length;
     
-    // Calculate average grade from exam results
-    const validGrades = examResults.filter(exam => exam.score !== null && exam.score !== undefined);
+    // Calculate average grade from exam results (use percentage if available, otherwise calculate from score/maxScore)
+    const validGrades = examResults.filter(exam => {
+      if (exam.percentage !== null && exam.percentage !== undefined) return true;
+      if (exam.score !== null && exam.score !== undefined && exam.maxScore && exam.maxScore > 0) return true;
+      return false;
+    });
+    
     const averageGrade = validGrades.length > 0 
-      ? Math.round(validGrades.reduce((sum, exam) => sum + exam.score, 0) / validGrades.length)
-      : 85; // Default average grade if no exams
+      ? Math.round(validGrades.reduce((sum, exam) => {
+          if (exam.percentage !== null && exam.percentage !== undefined) {
+            return sum + exam.percentage;
+          }
+          return sum + Math.round((exam.score / exam.maxScore) * 100);
+        }, 0) / validGrades.length)
+      : 0; // Return 0 if no exams instead of default
 
     // Last exam result
     const lastExam = examResults
-      .filter(exam => exam.score !== null && exam.score !== undefined)
-      .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0];
+      .filter(exam => {
+        if (exam.percentage !== null && exam.percentage !== undefined) return true;
+        if (exam.score !== null && exam.score !== undefined) return true;
+        return false;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.submittedAt || a.createdAt || 0);
+        const dateB = new Date(b.submittedAt || b.createdAt || 0);
+        return dateB - dateA;
+      })[0];
 
     // Grade progression over last 6 months
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
     
     const recentExams = examResults
-      .filter(exam => new Date(exam.submittedAt) >= sixMonthsAgo && exam.score !== null)
-      .sort((a, b) => new Date(a.submittedAt) - new Date(b.submittedAt));
+      .filter(exam => {
+        const examDate = new Date(exam.submittedAt || exam.createdAt || 0);
+        const hasScore = exam.percentage !== null && exam.percentage !== undefined || 
+                        (exam.score !== null && exam.score !== undefined && exam.maxScore && exam.maxScore > 0);
+        return examDate >= sixMonthsAgo && hasScore;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.submittedAt || a.createdAt || 0);
+        const dateB = new Date(b.submittedAt || b.createdAt || 0);
+        return dateA - dateB;
+      });
 
-    // Generate mock grade progression if no real data
+    // Generate grade progression from real data
     const gradeProgression = recentExams.length > 0 
-      ? recentExams.map(exam => ({
-          date: exam.submittedAt,
-          month: new Date(exam.submittedAt).toLocaleDateString('ar-EG', { month: 'long' }),
-          grade: exam.score,
-          subject: exam.examTitle || 'عام'
-        }))
-      : [
-          { month: 'يناير', grade: 80 },
-          { month: 'فبراير', grade: 82 },
-          { month: 'مارس', grade: 85 },
-          { month: 'أبريل', grade: 88 },
-          { month: 'مايو', grade: 90 },
-          { month: 'يونيو', grade: 92 }
-        ];
+      ? recentExams.map(exam => {
+          const examDate = new Date(exam.submittedAt || exam.createdAt || new Date());
+          const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+          const month = monthNames[examDate.getMonth()];
+          const grade = exam.percentage !== null && exam.percentage !== undefined 
+            ? exam.percentage 
+            : Math.round((exam.score / exam.maxScore) * 100);
+          
+          return {
+            date: examDate.toISOString(),
+            month: month,
+            grade: grade,
+            subject: exam.examTitle || exam.courseId?.title || 'عام'
+          };
+        })
+      : []; // Return empty array if no data instead of mock data
 
-    // Subject performance distribution
+    // Subject performance distribution - use course subjects
     const subjectStats = {};
     examResults.forEach(exam => {
-      if (exam.score !== null && exam.score !== undefined) {
-        const subject = exam.examTitle || 'عام';
+      const hasScore = exam.percentage !== null && exam.percentage !== undefined || 
+                      (exam.score !== null && exam.score !== undefined && exam.maxScore && exam.maxScore > 0);
+      
+      if (hasScore) {
+        // Use course subject if available, otherwise use exam title
+        const subject = exam.courseId?.subject || exam.courseId?.title || exam.examTitle || 'عام';
         if (!subjectStats[subject]) {
           subjectStats[subject] = { total: 0, count: 0, color: getSubjectColor(subject) };
         }
-        subjectStats[subject].total += exam.score;
+        const score = exam.percentage !== null && exam.percentage !== undefined 
+          ? exam.percentage 
+          : Math.round((exam.score / exam.maxScore) * 100);
+        subjectStats[subject].total += score;
         subjectStats[subject].count += 1;
       }
     });
 
     const subjectDistribution = Object.keys(subjectStats).length > 0 
       ? Object.entries(subjectStats).map(([subject, data]) => ({
-          subject: subject,
-          score: Math.round(data.total / data.count),
-          percentage: Math.round((data.total / data.count) / 100 * 100),
+          name: subject,
+          value: Math.round(data.total / data.count),
+          percentage: Math.round(data.total / data.count),
           color: data.color,
           count: data.count
         }))
-      : [
-          { subject: 'الرياضيات', score: 85 },
-          { subject: 'الفيزياء', score: 92 },
-          { subject: 'الكيمياء', score: 78 },
-          { subject: 'اللغة العربية', score: 88 },
-          { subject: 'اللغة الإنجليزية', score: 90 }
-        ];
+      : []; // Return empty array if no data
 
-    // Course performance
+    // Course performance - properly handle enrolledCourses structure
     const coursePerformance = enrolledCourses.map(enrollment => {
-      const course = enrollment.courseId;
-      const courseExams = examResults.filter(exam => 
-        exam.courseId && exam.courseId.toString() === course._id.toString()
-      );
+      // Handle both course object and course ID
+      const course = enrollment.course || enrollment.courseId || enrollment;
+      const courseId = course._id || course;
+      
+      const courseExams = examResults.filter(exam => {
+        const examCourseId = exam.courseId?._id?.toString() || exam.courseId?.toString() || exam.courseId;
+        return examCourseId && examCourseId.toString() === courseId.toString();
+      });
+      
       const courseAverage = courseExams.length > 0 
-        ? Math.round(courseExams.reduce((sum, exam) => sum + exam.score, 0) / courseExams.length)
+        ? Math.round(courseExams.reduce((sum, exam) => sum + (exam.percentage || exam.score || 0), 0) / courseExams.length)
         : 0;
 
+      const lastExam = courseExams.length > 0
+        ? courseExams.sort((a, b) => new Date(b.submittedAt || b.examDate || 0) - new Date(a.submittedAt || a.examDate || 0))[0]
+        : null;
+
       return {
-        courseId: course._id,
-        courseName: course.title,
-        status: enrollment.paymentStatus,
+        courseId: courseId,
+        courseName: course.title || course.courseName || 'غير محدد',
+        status: enrollment.paymentStatus || 'approved',
         progress: enrollment.progress || 0,
         averageGrade: courseAverage,
         examCount: courseExams.length,
-        lastExamDate: courseExams.length > 0 
-          ? courseExams.sort((a, b) => new Date(b.examDate) - new Date(a.examDate))[0].examDate
-          : null
+        lastExamDate: lastExam ? (lastExam.submittedAt || lastExam.examDate) : null
       };
     });
 
@@ -1101,18 +1161,13 @@ const getStudentStats = async (req, res) => {
         averageGrade,
         attendanceRate,
         lastExamResult: lastExam ? {
-          subject: lastExam.examTitle || 'عام',
-          score: lastExam.score,
-          date: lastExam.submittedAt,
-          courseName: lastExam.courseId || 'غير محدد'
-        } : {
-          subject: 'الرياضيات',
-          score: 88,
-          date: new Date(),
-          courseName: 'الرياضيات المتقدمة'
-        },
-        lastExamScore: lastExam ? lastExam.score : 88,
-        lastExamTotal: 100
+          subject: lastExam.examTitle || lastExam.courseId?.title || 'عام',
+          score: lastExam.percentage || Math.round((lastExam.score / lastExam.maxScore) * 100),
+          date: lastExam.submittedAt || lastExam.createdAt,
+          courseName: lastExam.courseId?.title || lastExam.courseId || 'غير محدد'
+        } : null,
+        lastExamScore: lastExam ? (lastExam.percentage || Math.round((lastExam.score / lastExam.maxScore) * 100)) : null,
+        lastExamTotal: lastExam ? 100 : null
       },
       charts: {
         gradeProgression,
@@ -1129,31 +1184,35 @@ const getStudentStats = async (req, res) => {
       },
       recentActivity: examResults.length > 0 
         ? examResults
-            .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))
+            .sort((a, b) => {
+              const dateA = new Date(a.submittedAt || a.createdAt || 0);
+              const dateB = new Date(b.submittedAt || b.createdAt || 0);
+              return dateB - dateA;
+            })
             .slice(0, 5)
-            .map(exam => ({
-              type: 'exam',
-              title: `امتحان ${exam.examTitle || 'عام'}`,
-              score: exam.score,
-              date: exam.submittedAt,
-              courseName: exam.courseId || 'غير محدد',
-              points: Math.round(exam.score / 10)
-            }))
-        : [
-            { type: 'exam', title: 'امتحان الرياضيات', score: 88, date: new Date(), courseName: 'الرياضيات المتقدمة', points: 8 },
-            { type: 'exam', title: 'امتحان الفيزياء', score: 92, date: new Date(), courseName: 'الفيزياء', points: 9 },
-            { type: 'exam', title: 'امتحان الكيمياء', score: 78, date: new Date(), courseName: 'الكيمياء', points: 7 },
-            { type: 'exam', title: 'امتحان اللغة العربية', score: 85, date: new Date(), courseName: 'اللغة العربية', points: 8 },
-            { type: 'exam', title: 'امتحان اللغة الإنجليزية', score: 90, date: new Date(), courseName: 'اللغة الإنجليزية', points: 9 }
-          ]
+            .map(exam => {
+              const score = exam.percentage !== null && exam.percentage !== undefined 
+                ? exam.percentage 
+                : (exam.score && exam.maxScore ? Math.round((exam.score / exam.maxScore) * 100) : 0);
+              
+              return {
+                type: 'exam',
+                title: `امتحان ${exam.examTitle || 'عام'}`,
+                score: score,
+                date: exam.submittedAt || exam.createdAt,
+                courseName: exam.courseId?.title || exam.courseId || 'غير محدد',
+                points: Math.round(score / 10)
+              };
+            })
+        : [] // Return empty array if no data
     };
 
     console.log('✅ Stats data prepared successfully');
     
-    // 9. Return structured response
+    // 9. Return structured response matching expected format
     res.status(200).json({
       success: true,
-      stats: statsData
+      data: statsData
     });
 
   } catch (error) {
@@ -1190,6 +1249,473 @@ const getSubjectColor = (subject) => {
   return colors[subject] || '#6B7280';
 };
 
+// Get comprehensive student data for parent dashboard
+const getComprehensiveStudentData = async (req, res) => {
+  try {
+    console.log('🔍 getComprehensiveStudentData called with:', { 
+      studentId: req.params.studentId, 
+      parentId: req.user?.id 
+    });
+    
+    const { studentId } = req.params;
+    const parentId = req.user.id;
+
+    // 1. Validate studentId format
+    if (!studentId || studentId === 'undefined') {
+      console.log('❌ Missing studentId');
+      return res.status(400).json({
+        success: false,
+        message: 'Student ID is required'
+      });
+    }
+
+    // 2. Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      console.log('❌ Invalid ObjectId format:', studentId);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid student ID format'
+      });
+    }
+
+    // 3. Validate parentId
+    if (!parentId || !mongoose.Types.ObjectId.isValid(parentId)) {
+      console.log('❌ Invalid parentId:', parentId);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid parent ID'
+      });
+    }
+
+    // 4. Verify parent exists and has access to student
+    const parent = await User.findById(parentId);
+    console.log('👤 Parent found:', { parentId, hasParent: !!parent, linkedStudents: parent?.linkedStudents?.length || 0 });
+    
+    if (!parent) {
+      console.log('❌ Parent not found:', parentId);
+      return res.status(404).json({
+        success: false,
+        message: 'Parent not found'
+      });
+    }
+
+    // 5. Check if student is linked to parent
+    const linkedStudents = parent.linkedStudents || [];
+    const isLinked = linkedStudents.some(linkedStudent => {
+      const linkedId = linkedStudent.toString ? linkedStudent.toString() : linkedStudent;
+      const studentIdStr = studentId.toString ? studentId.toString() : studentId;
+      return linkedId === studentIdStr;
+    });
+    
+    console.log('🔗 Link check:', { 
+      studentId, 
+      isLinked, 
+      linkedStudentsCount: linkedStudents.length
+    });
+    
+    if (!isLinked) {
+      console.log('❌ Parent access denied - student not linked');
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Student not linked to parent.'
+      });
+    }
+
+    // 6. Get student data with enrolled courses
+    console.log('🔍 Attempting to find student with ID:', studentId);
+    
+    let student;
+    try {
+      student = await User.findById(studentId)
+        .populate({
+          path: 'enrolledCourses.course',
+          select: 'title subject grade price videos exams createdBy',
+          populate: {
+            path: 'createdBy',
+            select: 'firstName secondName thirdName fourthName'
+          }
+        })
+        .lean();
+      
+      if (!student) {
+        console.log('❌ Student not found:', studentId);
+        return res.status(404).json({
+          success: false,
+          message: 'الطالب غير موجود'
+        });
+      }
+      
+      console.log('👨‍🎓 Student query completed:', { 
+        studentId, 
+        hasStudent: !!student, 
+        enrolledCourses: student?.enrolledCourses?.length || 0 
+      });
+    } catch (dbError) {
+      console.error('💥 Database error when finding student:', {
+        error: dbError.message,
+        stack: dbError.stack,
+        studentId
+      });
+      
+      return res.status(500).json({
+        success: false,
+        message: 'خطأ في قاعدة البيانات أثناء جلب بيانات الطالب'
+      });
+    }
+
+    // 7. Get exam results from ExamResult collection
+    console.log('🔍 Fetching exam results for student:', studentId);
+    
+    let examResults = [];
+    try {
+      examResults = await ExamResult.find({ studentId: studentId })
+        .populate('courseId', 'title subject grade')
+        .sort({ submittedAt: -1 })
+        .lean();
+      console.log('📊 Exam results found:', examResults.length);
+    } catch (examError) {
+      console.error('💥 Error fetching exam results:', {
+        error: examError.message,
+        studentId
+      });
+      examResults = [];
+    }
+
+    // 8. Get quiz results
+    let quizResults = [];
+    try {
+      const QuizResult = require('../models/QuizResult');
+      quizResults = await QuizResult.find({ userId: studentId })
+        .populate('courseId', 'title subject')
+        .sort({ completedAt: -1 })
+        .lean();
+      console.log('📝 Quiz results found:', quizResults.length);
+    } catch (quizError) {
+      console.error('💥 Error fetching quiz results:', quizError.message);
+      quizResults = [];
+    }
+
+    // 9. Get course progress
+    let courseProgress = [];
+    try {
+      const UserCourseProgress = require('../models/UserCourseProgress');
+      courseProgress = await UserCourseProgress.find({ userId: studentId })
+        .populate('courseId', 'title subject grade')
+        .lean();
+      console.log('📈 Course progress found:', courseProgress.length);
+    } catch (progressError) {
+      console.error('💥 Error fetching course progress:', progressError.message);
+      courseProgress = [];
+    }
+
+    // 10. Process enrolled courses
+    const enrolledCourses = (student.enrolledCourses || []).map(enrollment => {
+      const course = enrollment.course || enrollment.courseId || enrollment;
+      const courseId = course._id || course;
+      
+      // Find progress for this course
+      const progress = courseProgress.find(p => 
+        p.courseId && (p.courseId._id?.toString() === courseId.toString() || p.courseId.toString() === courseId.toString())
+      );
+      
+      // Calculate total lessons (videos + exams)
+      const totalVideos = course.videos?.length || 0;
+      const totalExams = course.exams?.length || 0;
+      const totalLessons = totalVideos + totalExams;
+      
+      // Calculate completed lessons from progress
+      const completedVideos = progress?.completedVideos?.length || 0;
+      const completedExams = progress?.completedExams?.length || 0;
+      const completedLessons = completedVideos + completedExams;
+      
+      // Map paymentStatus to subscriptionStatus
+      let subscriptionStatus = 'غير محدد';
+      if (enrollment.paymentStatus === 'approved') {
+        subscriptionStatus = progress?.isCompleted ? 'Completed' : 'Active';
+      } else if (enrollment.paymentStatus === 'pending') {
+        subscriptionStatus = 'Pending';
+      } else if (enrollment.paymentStatus === 'rejected') {
+        subscriptionStatus = 'Expired';
+      }
+      
+      // Get instructor name from course.createdBy
+      let instructorName = 'غير محدد';
+      if (course.createdBy) {
+        const instructor = course.createdBy;
+        const nameParts = [];
+        if (instructor.firstName) nameParts.push(instructor.firstName);
+        if (instructor.secondName) nameParts.push(instructor.secondName);
+        if (instructor.thirdName) nameParts.push(instructor.thirdName);
+        if (instructor.fourthName) nameParts.push(instructor.fourthName);
+        instructorName = nameParts.length > 0 ? nameParts.join(' ') : 'غير محدد';
+      }
+      
+      return {
+        courseId: courseId,
+        courseName: course.title || 'غير محدد',
+        subject: course.subject || 'غير محدد',
+        grade: course.grade || student.grade,
+        progress: progress?.overallProgress || enrollment.progress || 0,
+        status: enrollment.paymentStatus || 'pending',
+        subscriptionStatus: subscriptionStatus,
+        instructorName: instructorName,
+        totalLessons: totalLessons,
+        completedLessons: completedLessons,
+        enrolledAt: enrollment.enrolledAt || progress?.enrolledAt,
+        isCompleted: progress?.isCompleted || false
+      };
+    }).filter(enrollment => enrollment.courseId);
+
+    // 11. Calculate statistics
+    const totalCourses = enrolledCourses.length;
+    const completedCourses = enrolledCourses.filter(c => c.isCompleted || c.status === 'approved').length;
+    
+    // Calculate average grade from exam results
+    const validGrades = examResults.filter(exam => {
+      if (exam.percentage !== null && exam.percentage !== undefined) return true;
+      if (exam.score !== null && exam.score !== undefined && exam.maxScore && exam.maxScore > 0) return true;
+      return false;
+    });
+    
+    const averageGrade = validGrades.length > 0 
+      ? Math.round(validGrades.reduce((sum, exam) => {
+          if (exam.percentage !== null && exam.percentage !== undefined) {
+            return sum + exam.percentage;
+          }
+          return sum + Math.round((exam.score / exam.maxScore) * 100);
+        }, 0) / validGrades.length)
+      : 0;
+
+    // Calculate attendance rate based on course progress
+    const totalPossibleProgress = enrolledCourses.length * 100;
+    const actualProgress = enrolledCourses.reduce((sum, course) => sum + (course.progress || 0), 0);
+    const attendanceRate = totalPossibleProgress > 0 
+      ? Math.round((actualProgress / totalPossibleProgress) * 100)
+      : 0;
+
+    // Last exam result
+    const lastExam = examResults
+      .filter(exam => {
+        if (exam.percentage !== null && exam.percentage !== undefined) return true;
+        if (exam.score !== null && exam.score !== undefined) return true;
+        return false;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.submittedAt || a.createdAt || 0);
+        const dateB = new Date(b.submittedAt || b.createdAt || 0);
+        return dateB - dateA;
+      })[0];
+
+    // 12. Generate grade progression chart (last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    
+    const recentExams = examResults
+      .filter(exam => {
+        const examDate = new Date(exam.submittedAt || exam.createdAt || 0);
+        const hasScore = exam.percentage !== null && exam.percentage !== undefined || 
+                        (exam.score !== null && exam.score !== undefined && exam.maxScore && exam.maxScore > 0);
+        return examDate >= sixMonthsAgo && hasScore;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.submittedAt || a.createdAt || 0);
+        const dateB = new Date(b.submittedAt || b.createdAt || 0);
+        return dateA - dateB;
+      });
+
+    const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+    
+    const gradeProgression = recentExams.map(exam => {
+      const examDate = new Date(exam.submittedAt || exam.createdAt || new Date());
+      const month = monthNames[examDate.getMonth()];
+      const grade = exam.percentage !== null && exam.percentage !== undefined 
+        ? exam.percentage 
+        : Math.round((exam.score / exam.maxScore) * 100);
+      
+      return {
+        date: examDate.toISOString(),
+        month: month,
+        grade: grade,
+        subject: exam.examTitle || exam.courseId?.title || 'عام'
+      };
+    });
+
+    // 13. Subject distribution
+    const subjectStats = {};
+    examResults.forEach(exam => {
+      const hasScore = exam.percentage !== null && exam.percentage !== undefined || 
+                      (exam.score !== null && exam.score !== undefined && exam.maxScore && exam.maxScore > 0);
+      
+      if (hasScore) {
+        const subject = exam.courseId?.subject || exam.courseId?.title || exam.examTitle || 'عام';
+        if (!subjectStats[subject]) {
+          subjectStats[subject] = { total: 0, count: 0, color: getSubjectColor(subject) };
+        }
+        const score = exam.percentage !== null && exam.percentage !== undefined 
+          ? exam.percentage 
+          : Math.round((exam.score / exam.maxScore) * 100);
+        subjectStats[subject].total += score;
+        subjectStats[subject].count += 1;
+      }
+    });
+
+    const subjectDistribution = Object.keys(subjectStats).length > 0 
+      ? Object.entries(subjectStats).map(([subject, data]) => ({
+          name: subject,
+          value: Math.round(data.total / data.count),
+          percentage: Math.round(data.total / data.count),
+          color: data.color,
+          count: data.count
+        }))
+      : [];
+
+    // 14. Course performance
+    const coursePerformance = enrolledCourses.map(enrollment => {
+      const courseId = enrollment.courseId;
+      const courseExams = examResults.filter(exam => {
+        const examCourseId = exam.courseId?._id?.toString() || exam.courseId?.toString() || exam.courseId;
+        return examCourseId && examCourseId.toString() === courseId.toString();
+      });
+      
+      const courseAverage = courseExams.length > 0 
+        ? Math.round(courseExams.reduce((sum, exam) => {
+            const score = exam.percentage !== null && exam.percentage !== undefined 
+              ? exam.percentage 
+              : (exam.score && exam.maxScore ? Math.round((exam.score / exam.maxScore) * 100) : 0);
+            return sum + score;
+          }, 0) / courseExams.length)
+        : 0;
+
+      const lastExam = courseExams.length > 0
+        ? courseExams.sort((a, b) => new Date(b.submittedAt || b.examDate || 0) - new Date(a.submittedAt || a.examDate || 0))[0]
+        : null;
+
+      return {
+        courseId: courseId,
+        courseName: enrollment.courseName,
+        status: enrollment.status,
+        progress: enrollment.progress,
+        averageGrade: courseAverage,
+        examCount: courseExams.length,
+        lastExamDate: lastExam ? (lastExam.submittedAt || lastExam.examDate) : null
+      };
+    });
+
+    // 15. Recent activity (from exam results and quiz results)
+    const recentActivity = [];
+    
+    // Add exam activities
+    examResults.slice(0, 5).forEach(exam => {
+      const score = exam.percentage !== null && exam.percentage !== undefined 
+        ? exam.percentage 
+        : (exam.score && exam.maxScore ? Math.round((exam.score / exam.maxScore) * 100) : 0);
+      
+      recentActivity.push({
+        type: 'exam',
+        title: `امتحان ${exam.examTitle || 'عام'}`,
+        score: score,
+        date: exam.submittedAt || exam.createdAt,
+        courseName: exam.courseId?.title || exam.courseId || 'غير محدد',
+        points: Math.round(score / 10)
+      });
+    });
+    
+    // Add quiz activities
+    quizResults.slice(0, 3).forEach(quiz => {
+      recentActivity.push({
+        type: 'quiz',
+        title: `اختبار ${quiz.courseId?.title || 'عام'}`,
+        score: quiz.score,
+        date: quiz.completedAt || quiz.createdAt,
+        courseName: quiz.courseId?.title || 'غير محدد',
+        points: Math.round(quiz.score / 10)
+      });
+    });
+    
+    // Sort by date and take top 10
+    recentActivity.sort((a, b) => new Date(b.date) - new Date(a.date));
+    const topRecentActivity = recentActivity.slice(0, 10);
+
+    // 16. Format exam results for response
+    const formattedExamResults = examResults.map(exam => ({
+      id: exam._id,
+      examId: exam.examId,
+      examTitle: exam.examTitle,
+      courseId: exam.courseId?._id || exam.courseId,
+      courseName: exam.courseId?.title || 'غير محدد',
+      subject: exam.courseId?.subject || 'غير محدد',
+      score: exam.score,
+      maxScore: exam.maxScore,
+      percentage: exam.percentage || (exam.maxScore > 0 ? Math.round((exam.score / exam.maxScore) * 100) : 0),
+      grade: exam.grade,
+      level: exam.level,
+      submittedAt: exam.submittedAt,
+      createdAt: exam.createdAt
+    }));
+
+    // 17. Prepare comprehensive response
+    const response = {
+      success: true,
+      student: {
+        _id: student._id,
+        firstName: student.firstName,
+        secondName: student.secondName,
+        thirdName: student.thirdName,
+        fourthName: student.fourthName,
+        userEmail: student.userEmail || student.email,
+        phoneStudent: student.phoneStudent,
+        studentId: student.studentId,
+        grade: student.grade,
+        governorate: student.governorate,
+        profilePicture: student.profilePicture
+      },
+      statistics: {
+        totalCourses,
+        completedCourses,
+        averageGrade,
+        attendanceRate,
+        lastExamResult: lastExam ? {
+          subject: lastExam.examTitle || lastExam.courseId?.title || 'عام',
+          score: lastExam.percentage || Math.round((lastExam.score / lastExam.maxScore) * 100),
+          date: lastExam.submittedAt || lastExam.createdAt,
+          courseName: lastExam.courseId?.title || 'غير محدد'
+        } : null,
+        lastExamScore: lastExam ? (lastExam.percentage || Math.round((lastExam.score / lastExam.maxScore) * 100)) : null,
+        lastExamTotal: lastExam ? 100 : null
+      },
+      enrolledCourses,
+      examResults: formattedExamResults,
+      charts: {
+        gradeProgression,
+        subjectDistribution,
+        coursePerformance,
+        attendanceChart: coursePerformance.map(course => ({
+          month: course.courseName,
+          attendance: course.progress
+        }))
+      },
+      recentActivity: topRecentActivity
+    };
+
+    console.log('✅ Comprehensive student data retrieved successfully');
+    res.status(200).json(response);
+
+  } catch (error) {
+    console.error('❌ Get comprehensive student data error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      studentId: req.params.studentId,
+      parentId: req.user?.id
+    });
+    
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error. Please try again later.'
+    });
+  }
+};
+
 module.exports = {
   searchStudent,
   sendOTP,
@@ -1201,5 +1727,6 @@ module.exports = {
   getStudentAttendance,
   getStudentProgress,
   exportReport,
-  getStudentStats
+  getStudentStats,
+  getComprehensiveStudentData
 };

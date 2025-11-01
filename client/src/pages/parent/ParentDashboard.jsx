@@ -106,19 +106,8 @@ const ParentDashboard = () => {
   }, [studentIdInput]);
   
   // Charts data with default values
-  const [gradeProgression, setGradeProgression] = useState([
-    { month: 'سبتمبر', grade: 82 },
-    { month: 'أكتوبر', grade: 85 },
-    { month: 'نوفمبر', grade: 88 },
-    { month: 'ديسمبر', grade: 87 }
-  ]);
-  const [subjectDistribution, setSubjectDistribution] = useState([
-    { subject: 'اختبار النحو', score: 96, color: '#F59E0B' },
-    { subject: 'اختبار الأدب', score: 82, color: '#EF4444' },
-    { subject: 'اختبار التعبير', score: 78, color: '#8B5CF6' },
-    { subject: 'اختبار البلاغة', score: 84, color: '#06B6D4' },
-    { subject: 'اختبار الإملاء', score: 90, color: '#10B981' }
-  ]);
+  const [gradeProgression, setGradeProgression] = useState([]);
+  const [subjectDistribution, setSubjectDistribution] = useState([]);
   const [attendanceChart, setAttendanceChart] = useState([]);
   const [completionRates, setCompletionRates] = useState([
     { name: 'مكتمل', value: 67, color: '#10B981' },
@@ -210,31 +199,115 @@ const ParentDashboard = () => {
           );
           
           setGradesData(finalResults);
+          
+          // Build gradeProgression from real exam results
+          // Get exams from last 6 months, sorted by date
+          const sixMonthsAgo = new Date();
+          sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+          
+          const recentExams = data.examResults
+            .filter(exam => {
+              const examDate = new Date(exam.submittedAt || exam.createdAt || 0);
+              const hasScore = exam.percentage !== null && exam.percentage !== undefined || 
+                              (exam.score !== null && exam.score !== undefined && exam.maxScore && exam.maxScore > 0);
+              return examDate >= sixMonthsAgo && hasScore;
+            })
+            .sort((a, b) => {
+              const dateA = new Date(a.submittedAt || a.createdAt || 0);
+              const dateB = new Date(b.submittedAt || b.createdAt || 0);
+              return dateA - dateB; // Sort ascending by date
+            });
+          
+          // Group by month and calculate average grade per month
+          const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+          const monthlyGrades = {};
+          
+          recentExams.forEach(exam => {
+            const examDate = new Date(exam.submittedAt || exam.createdAt || new Date());
+            const monthKey = `${examDate.getFullYear()}-${examDate.getMonth()}`;
+            const monthName = monthNames[examDate.getMonth()];
+            
+            const score = exam.percentage !== null && exam.percentage !== undefined 
+              ? exam.percentage 
+              : (exam.score && exam.maxScore ? Math.round((exam.score / exam.maxScore) * 100) : 0);
+            
+            if (!monthlyGrades[monthKey]) {
+              monthlyGrades[monthKey] = {
+                month: monthName,
+                grades: [],
+                date: examDate
+              };
+            }
+            
+            monthlyGrades[monthKey].grades.push(score);
+          });
+          
+          // Calculate average grade for each month
+          const gradeProgressionData = Object.values(monthlyGrades)
+            .map(monthData => ({
+              month: monthData.month,
+              grade: Math.round(monthData.grades.reduce((sum, grade) => sum + grade, 0) / monthData.grades.length),
+              date: monthData.date
+            }))
+            .sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort by date ascending
+          
+          setGradeProgression(gradeProgressionData.length > 0 ? gradeProgressionData : []);
+          
+          // Build subjectDistribution from real exam results
+          // Group by exam title and get the latest score for each exam
+          const examDistributionMap = {};
+          data.examResults.forEach((result) => {
+            const examTitle = result.examTitle || result.title || 'امتحان غير محدد';
+            const score = result.percentage !== null && result.percentage !== undefined 
+              ? result.percentage 
+              : (result.score && result.maxScore ? Math.round((result.score / result.maxScore) * 100) : 0);
+            
+            // Keep only the latest score for each exam
+            if (!examDistributionMap[examTitle] || 
+                new Date(result.submittedAt || result.createdAt || 0) > 
+                new Date(examDistributionMap[examTitle].date || 0)) {
+              examDistributionMap[examTitle] = {
+                subject: examTitle,
+                score: score,
+                date: result.submittedAt || result.createdAt || new Date()
+              };
+            }
+          });
+          
+          // Convert to array and assign colors
+          const colors = ['#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#10B981', '#F97316', '#3B82F6', '#8B5CF6'];
+          const subjectDistributionData = Object.values(examDistributionMap)
+            .map((item, index) => ({
+              subject: item.subject,
+              score: item.score,
+              color: colors[index % colors.length]
+            }))
+            .sort((a, b) => b.score - a.score); // Sort by score descending
+          
+          setSubjectDistribution(subjectDistributionData.length > 0 ? subjectDistributionData : []);
         } else {
           setGradesData([]);
+          setGradeProgression([]);
+          setSubjectDistribution([]);
         }
         
         // Update charts data
         if (data.progressCharts) {
           const charts = data.progressCharts;
-          setGradeProgression(charts.gradeProgression || [
-            { month: 'سبتمبر', grade: 82 },
-            { month: 'أكتوبر', grade: 85 },
-            { month: 'نوفمبر', grade: 88 },
-            { month: 'ديسمبر', grade: 87 }
-          ]);
-          setSubjectDistribution(charts.subjectDistribution || [
-            { subject: 'اختبار النحو', score: 96, color: '#F59E0B' },
-            { subject: 'اختبار الأدب', score: 82, color: '#EF4444' },
-            { subject: 'اختبار التعبير', score: 78, color: '#8B5CF6' },
-            { subject: 'اختبار البلاغة', score: 84, color: '#06B6D4' },
-            { subject: 'اختبار الإملاء', score: 90, color: '#10B981' }
-          ]);
+          // Only use gradeProgression from backend if we don't have examResults
+          if (!data.examResults || data.examResults.length === 0) {
+            setGradeProgression(charts.gradeProgression || []);
+            setSubjectDistribution(charts.subjectDistribution || []);
+          }
           setAttendanceChart(charts.attendanceChart || []);
           setCompletionRates(charts.completionRates || [
             { name: 'مكتمل', value: 67, color: '#10B981' },
             { name: 'جاري', value: 33, color: '#06B6D4' }
           ]);
+        } else if (!data.examResults || data.examResults.length === 0) {
+          // If no data at all, set empty arrays
+          setGradeProgression([]);
+          setSubjectDistribution([]);
         }
         
         // Update enrolled courses
@@ -1762,15 +1835,18 @@ const ParentDashboard = () => {
                                 <span className={`px-2 py-1 rounded-full ${
                                   course.subscriptionStatus === 'Active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
                                   course.subscriptionStatus === 'Completed' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                  course.subscriptionStatus === 'Expired' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                                  course.subscriptionStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
                                   'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
                                 }`}>
                                   {course.subscriptionStatus === 'Active' ? 'نشط' :
                                    course.subscriptionStatus === 'Completed' ? 'مكتمل' : 
-                                   course.subscriptionStatus === 'Expired' ? 'منتهي' : 'غير محدد'}
+                                   course.subscriptionStatus === 'Expired' ? 'منتهي' :
+                                   course.subscriptionStatus === 'Pending' ? 'قيد الانتظار' : 'غير محدد'}
                                 </span>
-                                <span className="text-gray-500 dark:text-gray-400">
+                                {/* <span className="text-gray-500 dark:text-gray-400">
                                   {course.instructorName || 'غير محدد'}
-                                </span>
+                                </span> */}
                           </div>
                             </div>
                           ))
@@ -1912,10 +1988,11 @@ const ParentDashboard = () => {
                   {/* Charts Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   {/* Grade Progression Line Chart */}
-                    <LuxuryCard className="p-6">
+                  <LuxuryCard className="p-6">
                     <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white">
                       تطور الدرجات عبر الوقت
                       </h3>
+                    {gradeProgression && gradeProgression.length > 0 ? (
                     <div className="h-80">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={gradeProgression}>
@@ -1928,6 +2005,8 @@ const ParentDashboard = () => {
                           <YAxis 
                             stroke="#6B7280"
                             fontSize={12}
+                            domain={[0, 100]}
+                            label={{ value: 'الدرجة (%)', angle: -90, position: 'insideLeft' }}
                           />
                           <Tooltip 
                             contentStyle={{
@@ -1936,6 +2015,8 @@ const ParentDashboard = () => {
                               borderRadius: '8px',
                               color: '#F9FAFB'
                             }}
+                            formatter={(value, name, props) => [`${value}%`, 'الدرجة']}
+                            labelFormatter={(label) => `الشهر: ${label}`}
                           />
                           <Line 
                             type="monotone" 
@@ -1948,6 +2029,14 @@ const ParentDashboard = () => {
                         </LineChart>
                       </ResponsiveContainer>
                       </div>
+                    ) : (
+                      <div className="h-80 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                        <div className="text-center">
+                          <TrendingUp size={48} className="mx-auto mb-4 opacity-50" />
+                          <p>لا توجد بيانات درجات متاحة</p>
+                        </div>
+                      </div>
+                    )}
                     </LuxuryCard>
 
                   {/* Test Scores Bar Chart */}
@@ -1955,6 +2044,7 @@ const ParentDashboard = () => {
                     <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white">
                       توزيع درجات الاختبارات
                       </h3>
+                    {subjectDistribution && subjectDistribution.length > 0 ? (
                     <div className="h-80">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={subjectDistribution}>
@@ -1963,10 +2053,15 @@ const ParentDashboard = () => {
                             dataKey="subject" 
                             stroke="#6B7280"
                             fontSize={12}
+                            angle={-45}
+                            textAnchor="end"
+                            height={80}
                           />
                           <YAxis 
                             stroke="#6B7280"
                             fontSize={12}
+                            domain={[0, 100]}
+                            label={{ value: 'الدرجة (%)', angle: -90, position: 'insideLeft' }}
                           />
                           <Tooltip 
                             contentStyle={{
@@ -1975,15 +2070,28 @@ const ParentDashboard = () => {
                               borderRadius: '8px',
                               color: '#F9FAFB'
                             }}
+                            formatter={(value, name, props) => [`${value}%`, 'الدرجة']}
+                            labelFormatter={(label) => `امتحان: ${label}`}
                           />
                           <Bar 
                             dataKey="score" 
-                            fill="#10B981"
                             radius={[4, 4, 0, 0]}
-                          />
+                          >
+                            {subjectDistribution.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color || '#10B981'} />
+                            ))}
+                          </Bar>
                         </BarChart>
                       </ResponsiveContainer>
                               </div>
+                    ) : (
+                      <div className="h-80 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                        <div className="text-center">
+                          <BarChart3 size={48} className="mx-auto mb-4 opacity-50" />
+                          <p>لا توجد بيانات اختبارات متاحة</p>
+                        </div>
+                      </div>
+                    )}
                   </LuxuryCard>
 
                   {/* Charts and Statistics Section */}
@@ -2004,19 +2112,22 @@ const ParentDashboard = () => {
                         <h4 className="text-lg font-semibold text-cyan-400 dark:text-cyan-300 light:text-cyan-600 mb-4">
                           تطور الدرجات الشهري
                         </h4>
+                        {gradeProgression && gradeProgression.length > 0 ? (
                         <div className="h-64">
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={gradeProgression}>
                               <CartesianGrid strokeDasharray="3 3" stroke="rgba(6,182,212,0.2)" />
                               <XAxis dataKey="month" stroke="rgba(6,182,212,0.6)" />
-                              <YAxis stroke="rgba(6,182,212,0.6)" />
+                              <YAxis stroke="rgba(6,182,212,0.6)" domain={[0, 100]} />
                               <Tooltip 
                                 contentStyle={{ 
                                   backgroundColor: 'rgba(15, 23, 42, 0.9)', 
                                   border: '1px solid rgba(6,182,212,0.3)',
                                   borderRadius: '8px',
                                   color: '#06B6D4'
-                                }} 
+                                }}
+                                formatter={(value, name, props) => [`${value}%`, 'الدرجة']}
+                                labelFormatter={(label) => `الشهر: ${label}`}
                               />
                               <Line 
                                 type="monotone" 
@@ -2029,6 +2140,14 @@ const ParentDashboard = () => {
                             </LineChart>
                           </ResponsiveContainer>
                         </div>
+                        ) : (
+                          <div className="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                            <div className="text-center">
+                              <TrendingUp size={48} className="mx-auto mb-4 opacity-50" />
+                              <p>لا توجد بيانات درجات متاحة</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Completion Rates */}

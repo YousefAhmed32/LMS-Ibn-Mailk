@@ -697,7 +697,8 @@ const EditCourse = () => {
             <LuxuryButton
               variant="ghost"
               onClick={() => navigate('/admin/courses')}
-              className="p-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 transition-all duration-200  shadow-md hover:shadow-lg"
+              className="p-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-800 transition-colors duration-150
+  shadow-md hover:shadow-lg"
             >
               <ArrowLeft size={20} />
             </LuxuryButton>
@@ -754,7 +755,8 @@ const EditCourse = () => {
                     name="title"
                     value={courseForm.title}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2"
+                    className="w-full px-4 py-3 rounded-lg border-2 transition-colors duration-150
+ focus:outline-none focus:ring-2"
                     style={{
                       borderColor: colors.border,
                       backgroundColor: colors.background,
@@ -774,7 +776,8 @@ const EditCourse = () => {
                     value={courseForm.description}
                     onChange={handleInputChange}
                     rows={4}
-                    className="w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2 resize-none"
+                    className="w-full px-4 py-3 rounded-lg border-2 transition-colors duration-150
+ focus:outline-none focus:ring-2 resize-none"
                     style={{
                       borderColor: colors.border,
                       backgroundColor: colors.background,
@@ -794,7 +797,8 @@ const EditCourse = () => {
                       name="subject"
                       value={courseForm.subject}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2"
+                      className="w-full px-4 py-3 rounded-lg border-2 transition-colors duration-150
+ focus:outline-none focus:ring-2"
                       style={{
                         borderColor: colors.border,
                         backgroundColor: colors.background,
@@ -815,7 +819,8 @@ const EditCourse = () => {
                       name="grade"
                       value={courseForm.grade}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2"
+                      className="w-full px-4 py-3 rounded-lg border-2 transition-colors duration-150
+ focus:outline-none focus:ring-2"
                       style={{
                         borderColor: colors.border,
                         backgroundColor: colors.background,
@@ -848,7 +853,8 @@ const EditCourse = () => {
                         onChange={handleInputChange}
                         min="0"
                         step="0.01"
-                        className="w-full pl-10 pr-4 py-3 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2"
+                        className="w-full pl-10 pr-4 py-3 rounded-lg border-2 transition-colors duration-150
+ focus:outline-none focus:ring-2"
                         style={{
                           borderColor: colors.border,
                           backgroundColor: colors.background,
@@ -871,7 +877,8 @@ const EditCourse = () => {
                         name="imageUrl"
                         value={courseForm.imageUrl}
                         onChange={handleInputChange}
-                        className="w-full pl-10 pr-4 py-3 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2"
+                        className="w-full pl-10 pr-4 py-3 rounded-lg border-2 transition-colors duration-150
+ focus:outline-none focus:ring-2"
                         style={{
                           borderColor: colors.border,
                           backgroundColor: colors.background,
@@ -922,7 +929,8 @@ const EditCourse = () => {
                       key={video.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-4 p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md"
+                      className="flex items-center gap-4 p-4 rounded-lg border-2 transition-colors duration-150
+ hover:shadow-md"
                       style={{
                         borderColor: colors.border,
                         backgroundColor: colors.background
@@ -954,7 +962,8 @@ const EditCourse = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => window.open(video.url, '_blank')}
-                          className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all duration-200 "
+                          className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-colors duration-150
+ "
                         >
                           <ExternalLink size={16} />
                         </LuxuryButton>
@@ -962,7 +971,8 @@ const EditCourse = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEditVideo(video)}
-                          className="p-2 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-yellow-600 hover:text-yellow-700 transition-all duration-200 "
+                          className="p-2 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-yellow-600 hover:text-yellow-700 transition-colors duration-150
+ "
                         >
                           <Edit size={16} />
                         </LuxuryButton>
@@ -970,7 +980,8 @@ const EditCourse = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDeleteVideo(video.id)}
-                          className="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 transition-all duration-200 "
+                          className="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 transition-colors duration-150
+ "
                         >
                           <Trash2 size={16} />
                         </LuxuryButton>
@@ -1017,7 +1028,8 @@ const EditCourse = () => {
                       key={exam.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-md"
+                      className="p-4 rounded-lg border-2 transition-colors duration-150
+ hover:shadow-md"
                       style={{
                         borderColor: colors.border,
                         backgroundColor: colors.background
@@ -1087,7 +1099,8 @@ const EditCourse = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => window.open(exam.url, '_blank')}
-                              className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all duration-200 "
+                              className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-colors duration-150
+ "
                             >
                               <ExternalLink size={16} />
                             </LuxuryButton>
@@ -1096,7 +1109,8 @@ const EditCourse = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleEditExam(exam)}
-                            className="p-2 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-yellow-600 hover:text-yellow-700 transition-all duration-200 "
+                            className="p-2 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-yellow-600 hover:text-yellow-700 transition-colors duration-150
+ "
                           >
                             <Edit size={16} />
                           </LuxuryButton>
@@ -1104,7 +1118,8 @@ const EditCourse = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteExam(exam.id)}
-                            className="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 transition-all duration-200 "
+                            className="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 transition-colors duration-150
+ "
                           >
                             <Trash2 size={16} />
                           </LuxuryButton>
@@ -1188,7 +1203,8 @@ const EditCourse = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => window.open(courseForm.imageUrl, '_blank')}
-                        className="flex-1 px-3 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all duration-200"
+                        className="flex-1 px-3 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-colors duration-150
+"
                       >
                         <Eye size={14} className="mr-1" />
                         عرض
@@ -1197,7 +1213,8 @@ const EditCourse = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => setCourseForm(prev => ({ ...prev, imageUrl: '' }))}
-                        className="flex-1 px-3 py-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-all duration-200"
+                        className="flex-1 px-3 py-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-colors duration-150
+"
                       >
                         <Trash2 size={14} className="mr-1" />
                         حذف
@@ -1257,7 +1274,8 @@ const EditCourse = () => {
                       type="text"
                       value={newVideo.title}
                       onChange={(e) => setNewVideo(prev => ({ ...prev, title: e.target.value }))}
-                      className="w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2"
+                      className="w-full px-4 py-3 rounded-lg border-2 transition-colors duration-150
+ focus:outline-none focus:ring-2"
                       style={{
                         borderColor: colors.border,
                         backgroundColor: colors.background,
@@ -1276,7 +1294,8 @@ const EditCourse = () => {
                       type="url"
                       value={newVideo.url}
                       onChange={(e) => setNewVideo(prev => ({ ...prev, url: e.target.value }))}
-                      className="w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2"
+                      className="w-full px-4 py-3 rounded-lg border-2 transition-colors duration-150
+ focus:outline-none focus:ring-2"
                       style={{
                         borderColor: colors.border,
                         backgroundColor: colors.background,
@@ -1296,7 +1315,8 @@ const EditCourse = () => {
                       value={newVideo.duration}
                       onChange={(e) => setNewVideo(prev => ({ ...prev, duration: parseInt(e.target.value) || 0 }))}
                       min="0"
-                      className="w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2"
+                      className="w-full px-4 py-3 rounded-lg border-2 transition-colors duration-150
+ focus:outline-none focus:ring-2"
                       style={{
                         borderColor: colors.border,
                         backgroundColor: colors.background,
@@ -1315,7 +1335,8 @@ const EditCourse = () => {
                       type="url"
                       value={newVideo.thumbnail}
                       onChange={(e) => setNewVideo(prev => ({ ...prev, thumbnail: e.target.value }))}
-                      className="w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2"
+                      className="w-full px-4 py-3 rounded-lg border-2 transition-colors duration-150
+ focus:outline-none focus:ring-2"
                       style={{
                         borderColor: colors.border,
                         backgroundColor: colors.background,
@@ -1331,7 +1352,8 @@ const EditCourse = () => {
                   <LuxuryButton
                     variant="ghost"
                     onClick={closeVideoModal}
-                    className="flex-1 px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 font-semibold transition-all duration-200 "
+                    className="flex-1 px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 font-semibold transition-colors duration-150
+ "
                   >
                     إلغاء
                   </LuxuryButton>
@@ -1349,7 +1371,9 @@ const EditCourse = () => {
       </AnimatePresence>
 
       {/* Enhanced Exam Modal */}
-      <AnimatePresence>
+      <AnimatePresence
+      
+      >
         {showExamModal && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -1361,7 +1385,7 @@ const EditCourse = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
+             
               className="w-full max-w-4xl max-h-[90vh] overflow-y-auto"
             >
               <LuxuryCard className="p-6 form-container">
@@ -1482,7 +1506,8 @@ const EditCourse = () => {
                       type="text"
                       value={newExam.title}
                       onChange={(e) => setNewExam(prev => ({ ...prev, title: e.target.value }))}
-                      className="stable-field w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-200"
+                      className="stable-field w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors duration-150
+"
                       placeholder="أدخل عنوان الامتحان"
                     />
                   </div>
@@ -1496,7 +1521,8 @@ const EditCourse = () => {
                         type="url"
                         value={newExam.url}
                         onChange={(e) => setNewExam(prev => ({ ...prev, url: e.target.value }))}
-                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-200"
+                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors duration-150
+"
                         placeholder="https://forms.google.com/..."
                       />
                     </div>
@@ -1515,7 +1541,8 @@ const EditCourse = () => {
                         value={newExam.duration}
                         onChange={(e) => setNewExam(prev => ({ ...prev, duration: parseInt(e.target.value) || 30 }))}
                         min="1"
-                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-200"
+                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors duration-150
+"
                       />
                     </div>
 
@@ -1529,7 +1556,8 @@ const EditCourse = () => {
                         onChange={(e) => setNewExam(prev => ({ ...prev, passingScore: parseInt(e.target.value) || 60 }))}
                         min="0"
                         max="100"
-                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all duration-200"
+                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors duration-150
+"
                       />
                     </div>
 
@@ -1760,7 +1788,8 @@ const EditCourse = () => {
                         questions: []
                       });
                     }}
-                    className="flex-1 px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold transition-all duration-200 "
+                    className="flex-1 px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold transition-colors duration-150
+ "
                   >
                     إلغاء
                   </LuxuryButton>
