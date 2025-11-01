@@ -805,9 +805,9 @@ const ParentDashboard = () => {
                               <div className="h-full w-full rounded-2xl bg-gradient-to-r from-white/10 via-white/5 to-white/10"></div>
                             </div>
 
-                            <div className="relative flex items-center gap-4">
+                            <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                               {/* Student Avatar */}
-                              <div className="relative">
+                              <div className="relative flex-shrink-0">
                                 <div className="w-12 h-12 bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 rounded-full flex items-center justify-center shadow-lg">
                                   <User className="text-white text-lg" />
                                 </div>
@@ -818,28 +818,28 @@ const ParentDashboard = () => {
                               </div>
 
                               {/* Student Info */}
-                              <div className="flex-1">
-                                <h4 className="text-white font-semibold text-lg mb-1">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-white font-semibold text-base sm:text-lg mb-1 truncate">
                                   {child.firstName} {child.secondName} {child.thirdName} {child.fourthName}
                                 </h4>
-                                <div className="flex items-center gap-4 text-sm text-gray-300">
+                                <div className="flex flex-col xs:flex-row items-start xs:items-center gap-2 xs:gap-4 text-sm text-gray-300">
                                   {child.studentId && (
-                                    <div className="flex items-center gap-1">
-                                      <GraduationCap size={14} />
-                                      <span>{child.studentId}</span>
+                                    <div className="flex items-center gap-1 min-w-0">
+                                      <GraduationCap size={14} className="flex-shrink-0" />
+                                      <span className="truncate">{child.studentId}</span>
                                     </div>
                                   )}
                                   {child.grade && (
-                                    <div className="flex items-center gap-1">
-                                      <BookOpen size={14} />
-                                      <span>{child.grade}</span>
+                                    <div className="flex items-center gap-1 min-w-0">
+                                      <BookOpen size={14} className="flex-shrink-0" />
+                                      <span className="truncate">{child.grade}</span>
                                     </div>
                                   )}
                                 </div>
                               </div>
 
                               {/* Action Button */}
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0">
                                 <motion.div
                                   className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center"
                                   whileHover={{ scale: 1.1 }}
@@ -847,7 +847,7 @@ const ParentDashboard = () => {
                                 >
                                   <ArrowLeft size={16} className="text-white" />
                                 </motion.div>
-                                <span className="text-xs text-gray-400 group-hover:text-white transition-colors">
+                                <span className="text-xs text-gray-400 group-hover:text-white transition-colors hidden sm:inline">
                                   عرض البيانات
                                 </span>
                               </div>
@@ -1305,9 +1305,11 @@ const ParentDashboard = () => {
         {/* Compact Luxury Header */}
         <div className="relative z-10 w-full bg-gradient-to-r from-slate-800/95 via-gray-900/98 to-slate-800/95 dark:from-slate-800/95 dark:via-gray-900/98 dark:to-slate-800/95 light:from-white/95 light:via-gray-50/98 light:to-white/95 backdrop-blur-xl shadow-[0_0_15px_rgba(6,182,212,0.15)] dark:shadow-[0_0_20px_rgba(6,182,212,0.25)] light:shadow-[0_0_10px_rgba(6,182,212,0.1)] border-b border-cyan-400/25 dark:border-cyan-400/35 light:border-cyan-600/15">
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/3 via-blue-500/5 to-purple-500/3 dark:from-cyan-500/5 dark:via-blue-500/8 dark:to-purple-500/5 light:from-cyan-500/2 light:via-blue-500/3 light:to-purple-500/2"></div>
-          <div className="relative w-full px-4 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 sm:gap-4">
+          <div className="relative w-full px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+            {/* Mobile Layout: Stack vertically */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              {/* Left Section */}
+              <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -1323,7 +1325,7 @@ const ParentDashboard = () => {
                     {selectedChild ? `درجات ${selectedChild.firstName} ${selectedChild.secondName}` : 'درجات أولادي'}
                   </h1>
                   {/* Mobile Title */}
-                  <h1 className="sm:hidden text-lg font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 dark:from-cyan-300 dark:via-blue-300 dark:to-purple-300 light:from-cyan-600 light:via-blue-600 light:to-purple-600 bg-clip-text text-transparent mb-1 drop-shadow-[0_0_4px_rgba(6,182,212,0.25)] dark:drop-shadow-[0_0_6px_rgba(6,182,212,0.35)] light:drop-shadow-[0_0_3px_rgba(6,182,212,0.15)]">
+                  <h1 className="sm:hidden text-base font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 dark:from-cyan-300 dark:via-blue-300 dark:to-purple-300 light:from-cyan-600 light:via-blue-600 light:to-purple-600 bg-clip-text text-transparent mb-1 drop-shadow-[0_0_4px_rgba(6,182,212,0.25)] dark:drop-shadow-[0_0_6px_rgba(6,182,212,0.35)] light:drop-shadow-[0_0_3px_rgba(6,182,212,0.15)] truncate">
                     {selectedChild ? `درجات ${selectedChild.firstName}` : 'درجات أولادي'}
                   </h1>
                   
@@ -1335,7 +1337,7 @@ const ParentDashboard = () => {
                     }
                   </p>
                   {/* Mobile Subtitle */}
-                  <p className="sm:hidden text-cyan-300 dark:text-cyan-200 light:text-cyan-700 text-xs font-medium">
+                  <p className="sm:hidden text-cyan-300 dark:text-cyan-200 light:text-cyan-700 text-xs font-medium truncate">
                     {selectedChild ? 
                       `تابع الأداء الأكاديمي` : 
                       'تابع أداء أطفالك'
@@ -1343,18 +1345,19 @@ const ParentDashboard = () => {
                   </p>
                   
                   {selectedChild && (
-                    <div className="mt-1 flex items-center gap-2">
+                    <div className="mt-1 flex items-center gap-1.5 sm:gap-2">
                       <CheckCircle size={10} className="text-emerald-400 dark:text-emerald-300 light:text-emerald-600 drop-shadow-[0_0_2px_rgba(16,185,129,0.25)] dark:drop-shadow-[0_0_3px_rgba(16,185,129,0.35)] light:drop-shadow-[0_0_1px_rgba(16,185,129,0.15)] flex-shrink-0" />
-                      <span className="text-emerald-300 dark:text-emerald-200 light:text-emerald-700 text-xs font-medium leading-tight">
+                      <span className="text-emerald-300 dark:text-emerald-200 light:text-emerald-700 text-xs font-medium leading-tight truncate">
                         <span className="hidden xs:inline">تم تحميل البيانات تلقائياً</span>
                         <span className="xs:hidden">تم التحميل</span>
                       </span>
                     </div>
                   )}
               </div>
-            </div>
+              </div>
             
-              <div className="flex items-center gap-2 sm:gap-4">
+              {/* Right Section - Buttons */}
+              <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 flex-wrap sm:flex-nowrap flex-shrink-0">
                 {/* Theme Toggle Buttons */}
                 <div className="flex items-center gap-1">
                   <motion.button
@@ -1364,9 +1367,9 @@ const ParentDashboard = () => {
                       document.documentElement.classList.remove('dark');
                       document.documentElement.classList.add('light');
                     }}
-                    className="p-2 rounded-lg bg-gradient-to-r from-yellow-500/12 to-orange-500/12 dark:from-yellow-500/15 dark:to-orange-500/15 light:from-yellow-500/6 light:to-orange-500/6 backdrop-blur-sm text-yellow-300 dark:text-yellow-200 light:text-yellow-700 hover:from-yellow-500/15 hover:to-orange-500/15 dark:hover:from-yellow-500/20 dark:hover:to-orange-500/20 light:hover:from-yellow-500/8 light:hover:to-orange-500/8 transition-all duration-300 border border-yellow-400/20 dark:border-yellow-400/30 light:border-yellow-600/15 shadow-[0_0_8px_rgba(245,158,11,0.15)] dark:shadow-[0_0_12px_rgba(245,158,11,0.25)] light:shadow-[0_0_6px_rgba(245,158,11,0.1)] hover:shadow-[0_0_12px_rgba(245,158,11,0.25)] dark:hover:shadow-[0_0_15px_rgba(245,158,11,0.35)] light:hover:shadow-[0_0_8px_rgba(245,158,11,0.15)]"
+                    className="p-1.5 sm:p-2 rounded-lg bg-gradient-to-r from-yellow-500/12 to-orange-500/12 dark:from-yellow-500/15 dark:to-orange-500/15 light:from-yellow-500/6 light:to-orange-500/6 backdrop-blur-sm text-yellow-300 dark:text-yellow-200 light:text-yellow-700 hover:from-yellow-500/15 hover:to-orange-500/15 dark:hover:from-yellow-500/20 dark:hover:to-orange-500/20 light:hover:from-yellow-500/8 light:hover:to-orange-500/8 transition-all duration-300 border border-yellow-400/20 dark:border-yellow-400/30 light:border-yellow-600/15 shadow-[0_0_8px_rgba(245,158,11,0.15)] dark:shadow-[0_0_12px_rgba(245,158,11,0.25)] light:shadow-[0_0_6px_rgba(245,158,11,0.1)] hover:shadow-[0_0_12px_rgba(245,158,11,0.25)] dark:hover:shadow-[0_0_15px_rgba(245,158,11,0.35)] light:hover:shadow-[0_0_8px_rgba(245,158,11,0.15)]"
                   >
-                    <Sun size={16} />
+                    <Sun size={14} className="sm:w-4 sm:h-4" />
                   </motion.button>
                   
                   <motion.button
@@ -1376,9 +1379,9 @@ const ParentDashboard = () => {
                       document.documentElement.classList.remove('light');
                       document.documentElement.classList.add('dark');
                     }}
-                    className="p-2 rounded-lg bg-gradient-to-r from-slate-500/12 to-gray-500/12 dark:from-slate-500/15 dark:to-gray-500/15 light:from-slate-500/6 light:to-gray-500/6 backdrop-blur-sm text-slate-300 dark:text-slate-200 light:text-slate-700 hover:from-slate-500/15 hover:to-gray-500/15 dark:hover:from-slate-500/20 dark:hover:to-gray-500/20 light:hover:from-slate-500/8 light:hover:to-gray-500/8 transition-all duration-300 border border-slate-400/20 dark:border-slate-400/30 light:border-slate-600/15 shadow-[0_0_8px_rgba(71,85,105,0.15)] dark:shadow-[0_0_12px_rgba(71,85,105,0.25)] light:shadow-[0_0_6px_rgba(71,85,105,0.1)] hover:shadow-[0_0_12px_rgba(71,85,105,0.25)] dark:hover:shadow-[0_0_15px_rgba(71,85,105,0.35)] light:hover:shadow-[0_0_8px_rgba(71,85,105,0.15)]"
+                    className="p-1.5 sm:p-2 rounded-lg bg-gradient-to-r from-slate-500/12 to-gray-500/12 dark:from-slate-500/15 dark:to-gray-500/15 light:from-slate-500/6 light:to-gray-500/6 backdrop-blur-sm text-slate-300 dark:text-slate-200 light:text-slate-700 hover:from-slate-500/15 hover:to-gray-500/15 dark:hover:from-slate-500/20 dark:hover:to-gray-500/20 light:hover:from-slate-500/8 light:hover:to-gray-500/8 transition-all duration-300 border border-slate-400/20 dark:border-slate-400/30 light:border-slate-600/15 shadow-[0_0_8px_rgba(71,85,105,0.15)] dark:shadow-[0_0_12px_rgba(71,85,105,0.25)] light:shadow-[0_0_6px_rgba(71,85,105,0.1)] hover:shadow-[0_0_12px_rgba(71,85,105,0.25)] dark:hover:shadow-[0_0_15px_rgba(71,85,105,0.35)] light:hover:shadow-[0_0_8px_rgba(71,85,105,0.15)]"
                   >
-                    <Moon size={16} />
+                    <Moon size={14} className="sm:w-4 sm:h-4" />
                   </motion.button>
                 </div>
 
@@ -1386,9 +1389,9 @@ const ParentDashboard = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => navigate('/parent/link-student')}
-                  className="px-2 sm:px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500/15 to-blue-500/15 dark:from-cyan-500/20 dark:to-blue-500/20 light:from-cyan-500/8 light:to-blue-500/8 backdrop-blur-sm text-cyan-300 dark:text-cyan-200 light:text-cyan-700 hover:from-cyan-500/20 hover:to-blue-500/20 dark:hover:from-cyan-500/25 dark:hover:to-blue-500/25 light:hover:from-cyan-500/12 light:hover:to-blue-500/12 transition-all duration-300 flex items-center gap-1 sm:gap-2 border border-cyan-400/30 dark:border-cyan-400/40 light:border-cyan-600/20 shadow-[0_0_12px_rgba(6,182,212,0.2)] dark:shadow-[0_0_18px_rgba(6,182,212,0.3)] light:shadow-[0_0_8px_rgba(6,182,212,0.15)] hover:shadow-[0_0_18px_rgba(6,182,212,0.3)] dark:hover:shadow-[0_0_25px_rgba(6,182,212,0.4)] light:hover:shadow-[0_0_12px_rgba(6,182,212,0.2)] text-xs sm:text-sm font-medium"
+                  className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg bg-gradient-to-r from-cyan-500/15 to-blue-500/15 dark:from-cyan-500/20 dark:to-blue-500/20 light:from-cyan-500/8 light:to-blue-500/8 backdrop-blur-sm text-cyan-300 dark:text-cyan-200 light:text-cyan-700 hover:from-cyan-500/20 hover:to-blue-500/20 dark:hover:from-cyan-500/25 dark:hover:to-blue-500/25 light:hover:from-cyan-500/12 light:hover:to-blue-500/12 transition-all duration-300 flex items-center gap-1 sm:gap-2 border border-cyan-400/30 dark:border-cyan-400/40 light:border-cyan-600/20 shadow-[0_0_12px_rgba(6,182,212,0.2)] dark:shadow-[0_0_18px_rgba(6,182,212,0.3)] light:shadow-[0_0_8px_rgba(6,182,212,0.15)] hover:shadow-[0_0_18px_rgba(6,182,212,0.3)] dark:hover:shadow-[0_0_25px_rgba(6,182,212,0.4)] light:hover:shadow-[0_0_12px_rgba(6,182,212,0.2)] text-xs sm:text-sm font-medium"
                 >
-                  <UserCheck size={14} className="sm:w-4 sm:h-4" />
+                  <UserCheck size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
                   <span className="hidden xs:inline">ربط طالب جديد</span>
                   <span className="xs:hidden">ربط</span>
                 </motion.button>
@@ -1399,11 +1402,10 @@ const ParentDashboard = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => navigateToStudentAccount()}
-                    className="px-3 sm:px-6 py-2 sm:py-3 rounded-xl bg-gradient-to-r from-emerald-500/20 to-green-500/20 backdrop-blur-sm text-white hover:from-emerald-500/30 hover:to-green-500/30 transition-all duration-200 flex items-center gap-1 sm:gap-2 border border-emerald-400/30 text-xs sm:text-sm"
+                    className="px-2 sm:px-3 md:px-6 py-1.5 sm:py-2 md:py-3 rounded-xl bg-gradient-to-r from-emerald-500/20 to-green-500/20 backdrop-blur-sm text-white hover:from-emerald-500/30 hover:to-green-500/30 transition-all duration-200 flex items-center gap-1 sm:gap-2 border border-emerald-400/30 text-xs sm:text-sm"
                   >
-                    <Users size={14} className="sm:w-4 sm:h-4" />
-                    <span className="hidden xs:inline">حساب {selectedChild.firstName}</span>
-                    <span className="xs:hidden">حساب</span>
+                    <Users size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
+                    <span className="hidden sm:inline">حساب</span>
                   </motion.button>
                 )}
                 
@@ -1412,10 +1414,11 @@ const ParentDashboard = () => {
                     console.log('Link student button clicked');
                     setShowLinkModal(true);
                   }}
-                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm text-white hover:from-purple-500/30 hover:to-pink-500/30 transition-all duration-200 flex items-center gap-2 border border-purple-400/30"
+                  className="px-3 sm:px-4 md:px-6 py-1.5 sm:py-2 md:py-3 rounded-xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-sm text-white hover:from-purple-500/30 hover:to-pink-500/30 transition-all duration-200 flex items-center gap-1 sm:gap-2 border border-purple-400/30 text-xs sm:text-sm"
                 >
-                  <Plus size={18} />
-                  ربط سريع
+                  <Plus size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
+                  <span className="hidden xs:inline">ربط سريع</span>
+                  <span className="xs:hidden">ربط</span>
                 </button>
                 
                 <motion.button
@@ -1519,52 +1522,60 @@ const ParentDashboard = () => {
                 {/* Child Info Card */}
                 {selectedChild && (
                   <LuxuryCard className="p-8 bg-gradient-to-r from-white to-blue-50 dark:from-gray-800 dark:to-gray-700">
-                    <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-6">
-                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 md:gap-0">
+                      <div className="flex items-center gap-6">
+                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shrink-0">
                           <GraduationCap size={32} className="text-white" />
-                      </div>
-                      
+                        </div>
                         <div>
-                          <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">
+                          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white mb-2 break-words leading-snug">
                             {selectedChild.firstName} {selectedChild.secondName} {selectedChild.thirdName} {selectedChild.fourthName}
-                        </h2>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="flex items-center gap-2">
-                              <Users size={16} className="text-gray-500 dark:text-gray-400" />
-                              <span className="text-gray-600 dark:text-gray-300">معرف الطالب:</span>
-                              <span className="font-mono text-gray-800 dark:text-white">{selectedChild.studentId}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                              <Mail size={16} className="text-gray-500 dark:text-gray-400" />
-                              <span className="text-gray-600 dark:text-gray-300">البريد:</span>
-                              <span className="text-gray-800 dark:text-white">{selectedChild.userEmail}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                              <Phone size={16} className="text-gray-500 dark:text-gray-400" />
-                              <span className="text-gray-600 dark:text-gray-300">الهاتف:</span>
-                              <span className="text-gray-800 dark:text-white">{selectedChild.phoneStudent}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                              <MapPin size={16} className="text-gray-500 dark:text-gray-400" />
-                              <span className="text-gray-600 dark:text-gray-300">المحافظة:</span>
-                              <span className="text-gray-800 dark:text-white">{selectedChild.governorate}</span>
+                          </h2>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 break-all">
+                              <span className="flex items-center gap-1">
+                                <Users size={16} className="text-gray-500 dark:text-gray-400" />
+                                <span className="text-gray-600 dark:text-gray-300">معرف الطالب:</span>
+                              </span>
+                              <span className="font-mono text-gray-800 dark:text-white text-xs sm:text-sm">{selectedChild.studentId}</span>
+                            </div>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 break-all">
+                              <span className="flex items-center gap-1">
+                                <Mail size={16} className="text-gray-500 dark:text-gray-400" />
+                                <span className="text-gray-600 dark:text-gray-300">البريد:</span>
+                              </span>
+                              <span className="text-gray-800 dark:text-white text-xs sm:text-sm break-all">{selectedChild.userEmail}</span>
+                            </div>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 break-all">
+                              <span className="flex items-center gap-1">
+                                <Phone size={16} className="text-gray-500 dark:text-gray-400" />
+                                <span className="text-gray-600 dark:text-gray-300">الهاتف:</span>
+                              </span>
+                              <span className="text-gray-800 dark:text-white text-xs sm:text-sm">{selectedChild.phoneStudent}</span>
+                            </div>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 break-all">
+                              <span className="flex items-center gap-1">
+                                <MapPin size={16} className="text-gray-500 dark:text-gray-400" />
+                                <span className="text-gray-600 dark:text-gray-300">المحافظة:</span>
+                              </span>
+                              <span className="text-gray-800 dark:text-white text-xs sm:text-sm">{selectedChild.governorate}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                      
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => exportReport(selectedChild._id)}
-                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center gap-2 shadow-lg"
-                      >
-                        <Download size={18} />
-                        تصدير التقرير
-                      </motion.button>
+                      <div className="mt-4 md:mt-0 flex-shrink-0 text-center md:text-end">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => exportReport(selectedChild._id)}
+                          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center gap-2 shadow-lg justify-center w-full md:w-auto"
+                        >
+                          <Download size={18} />
+                          تصدير التقرير
+                        </motion.button>
                       </div>
-                    </LuxuryCard>
+                    </div>
+                  </LuxuryCard>
                 )}
 
                 {/* Loading State */}
