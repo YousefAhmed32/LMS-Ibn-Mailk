@@ -109,7 +109,7 @@ const Footer = () => {
     {
       name: 'Telegram',
       icon: Send,
-      href: 'https://t.me/yansy_platform',
+      href: 'https://t.me/apnayhay?direct',
       color: 'text-blue-500 hover:text-blue-400',
       glowColor: 'hover:shadow-blue-500/50'
     },
