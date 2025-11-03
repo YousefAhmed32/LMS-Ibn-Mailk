@@ -294,7 +294,7 @@ const NotificationsPage = () => {
         {/* Filters and Actions */}
         <Card className="mb-6">
           <CardContent className="p-6">
-            <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex flex-col lg:flex-row gap-4 pt-5">
               {/* Search */}
               <div className="flex-1">
                 <div className="relative">
@@ -304,7 +304,7 @@ const NotificationsPage = () => {
                     placeholder="البحث في الإشعارات..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-900 dark:text-white dark:border-gray-700"
                   />
                 </div>
               </div>
@@ -313,7 +313,7 @@ const NotificationsPage = () => {
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-900 dark:text-white dark:border-gray-700"
               >
                 {notificationTypes.map(type => (
                   <option key={type.value} value={type.value}>
@@ -326,7 +326,7 @@ const NotificationsPage = () => {
               <select
                 value={filterRead}
                 onChange={(e) => setFilterRead(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-900 dark:text-white dark:border-gray-700"
               >
                 <option value="all">جميع الحالات</option>
                 <option value="unread">غير مقروءة</option>
@@ -410,11 +410,7 @@ const NotificationsPage = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
-                      className={`p-4 rounded-lg border transition-all duration-200 ${
-                        selectedNotifications.includes(notification.id || notification._id)
-                          ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-700'
-                          : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                      } ${getStatusColor(notification)}`}
+                       className="  p-2 bg-white dark:bg-gray-950 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700"
                     >
                       <div className="flex items-start gap-4">
                         {/* Checkbox */}

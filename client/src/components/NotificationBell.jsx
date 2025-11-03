@@ -6,6 +6,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
+  const dropdownContentRef = useRef(null);
+  const [position, setPosition] = useState({ top: 0, right: 0 });
+  
   const {
     notifications,
     unreadCount,
@@ -16,19 +20,41 @@ const NotificationBell = () => {
     getNotificationColor
   } = useNotifications();
 
+  // Calculate dropdown position when opening
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const dropdownWidth = 320; // w-80 = 320px
+      const rightPosition = window.innerWidth - rect.right;
+      
+      // Ensure dropdown doesn't go off screen
+      const finalRight = Math.max(16, Math.min(rightPosition, window.innerWidth - dropdownWidth - 16));
+      
+      setPosition({
+        top: rect.bottom + 8, // 8px below the button
+        right: finalRight,
+      });
+    }
+  }, [isOpen]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      const clickedOnButton = buttonRef.current && buttonRef.current.contains(event.target);
+      const clickedOnDropdown = dropdownContentRef.current && dropdownContentRef.current.contains(event.target);
+      
+      if (!clickedOnButton && !clickedOnDropdown) {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [isOpen]);
 
   const handleNotificationClick = async (notification) => {
     if (!notification.read) {
@@ -57,6 +83,7 @@ const NotificationBell = () => {
     <div className="relative" ref={dropdownRef}>
       {/* Bell Icon */}
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors duration-200"
         aria-label="الإشعارات"
@@ -80,11 +107,18 @@ const NotificationBell = () => {
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            ref={dropdownContentRef}
             initial={{ opacity: 0, y: -10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50 max-h-96 overflow-hidden"
+            style={{
+              position: 'fixed',
+              top: `${position.top}px`,
+              right: `${position.right}px`,
+              zIndex: 9999,
+            }}
+            className="w-80 max-w-[calc(100vw-32px)] bg-white rounded-xl shadow-lg border border-gray-200 max-h-96 overflow-hidden"
           >
             {/* Header */}
             <div className="p-4 border-b border-gray-200 bg-gray-50">

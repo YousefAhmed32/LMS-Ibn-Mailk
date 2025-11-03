@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bell, 
@@ -21,6 +22,9 @@ const EnhancedNotificationBell = () => {
   const [selectedNotifications, setSelectedNotifications] = useState([]);
   const [showSettings, setShowSettings] = useState(false);
   const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
+  const dropdownContentRef = useRef(null);
+  const [position, setPosition] = useState({ top: 0, right: 0 });
   
   const {
     notifications,
@@ -49,20 +53,56 @@ const EnhancedNotificationBell = () => {
     }
   }, [user?._id, fetchNotifications, fetchUnreadCount]);
 
+  // Calculate dropdown position when opening or scrolling
+  useEffect(() => {
+    const updatePosition = () => {
+      if (isOpen && buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        const dropdownWidth = 384; // w-96 = 384px
+        const rightPosition = window.innerWidth - rect.right;
+        
+        // Ensure dropdown doesn't go off screen
+        const finalRight = Math.max(16, Math.min(rightPosition, window.innerWidth - dropdownWidth - 16));
+        
+        setPosition({
+          top: rect.bottom + 8, // 8px below the button
+          right: finalRight,
+        });
+      }
+    };
+
+    updatePosition();
+
+    // Update position on scroll or resize
+    if (isOpen) {
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+      };
+    }
+  }, [isOpen]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      const clickedOnButton = buttonRef.current && buttonRef.current.contains(event.target);
+      const clickedOnDropdown = dropdownContentRef.current && dropdownContentRef.current.contains(event.target);
+      
+      if (!clickedOnButton && !clickedOnDropdown) {
         setIsOpen(false);
         setSelectedNotifications([]);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [isOpen]);
 
   const handleNotificationClick = async (notification) => {
     if (!notification.read) {
@@ -133,6 +173,7 @@ const EnhancedNotificationBell = () => {
     <div className="relative" ref={dropdownRef}>
       {/* Notification Bell Button */}
       <motion.button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
         whileHover={{ scale: 1.05 }}
@@ -157,16 +198,24 @@ const EnhancedNotificationBell = () => {
         }`} />
       </motion.button>
 
-      {/* Dropdown */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="absolute right-0 top-12 w-96 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50"
-          >
+      {/* Dropdown - Using Portal to render outside DOM hierarchy */}
+      {typeof window !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              ref={dropdownContentRef}
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              style={{
+                position: 'fixed',
+                top: `${position.top}px`,
+                right: `${position.right}px`,
+                zIndex: 99999,
+              }}
+              className="w-96 max-w-[calc(100vw-32px)] bg-white dark:bg-gray-950 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700"
+            >
             {/* Header */}
             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
@@ -251,11 +300,7 @@ const EnhancedNotificationBell = () => {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20 }}
-                      className={`p-3 rounded-lg mb-2 border transition-all duration-200 ${
-                        selectedNotifications.includes(notification.id || notification._id)
-                          ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-700'
-                          : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                      } ${getStatusColor(notification)}`}
+                      className={`p-3 rounded-lg mb-2 border bg-gray-50 dark:bg-gray-950 `}
                     >
                       <div className="flex items-start gap-3">
                         {/* Checkbox */}
@@ -361,7 +406,9 @@ const EnhancedNotificationBell = () => {
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence>,
+      document.body
+      )}
     </div>
   );
 };
