@@ -54,18 +54,18 @@ const HeroSection = () => {
             transition={{ duration: 0.6, delay: 0.1 }}
             whileHover={{ 
               scale: 1.03,
-              y: -2,
+              y: 2,
               boxShadow: "0 20px 40px rgba(6,182,212,0.2)"
             }}
-            className="group inline-flex items-center justify-center px-6 py-3 rounded-2xl bg-gradient-to-r from-cyan-50/90 via-blue-50/90 to-purple-50/90 dark:from-cyan-900/40 dark:via-blue-900/40 dark:to-purple-900/40 text-cyan-700 dark:text-cyan-300 font-bold text-sm shadow-xl hover:shadow-2xl transition-all duration-500 mb-8 border border-cyan-300/60 dark:border-cyan-600/40 backdrop-blur-xl relative overflow-hidden"
+            className="mt-2 group inline-flex items-center justify-center px-6 py-3 rounded-2xl bg-gradient-to-r from-cyan-50/90 via-blue-50/90 to-purple-50/90 dark:from-cyan-900/40 dark:via-blue-900/40 dark:to-purple-900/40 text-cyan-700 dark:text-cyan-300 font-bold text-sm shadow-xl hover:shadow-2xl transition-all duration-500 mb-8 border border-cyan-300/60 dark:border-cyan-600/40 backdrop-blur-xl relative overflow-hidden"
           >
             {/* Luxury shine effect */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
             
-            <div className="relative z-10">
+            <div className="relative z-10 mt">
               <Zap className="w-5 h-5 mr-3 text-cyan-500 drop-shadow-lg" />
             </div>
-            <span className="relative z-10 bg-gradient-to-r from-cyan-700 to-blue-700 dark:from-cyan-300 dark:to-blue-300 bg-clip-text text-transparent font-bold">
+            <span className="relative z-10 bg-gradient-to-r from-cyan-700 to-blue-700 dark:from-cyan-300 dark:to-blue-300 bg-clip-text text-transparent font-bold mt-2">
               مع الأستاذة / جميلة السيد - معلمة اللغة العربية
             </span>
           </motion.div>
