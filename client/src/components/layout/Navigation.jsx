@@ -73,9 +73,9 @@ const Navigation = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-luxury-navy-900/95 backdrop-blur-xl border-b border-gray-200/50 dark:border-luxury-navy-700/50 transition-all duration-300 shadow-lg dark:shadow-luxury-navy-900/20 overflow-x-hidden">
-      <div className="w-full mx-auto px-2 sm:px-4">
-        <div className="flex justify-between items-center h-16 gap-2">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-luxury-navy-900/95 backdrop-blur-xl border-b border-gray-200/50 dark:border-luxury-navy-700/50 transition-all duration-300 shadow-lg dark:shadow-luxury-navy-900/20 overflow-x-hidden w-full max-w-full">
+      <div className="w-full max-w-full mx-auto px-2 sm:px-4">
+        <div className="flex justify-between items-center h-16 gap-2 max-w-full">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3 group min-w-0 flex-shrink-0">
           <div className="relative">

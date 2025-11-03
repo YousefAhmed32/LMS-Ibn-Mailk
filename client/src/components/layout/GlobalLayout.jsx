@@ -11,7 +11,7 @@ const GlobalLayout = ({ children, showAdminHeader = false }) => {
   const shouldShowAdminHeader = showAdminHeader || (user?.role === 'admin' && window.location.pathname.startsWith('/admin'));
   
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-x-hidden w-full max-w-full">
       {/* Unified Header */}
       {shouldShowAdminHeader ? (
         <AdminHeader />
@@ -20,7 +20,7 @@ const GlobalLayout = ({ children, showAdminHeader = false }) => {
       )}
       
       {/* Main Content */}
-      <main className={`flex-1 ${shouldShowAdminHeader ? 'pt-20' : 'pt-16'}`}>
+      <main className={`flex-1 ${shouldShowAdminHeader ? 'pt-20' : 'pt-16'} w-full max-w-full overflow-x-hidden`}>
         {children}
       </main>
       

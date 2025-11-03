@@ -88,7 +88,7 @@ function App() {
     <ThemeProvider>
       <NotificationProvider>
         <AuthProvider>
-          <div className="App">
+          <div className="App overflow-x-hidden w-full max-w-full">
           <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<LandingPage />} />

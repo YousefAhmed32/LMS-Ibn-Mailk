@@ -59,8 +59,17 @@
   * {
     @apply border-border;
   }
+  html {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+  }
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+    position: relative;
   }
 }
 
