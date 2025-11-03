@@ -73,11 +73,11 @@ const Navigation = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-luxury-navy-900/95 backdrop-blur-xl border-b border-gray-200/50 dark:border-luxury-navy-700/50 transition-all duration-300 shadow-lg dark:shadow-luxury-navy-900/20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-luxury-navy-900/95 backdrop-blur-xl border-b border-gray-200/50 dark:border-luxury-navy-700/50 transition-all duration-300 shadow-lg dark:shadow-luxury-navy-900/20 overflow-x-hidden">
+      <div className="w-full mx-auto px-2 sm:px-4">
+        <div className="flex justify-between items-center h-16 gap-2">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3 group">
+          <Link to="/" className="flex items-center space-x-3 group min-w-0 flex-shrink-0">
           <div className="relative">
             {/* Logo Container with Enhanced Styling */}
             <div className={`w-14 h-14 rounded-2xl ${
@@ -138,7 +138,7 @@ const Navigation = () => {
 
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden lg:flex items-center space-x-8">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -171,15 +171,16 @@ const Navigation = () => {
           </div>
 
           {/* Right Side */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
             <ThemeToggle />
             
             {user && (
               <EnhancedNotificationBell />
             )}
             
+            {/* User Section - Hidden on mobile, shown on desktop */}
             {user ? (
-              <div className="relative" ref={dropdownRef}>
+              <div className="hidden lg:block relative" ref={dropdownRef}>
                 {/* User Avatar/Name Button */}
                 <button
                   onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
@@ -198,7 +199,7 @@ const Navigation = () => {
                     <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-luxury-navy-900"></div>
                   </div>
                   
-                  <div className="hidden sm:block text-left relative z-10">
+                  <div className="hidden lg:block text-left relative z-10">
                     <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 transition-colors duration-300 group-hover:text-luxury-gold-600 dark:group-hover:text-luxury-gold-400">
                       {user.firstName}
                     </span>
@@ -225,7 +226,7 @@ const Navigation = () => {
                         <div className="flex items-center space-x-3">
                           <div className="w-10 h-10 bg-gradient-to-br from-luxury-gold-500 to-luxury-orange-500 rounded-xl flex items-center justify-center shadow-lg">
                             <span className="text-white text-sm font-bold">
-                              {user.firstName?.charAt(0) || 'U'}{user.secondName?.charAt(0) || ''}
+                              {user.firstName?.charAt(0)  || 'U'}{user.secondName?.charAt(0) || ''}
                             </span>
                           </div>
                           <div>
@@ -244,7 +245,7 @@ const Navigation = () => {
                       </div>
                       
                       {/* Menu Items */}
-                      <div className="py-2">
+                      <div className="py-2  ">
                         <button
                           onClick={() => {
                             navigate('/account');
@@ -285,14 +286,14 @@ const Navigation = () => {
                 </AnimatePresence>
               </div>
             ) : (
-              <div className="flex items-center space-x-3">
+              <div className="hidden lg:flex items-center space-x-2 sm:space-x-3">
                 <Link to="/login">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="text-xs sm:text-sm whitespace-nowrap">
                     تسجيل الدخول
                   </Button>
                 </Link>
                 <Link to="/register">
-                  <Button size="sm">
+                  <Button size="sm" className="text-xs sm:text-sm whitespace-nowrap">
                     إنشاء حساب
                   </Button>
                 </Link>
@@ -301,7 +302,7 @@ const Navigation = () => {
 
             {/* Mobile menu button */}
             <button
-              className={`md:hidden p-2.5 rounded-xl transition-all duration-300 ${
+              className={`lg:hidden p-2.5 rounded-xl transition-all duration-300 mb- ${
                 isDarkMode 
                   ? 'bg-luxury-navy-700/50 hover:bg-luxury-navy-600/50 text-gray-300 hover:text-white border border-luxury-navy-600/30' 
                   : 'bg-white/80 hover:bg-white text-gray-600 hover:text-gray-900 border border-gray-200/50 shadow-lg hover:shadow-xl'
@@ -327,9 +328,42 @@ const Navigation = () => {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="md:hidden bg-white/95 dark:bg-luxury-navy-900/95 backdrop-blur-xl border-t border-gray-200/50 dark:border-luxury-navy-700/50 shadow-lg overflow-hidden"
+            className="lg:hidden bg-white/95 dark:bg-luxury-navy-900/95 backdrop-blur-xl border-t border-gray-200/50 dark:border-luxury-navy-700/50 shadow-lg overflow-hidden "
           >
             <div className="px-4 pt-4 pb-6 space-y-2">
+              {/* User Section - Mobile Only */}
+             
+
+              {/* Login/Signup Buttons - Mobile Only */}
+              {!user && (
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0 }}
+                  className="pb-4 border-b border-gray-200 dark:border-gray-700 mb-2 space-y-2"
+                >
+                  <Link
+                    to="/login"
+                    onClick={() => setIsOpen(false)}
+                    className="block w-full"
+                  >
+                    <Button variant="outline" className="w-full">
+                      تسجيل الدخول
+                    </Button>
+                  </Link>
+                  <Link
+                    to="/register"
+                    onClick={() => setIsOpen(false)}
+                    className="block w-full"
+                  >
+                    <Button className="w-full">
+                      إنشاء حساب
+                    </Button>
+                  </Link>
+                </motion.div>
+              )}
+
+              {/* Navigation Items */}
               {navigationItems.map((item, index) => {
                 const Icon = item.icon;
                 return (
@@ -337,7 +371,7 @@ const Navigation = () => {
                     key={item.name}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
+                    transition={{ delay: (index + 1) * 0.1 }}
                   >
                     <Link
                       to={item.href}
@@ -361,23 +395,39 @@ const Navigation = () => {
                   </motion.div>
                 );
               })}
-            
-            {user && (
-              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                <div className="px-3 py-2">
+
+              <hr className="p-4" />
+               {user && (
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0 }}
+                  className="pb-4 border-b border-gray-200 dark:border-gray-700 mb-2"
+                >
+                  
                   <div className="flex items-center space-x-3 mb-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-luxury-gold-500 to-luxury-gold-600 rounded-full flex items-center justify-center shadow-md">
-                      <span className="text-luxury-navy-900 text-sm font-bold">
-                        {user.firstName?.charAt(0) || 'U'}{user.secondName?.charAt(0) || ''}
-                      </span>
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-gradient-to-br from-luxury-gold-500 to-luxury-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+                        <span className="text-white text-base font-bold">
+                          {user.firstName?.charAt(0) || 'U'}{user.secondName?.charAt(0) || ''}
+                        </span>
+                      </div>
+                      {/* Online Status Indicator */}
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-luxury-navy-900"></div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <div className="flex-1">
+                      <p className="text-base font-semibold text-gray-900 dark:text-white">
                         {user.firstName} {user.secondName}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         {user.userEmail}
                       </p>
+                      <div className="flex items-center space-x-1 mt-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-xs text-green-600 dark:text-green-400">
+                          {user.role === 'admin' ? 'مدير النظام' : user.role === 'parent' ? 'ولي أمر' : 'طالب'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   
@@ -387,7 +437,7 @@ const Navigation = () => {
                         navigate('/account');
                         setIsOpen(false);
                       }}
-                      className="flex items-center w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-luxury-navy-800/50 rounded-lg transition-colors duration-200"
+                      className="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-luxury-gold-50 hover:to-luxury-orange-50 dark:hover:from-luxury-gold-900/20 dark:hover:to-luxury-orange-900/20 rounded-xl transition-all duration-200 hover:text-luxury-gold-600 dark:hover:text-luxury-gold-400"
                     >
                       <UserCircle className="h-4 w-4 ml-3" />
                       حسابي
@@ -398,7 +448,7 @@ const Navigation = () => {
                         navigate('/settings');
                         setIsOpen(false);
                       }}
-                      className="flex items-center w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-luxury-navy-800/50 rounded-lg transition-colors duration-200"
+                      className="flex items-center w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-luxury-gold-50 hover:to-luxury-orange-50 dark:hover:from-luxury-gold-900/20 dark:hover:to-luxury-orange-900/20 rounded-xl transition-all duration-200 hover:text-luxury-gold-600 dark:hover:text-luxury-gold-400"
                     >
                       <Settings className="h-4 w-4 ml-3" />
                       إعدادات الحساب
@@ -409,18 +459,19 @@ const Navigation = () => {
                         handleLogout();
                         setIsOpen(false);
                       }}
-                      className="flex items-center w-full px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors duration-200"
+                      className="flex items-center w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100/50 dark:hover:from-red-900/20 dark:hover:to-red-800/20 rounded-xl transition-all duration-200 hover:text-red-700 dark:hover:text-red-300"
                     >
                       <LogOut className="h-4 w-4 ml-3" />
                       تسجيل الخروج
                     </button>
                   </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </motion.div>
+                </motion.div>
+              )}
+            </div>
+            
+          </motion.div>
         )}
+        
       </AnimatePresence>
     </nav>
   );
