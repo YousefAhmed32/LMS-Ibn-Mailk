@@ -1584,6 +1584,8 @@ const CourseManagement = () => {
                         fontSize: typography.fontSize.sm,
                         color: course.isActive ? colors.warning : colors.success
                       }}
+
+                      
                     >
                       {course.isActive ? (
                         <>
@@ -1604,10 +1606,8 @@ const CourseManagement = () => {
                         variant="outline"
                         size="sm"
                         className="flex-1 flex items-center justify-center gap-2 hover:scale-105 transition-transform"
-                        onClick={() => {
-                          setCourseForm(course);
-                          setShowEditModal(true);
-                        }}
+                        onClick={() => navigate(`/admin/courses/${course._id}/edit`)}
+
                         style={{
                           background: `linear-gradient(135deg, ${colors.surfaceCard}80, ${colors.surfaceCard}40)`,
                           border: `2px solid ${colors.border}40`,
@@ -1618,8 +1618,9 @@ const CourseManagement = () => {
                         }}
                       >
                         <Edit size={14} />
-                        تعديل
+                        تعديل 
                       </LuxuryButton>
+                      
                       
                       <LuxuryButton
                         variant="outline"

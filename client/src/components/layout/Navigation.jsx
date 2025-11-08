@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '../ui/button';
@@ -30,24 +31,63 @@ import logo from '/assets/logo.png'
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 64, right: 16 });
   const { user, logout } = useAuth();
   const { isDarkMode } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
+  const dropdownContentRef = useRef(null);
+
+  // Calculate dropdown position when opened
+  useEffect(() => {
+    const updatePosition = () => {
+      if (isProfileDropdownOpen && buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        const dropdownWidth = 256; // w-64 = 256px
+        const rightPosition = window.innerWidth - rect.right;
+        
+        // Ensure dropdown doesn't go off screen
+        const finalRight = Math.max(16, Math.min(rightPosition, window.innerWidth - dropdownWidth - 16));
+        
+        setDropdownPosition({
+          top: rect.bottom + 8, // 8px below the button
+          right: finalRight,
+        });
+      }
+    };
+
+    updatePosition();
+
+    // Update position on scroll or resize
+    if (isProfileDropdownOpen) {
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+      };
+    }
+  }, [isProfileDropdownOpen]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (isProfileDropdownOpen && dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      const clickedOnButton = buttonRef.current && buttonRef.current.contains(event.target);
+      const clickedOnDropdown = dropdownContentRef.current && dropdownContentRef.current.contains(event.target);
+      
+      if (!clickedOnButton && !clickedOnDropdown) {
         setIsProfileDropdownOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    if (isProfileDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
   }, [isProfileDropdownOpen]);
 
   const handleLogout = async () => {
@@ -183,6 +223,7 @@ const Navigation = () => {
               <div className="hidden lg:block relative" ref={dropdownRef}>
                 {/* User Avatar/Name Button */}
                 <button
+                  ref={buttonRef}
                   onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
                   className="flex items-center space-x-3 px-4 py-2.5 rounded-xl hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100/50 dark:hover:from-luxury-navy-800/50 dark:hover:to-luxury-navy-700/30 transition-all duration-300 group relative overflow-hidden border border-transparent hover:border-luxury-gold-200/30 dark:hover:border-luxury-gold-700/20"
                 >
@@ -211,18 +252,26 @@ const Navigation = () => {
                   <ChevronDown className={`h-4 w-4 text-gray-500 dark:text-gray-400 transition-all duration-300 group-hover:text-luxury-gold-600 dark:group-hover:text-luxury-gold-400 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
-                {/* Dropdown Menu */}
-                <AnimatePresence>
-                  {isProfileDropdownOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute right-0 mt-3 w-64 bg-white/95 dark:bg-luxury-navy-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 dark:border-luxury-navy-700/50 py-3 z-50 overflow-hidden"
-                    >
+                {/* Dropdown Menu - Using Portal to render outside DOM hierarchy */}
+                {typeof window !== 'undefined' && createPortal(
+                  <AnimatePresence>
+                    {isProfileDropdownOpen && (
+                      <motion.div
+                        ref={dropdownContentRef}
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        style={{
+                          position: 'fixed',
+                          top: `${dropdownPosition.top}px`,
+                          right: `${dropdownPosition.right}px`,
+                          zIndex: 99999,
+                        }}
+                        className="w-64 max-w-[calc(100vw-32px)] bg-white dark:bg-gray-950 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700"
+                      >
                       {/* User Info Header */}
-                      <div className="px-5 py-4 border-b border-gray-200/50 dark:border-luxury-navy-700/50">
+                      <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
                         <div className="flex items-center space-x-3">
                           <div className="w-10 h-10 bg-gradient-to-br from-luxury-gold-500 to-luxury-orange-500 rounded-xl flex items-center justify-center shadow-lg">
                             <span className="text-white text-sm font-bold">
@@ -245,7 +294,7 @@ const Navigation = () => {
                       </div>
                       
                       {/* Menu Items */}
-                      <div className="py-2  ">
+                      <div className="py-2   ">
                         <button
                           onClick={() => {
                             navigate('/account');
@@ -268,7 +317,7 @@ const Navigation = () => {
                           إعدادات الحساب
                         </button>
                         
-                        <div className="border-t border-gray-200 dark:border-luxury-navy-700 my-1"></div>
+                        <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
                         
                         <button
                           onClick={() => {
@@ -283,7 +332,9 @@ const Navigation = () => {
                       </div>
                     </motion.div>
                   )}
-                </AnimatePresence>
+                </AnimatePresence>,
+                document.body
+                )}
               </div>
             ) : (
               <div className="hidden lg:flex items-center space-x-2 sm:space-x-3">

@@ -220,7 +220,7 @@ const EnhancedNotificationBell = () => {
             <div className="p-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  الإشعارات
+                  الإشعارات ..
                 </h3>
                 <div className="flex items-center gap-2">
                   {/* Connection Status */}
@@ -277,7 +277,7 @@ const EnhancedNotificationBell = () => {
               {notifications.length === 0 ? (
                 <div className="p-8 text-center text-gray-500 dark:text-gray-400">
                   <Bell size={48} className="mx-auto mb-4 opacity-50" />
-                  <p>لا توجد إشعارات</p>
+                  <p>لا توجد إشعارات </p>
                 </div>
               ) : (
                 <div className="p-2">
