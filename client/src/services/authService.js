@@ -6,8 +6,7 @@ export const registerService = async (userData) => {
   try {
     // Debug: Print incoming data to help troubleshoot field mapping issues
     console.log('📥 Registration service - incoming data:', {
-      email: userData.email ? userData.email.substring(0, 3) + '***@' + userData.email.split('@')[1] : 'missing',
-      userEmail: userData.userEmail ? userData.userEmail.substring(0, 3) + '***@' + userData.userEmail.split('@')[1] : 'missing',
+      phoneNumber: userData.phoneNumber ? userData.phoneNumber.substring(0, 4) + '***' : 'missing',
       role: userData.role,
       hasPassword: !!userData.password,
       hasGuardianPhone: !!userData.guardianPhone,
@@ -22,22 +21,17 @@ export const registerService = async (userData) => {
     delete mappedData.age;
     
     // Validate required fields on frontend
-    const requiredFields = ['firstName', 'secondName', 'thirdName', 'fourthName', 'email', 'password'];
+    const requiredFields = ['firstName', 'secondName', 'thirdName', 'fourthName', 'phoneNumber', 'password'];
     const missingFields = requiredFields.filter(field => !mappedData[field] || mappedData[field].trim() === '');
     
     if (missingFields.length > 0) {
       throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
     }
     
-    // Validate email format
-    const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
-    if (!emailRegex.test(mappedData.email)) {
-      throw new Error('Please enter a valid email address');
-    }
-    
-    // Validate password is not an email
-    if (emailRegex.test(mappedData.password)) {
-      throw new Error('Password cannot be an email address');
+    // Validate phone number format (Egyptian phone numbers)
+    const phoneRegex = /^(\+20|0)?1[0125][0-9]{8}$/;
+    if (!phoneRegex.test(mappedData.phoneNumber)) {
+      throw new Error('Please enter a valid Egyptian phone number');
     }
 
     // Role-specific validation
@@ -57,7 +51,7 @@ export const registerService = async (userData) => {
     
     console.log('✅ Registration successful:', {
       userId: response.data.data?._id,
-      email: response.data.data?.email,
+      phoneNumber: response.data.data?.phoneNumber,
       role: response.data.data?.role
     });
     
@@ -93,22 +87,22 @@ export const registerService = async (userData) => {
 };
 
 // Login service
-export const loginService = async (email, password) => {
+export const loginService = async (phoneNumber, password) => {
   try {
     console.log('🔐 Login service - preparing request:', {
-      email: email ? email.substring(0, 3) + '***@' + email.split('@')[1] : 'missing',
+      phoneNumber: phoneNumber ? phoneNumber.substring(0, 4) + '***' : 'missing',
       hasPassword: !!password,
       passwordLength: password ? password.length : 0
     });
 
     const requestPayload = {
-      email: email.toLowerCase().trim(), // Backend expects 'email', not 'userEmail'
+      phoneNumber: phoneNumber.trim().replace(/\s+/g, ''), // Normalize phone number
       password
     };
 
     // Debug: Print outgoing payload to help troubleshoot login issues
     console.log('📤 Login service - sending payload:', {
-      email: requestPayload.email.substring(0, 3) + '***@' + requestPayload.email.split('@')[1],
+      phoneNumber: requestPayload.phoneNumber.substring(0, 4) + '***',
       hasPassword: !!requestPayload.password,
       passwordLength: requestPayload.password ? requestPayload.password.length : 0,
       payloadKeys: Object.keys(requestPayload)
@@ -117,9 +111,9 @@ export const loginService = async (email, password) => {
     const response = await axiosInstance.post('/api/auth/login', requestPayload);
     
     console.log('✅ Login successful:', {
-      userId: response.data.data?._id,
-      email: response.data.data?.email,
-      role: response.data.data?.role
+      userId: response.data.user?._id,
+      phoneNumber: response.data.user?.phoneNumber,
+      role: response.data.user?.role
     });
     
     return response.data;

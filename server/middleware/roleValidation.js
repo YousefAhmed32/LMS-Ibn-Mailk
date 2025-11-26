@@ -22,9 +22,9 @@ const commonFields = {
     'string.min': 'Fourth name must be at least 2 characters',
     'string.max': 'Fourth name must not exceed 50 characters'
   }),
-  email: Joi.string().email().required().messages({
-    'string.empty': 'Email is required',
-    'string.email': 'Please provide a valid email address'
+  phoneNumber: Joi.string().pattern(/^(\+20|0)?1[0125][0-9]{8}$/).required().messages({
+    'string.empty': 'Phone number is required',
+    'string.pattern.base': 'Please provide a valid Egyptian phone number'
   }),
   password: Joi.string().min(6).required().messages({
     'string.empty': 'Password is required',

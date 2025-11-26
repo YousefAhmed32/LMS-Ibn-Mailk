@@ -352,7 +352,7 @@ const AdminHeader = () => {
                               ? 'bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent' 
                               : 'bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent'
                           }`}>
-                            {user?.userEmail}
+                            {user?.phoneNumber}
                           </p>
                         </div>
                       </div>

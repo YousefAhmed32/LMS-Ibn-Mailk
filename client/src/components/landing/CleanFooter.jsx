@@ -161,7 +161,7 @@ const CleanFooter = () => {
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
             {/* Copyright */}
             <div className="flex items-center gap-2 text-gray-400 text-sm">
-              <span>© 2024 منصة ابن مالك. جميع الحقوق محفوظة.</span>
+              <span>©2025منصة ابن مالك. جميع الحقوق محفوظة.</span>
               <Heart className="w-4 h-4 text-red-400" />
             </div>
 

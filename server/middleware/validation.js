@@ -23,10 +23,9 @@ const validateRegistration = [
     .isLength({ min: 2, max: 50 })
     .withMessage('Fourth name must be between 2 and 50 characters'),
   
-  body('userEmail')
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Please provide a valid email address'),
+  body('phoneNumber')
+    .matches(/^(\+20|0)?1[0125][0-9]{8}$/)
+    .withMessage('Please provide a valid Egyptian phone number'),
   
   body('password')
     .isLength({ min: 6 })
@@ -84,10 +83,9 @@ const validateRegistration = [
 
 // Validation rules for user login
 const validateLogin = [
-  body('email')
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Please provide a valid email address'),
+  body('phoneNumber')
+    .matches(/^(\+20|0)?1[0125][0-9]{8}$/)
+    .withMessage('Please provide a valid Egyptian phone number'),
   
   body('password')
     .notEmpty()

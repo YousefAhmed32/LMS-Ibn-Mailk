@@ -7,11 +7,11 @@ import Input from '../../components/ui/input';
 import Label from '../../components/ui/label';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from '../../hooks/use-toast';
-import { Eye, EyeOff, Lock, Mail, Users, Star, Sparkles, Rocket } from 'lucide-react';
+import { Eye, EyeOff, Lock, Phone, Users, Star, Sparkles, Rocket } from 'lucide-react';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
-    userEmail: '',
+    phoneNumber: '',
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -50,10 +50,21 @@ const LoginPage = () => {
     e.preventDefault();
     
     // Validate form data
-    if (!formData.userEmail || !formData.password) {
+    if (!formData.phoneNumber || !formData.password) {
       toast({
         title: "خطأ في البيانات",
         description: "يرجى ملء جميع الحقول المطلوبة",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate phone number format
+    const phoneRegex = /^(\+20|0)?1[0125][0-9]{8}$/;
+    if (!phoneRegex.test(formData.phoneNumber)) {
+      toast({
+        title: "خطأ في رقم الهاتف",
+        description: "يرجى إدخال رقم هاتف مصري صحيح (مثال: 01234567890)",
         variant: "destructive",
       });
       return;
@@ -63,7 +74,7 @@ const LoginPage = () => {
 
     try {
       // Use the correct login method from AuthContext
-      const result = await login(formData.userEmail, formData.password);
+      const result = await login(formData.phoneNumber, formData.password);
       
       if (result && result.success) {
         // Get user data from localStorage to determine role
@@ -302,24 +313,24 @@ const LoginPage = () => {
             
             <CardContent className="relative space-y-6">
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Email Field */}
+                {/* Phone Number Field */}
                 <motion.div 
                   className="space-y-3"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.6 }}
                 >
-                  <Label htmlFor="email" className="text-gray-200 font-semibold text-lg">
-                    البريد الإلكتروني
+                  <Label htmlFor="phoneNumber" className="text-gray-200 font-semibold text-lg">
+                    رقم الهاتف
                   </Label>
                   <div className="relative group">
-                    <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 group-focus-within:text-blue-400 transition-colors" />
+                    <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 group-focus-within:text-blue-400 transition-colors" />
                     <Input
-                      id="userEmail"
-                      name="userEmail"
-                      type="email"
-                      placeholder="أدخل بريدك الإلكتروني"
-                      value={formData.userEmail}
+                      id="phoneNumber"
+                      name="phoneNumber"
+                      type="tel"
+                      placeholder="أدخل رقم هاتفك (مثال: 01234567890)"
+                      value={formData.phoneNumber}
                       onChange={handleChange}
                       required
                       className="pl-12 h-14 bg-slate-700/50 border-slate-600 text-white placeholder-gray-400 rounded-xl focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all duration-300 relative z-10"

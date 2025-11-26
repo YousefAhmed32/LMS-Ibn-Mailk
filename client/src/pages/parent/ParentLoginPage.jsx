@@ -4,11 +4,11 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from '../../hooks/use-toast';
-import { Eye, EyeOff, Lock, Mail, Users, ArrowRight, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Lock, Phone, Users, ArrowRight, AlertCircle } from 'lucide-react';
 
 const ParentLoginPage = () => {
   const [formData, setFormData] = useState({
-    email: '',
+    phoneNumber: '',
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -19,13 +19,13 @@ const ParentLoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Handle pre-filled email and message from navigation
+  // Handle pre-filled phone number and message from navigation
   useEffect(() => {
     if (location.state) {
-      if (location.state.preFilledEmail) {
+      if (location.state.preFilledPhoneNumber) {
         setFormData(prev => ({
           ...prev,
-          email: location.state.preFilledEmail
+          phoneNumber: location.state.preFilledPhoneNumber
         }));
       }
       if (location.state.message) {
@@ -50,8 +50,19 @@ const ParentLoginPage = () => {
     e.preventDefault();
     setLoading(true);
 
+    // Validate phone number format
+    const phoneRegex = /^(\+20|0)?1[0125][0-9]{8}$/;
+    if (!phoneRegex.test(formData.phoneNumber)) {
+      toast({
+        title: "خطأ في رقم الهاتف",
+        description: "يرجى إدخال رقم هاتف مصري صحيح (مثال: 01234567890)",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      const result = await login(formData.email, formData.password);
+      const result = await login(formData.phoneNumber, formData.password);
       if (result.success) {
         toast({
           title: "مرحباً بك",
@@ -155,18 +166,18 @@ const ParentLoginPage = () => {
           className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-2xl"
         >
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Field */}
+            {/* Phone Number Field */}
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-white">
-                البريد الإلكتروني
+                رقم الهاتف
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <input
-                  type="email"
-                  name="email"
-                  placeholder="أدخل بريدك الإلكتروني"
-                  value={formData.email}
+                  type="tel"
+                  name="phoneNumber"
+                  placeholder="أدخل رقم هاتفك (مثال: 01234567890)"
+                  value={formData.phoneNumber}
                   onChange={handleChange}
                   required
                   className="w-full pl-12 pr-4 py-4 rounded-xl border border-white/20 bg-white/10 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-transparent transition-all duration-300"

@@ -25,17 +25,16 @@ const registerUser = async (req, res) => {
     console.log('🚀 Registration request received');
     console.log('📥 Incoming body:', JSON.stringify(req.body, null, 2));
     console.log('📋 Request body keys:', Object.keys(req.body));
-    console.log('📧 Email field:', req.body.email);
+    console.log('📱 Phone number field:', req.body.phoneNumber);
     
     const {
       firstName,
       secondName,
       thirdName,
       fourthName,
-      email,
+      phoneNumber,
       password,
       phoneStudent,
-      phoneNumber,
       phoneFather,
       phoneMother,
       guardianPhone,
@@ -47,16 +46,19 @@ const registerUser = async (req, res) => {
 
     console.log('🔍 Extracted fields:', {
       firstName, secondName, thirdName, fourthName,
-      email, role, phoneStudent, phoneNumber, guardianPhone, governorate, grade, relation
+      phoneNumber, role, phoneStudent, guardianPhone, governorate, grade, relation
     });
 
+    // Normalize phone number for lookup
+    const normalizedPhone = phoneNumber.trim().replace(/\s+/g, '');
+    
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ phoneNumber: normalizedPhone });
     if (existingUser) {
-      console.log('❌ User already exists with email:', email);
+      console.log('❌ User already exists with phone number:', phoneNumber);
       return res.status(400).json({
         success: false,
-        error: "User with this email already exists"
+        error: "User with this phone number already exists"
       });
     }
 
@@ -66,7 +68,7 @@ const registerUser = async (req, res) => {
       secondName,
       thirdName,
       fourthName,
-      email,
+      phoneNumber: normalizedPhone,
       password, // Will be hashed by pre-save middleware
       role,
       phoneFather,
@@ -85,10 +87,9 @@ const registerUser = async (req, res) => {
       userData.studentId = 'STU' + timestamp + random;
       console.log('📚 Student data prepared:', { phoneStudent, governorate, grade, studentId: userData.studentId });
     } else if (role === 'parent') {
-      userData.phoneNumber = phoneNumber;
       userData.relation = relation;
       // Parents don't get studentId
-      console.log('👨‍👩‍👧‍👦 Parent data prepared:', { phoneNumber, relation });
+      console.log('👨‍👩‍👧‍👦 Parent data prepared:', { phoneNumber: normalizedPhone, relation });
     }
 
     console.log('💾 User data to create:', JSON.stringify(userData, null, 2));
@@ -160,11 +161,11 @@ const loginUser = async (req, res) => {
     console.log('🔐 Login attempt started:', {
       timestamp: new Date().toISOString(),
       requestBody: {
-        email: req.body.email ? '***@' + req.body.email.split('@')[1] : 'missing',
+        phoneNumber: req.body.phoneNumber ? req.body.phoneNumber.substring(0, 4) + '***' : 'missing',
         password: req.body.password ? '[PROVIDED]' : '[MISSING]',
         passwordLength: req.body.password ? req.body.password.length : 0,
         allFields: Object.keys(req.body),
-        hasOtherFields: Object.keys(req.body).filter(k => !['email', 'password'].includes(k))
+        hasOtherFields: Object.keys(req.body).filter(k => !['phoneNumber', 'password'].includes(k))
       },
       headers: {
         contentType: req.headers['content-type'],
@@ -172,31 +173,29 @@ const loginUser = async (req, res) => {
       }
     });
 
-    const { email, password } = req.body;
+    const { phoneNumber, password } = req.body;
 
     // Validate input
-    if (!email || !password) {
+    if (!phoneNumber || !password) {
       console.log('❌ Login failed: Missing credentials');
       return res.status(400).json({
         success: false,
-        error: "Email and password are required",
+        error: "Phone number and password are required",
         details: {
-          missingEmail: !email,
+          missingPhoneNumber: !phoneNumber,
           missingPassword: !password
         }
       });
     }
 
-    console.log('🔍 Searching for user with email:', email);
+    console.log('🔍 Searching for user with phone number:', phoneNumber);
     
-    // Find user by email (case-insensitive and trimmed)
-    const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ 
-      email: { $regex: new RegExp(`^${normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
-    });
+    // Normalize phone number for lookup
+    const normalizedPhone = phoneNumber.trim().replace(/\s+/g, '');
+    const user = await User.findOne({ phoneNumber: normalizedPhone });
     
     if (!user) {
-      console.log('❌ Login failed: User not found for email:', email);
+      console.log('❌ Login failed: User not found for phone number:', phoneNumber);
       return res.status(401).json({
         success: false,
         error: "Invalid credentials"
@@ -205,7 +204,7 @@ const loginUser = async (req, res) => {
 
     console.log('✅ User found:', {
       userId: user._id,
-      email: user.email,
+      phoneNumber: user.phoneNumber,
       role: user.role,
       hasPassword: !!user.password,
       passwordLength: user.password ? user.password.length : 0
@@ -216,7 +215,7 @@ const loginUser = async (req, res) => {
     const isPasswordValid = await bcrypt.compare(password, user.password);
     
     if (!isPasswordValid) {
-      console.log('❌ Login failed: Invalid password for user:', email);
+      console.log('❌ Login failed: Invalid password for user:', phoneNumber);
       return res.status(401).json({
         success: false,
         error: "Invalid credentials"
@@ -237,7 +236,7 @@ const loginUser = async (req, res) => {
     const duration = Date.now() - startTime;
     console.log('🎉 Login successful:', {
       userId: user._id,
-      email: user.email,
+      phoneNumber: user.phoneNumber,
       role: user.role,
       duration: `${duration}ms`
     });
@@ -308,7 +307,7 @@ const getCurrentUser = async (req, res) => {
     console.log('✅ GetCurrentUser: User validated:', {
       userId: req.user._id,
       role: req.user.role,
-      email: req.user.email
+      phoneNumber: req.user.phoneNumber
     });
     
     // User is already fetched by middleware, but let's populate additional data if needed
@@ -377,7 +376,7 @@ const updateUserProfile = async (req, res) => {
 
     // Remove fields that shouldn't be updated
     delete updateData.password;
-    delete updateData.email;
+    delete updateData.phoneNumber;
     delete updateData.role;
     delete updateData.enrolledCourses;
 
@@ -546,11 +545,10 @@ const refreshToken = async (req, res) => {
         secondName: user.secondName,
         thirdName: user.thirdName,
         fourthName: user.fourthName,
-        email: user.email,
+        phoneNumber: user.phoneNumber,
         role: user.role,
         studentId: user.studentId,
         phoneStudent: user.phoneStudent,
-        phoneNumber: user.phoneNumber,
         governorate: user.governorate,
         grade: user.grade,
         relation: user.relation,

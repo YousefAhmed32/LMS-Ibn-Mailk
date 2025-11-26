@@ -22,7 +22,7 @@ export const AuthProvider = ({ children }) => {
   
   // Form data states for the auth/index.jsx component
   const [signInFormData, setSignInFormData] = useState({
-    userEmail: '',
+    phoneNumber: '',
     password: ''
   });
   
@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
     secondName: '',
     thirdName: '',
     fourthName: '',
-    userEmail: '',
+    phoneNumber: '',
     password: '',
     phoneStudent: '',
     guardianPhone: '',
@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }) => {
           console.log('✅ AuthContext: Restored user from localStorage:', {
             userId: parsedUserData._id,
             role: parsedUserData.role,
-            email: parsedUserData.userEmail || parsedUserData.email
+            phoneNumber: parsedUserData.phoneNumber
           });
         } catch (error) {
           console.error('❌ AuthContext: Error parsing user data:', error);
@@ -216,12 +216,12 @@ export const AuthProvider = ({ children }) => {
     return () => clearTimeout(timer);
   }, [initializeAuth]);
 
-  const login = useCallback(async (email, password) => {
+  const login = useCallback(async (phoneNumber, password) => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await loginService(email, password);
+      const response = await loginService(phoneNumber, password);
       console.log('Login response:', response);
       
       if (response && response.success) {
@@ -398,7 +398,7 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     
     try {
-      const result = await login(signInFormData.userEmail, signInFormData.password);
+      const result = await login(signInFormData.phoneNumber, signInFormData.password);
       if (result.success) {
         const message = result.roleChanged 
           ? 'تم تسجيل الدخول بنجاح - تم تغيير نوع الحساب'
@@ -415,7 +415,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [login, signInFormData.userEmail, signInFormData.password]);
+  }, [login, signInFormData.phoneNumber, signInFormData.password]);
 
   const handleRegisterUser = useCallback(async (event) => {
     event.preventDefault();

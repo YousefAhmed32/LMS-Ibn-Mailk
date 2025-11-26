@@ -454,7 +454,7 @@ const Footer = () => {
                 isDarkMode ? 'text-gray-400' : 'text-gray-500'
               }`}
             >
-              © 2024 YANSY Platform. جميع الحقوق محفوظة.
+              ©2025YANSY Platform. جميع الحقوق محفوظة.
             </motion.p>
             
             <motion.div 

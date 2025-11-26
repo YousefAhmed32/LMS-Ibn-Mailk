@@ -28,14 +28,13 @@ const UserSchema = new mongoose.Schema({
     minlength: [2, 'Fourth name must be at least 2 characters']
   },
 
-  // Authentication - SINGLE CANONICAL FIELD
-  email: { 
+  // Authentication - PHONE NUMBER BASED
+  phoneNumber: { 
     type: String, 
-    required: [true, 'Email is required'],
+    required: [true, 'Phone number is required'],
     unique: true,
-    lowercase: true,
     trim: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email address']
+    match: [/^(\+20|0)?1[0125][0-9]{8}$/, 'Please enter a valid Egyptian phone number']
   },
   password: { 
     type: String, 
@@ -69,9 +68,8 @@ const UserSchema = new mongoose.Schema({
     required: false
   },
 
-  // Contact Information
+  // Contact Information (Additional phone numbers)
   phoneStudent: { type: String, required: false },
-  phoneNumber: { type: String, required: false },
   phoneFather: { type: String, required: false },
   phoneMother: { type: String, required: false },
   guardianPhone: { type: String, required: false },
@@ -132,6 +130,25 @@ UserSchema.pre('save', async function(next) {
   }
 });
 
+// Pre-save middleware to normalize phone number
+UserSchema.pre('save', async function(next) {
+  // Normalize phone number (remove spaces, ensure consistent format)
+  if (this.isModified('phoneNumber') && this.phoneNumber) {
+    // Remove spaces and normalize
+    let normalized = this.phoneNumber.trim().replace(/\s+/g, '');
+    // If starts with +20, keep it; if starts with 0, convert to +20; if starts with 1, add +20
+    if (normalized.startsWith('+20')) {
+      normalized = normalized;
+    } else if (normalized.startsWith('0')) {
+      normalized = '+20' + normalized.substring(1);
+    } else if (normalized.startsWith('1')) {
+      normalized = '+20' + normalized;
+    }
+    this.phoneNumber = normalized;
+  }
+  next();
+});
+
 // Pre-save middleware to generate student ID for students
 UserSchema.pre('save', async function(next) {
   if (this.role === 'student' && !this.studentId) {
@@ -142,8 +159,8 @@ UserSchema.pre('save', async function(next) {
   next();
 });
 
-// Indexes - SINGLE EMAIL INDEX ONLY
-UserSchema.index({ email: 1 }, { unique: true, name: 'email_unique' });
+// Indexes - PHONE NUMBER BASED
+UserSchema.index({ phoneNumber: 1 }, { unique: true, name: 'phoneNumber_unique' });
 UserSchema.index({ role: 1 }, { name: 'role_index' });
 UserSchema.index({ studentId: 1 }, { unique: true, sparse: true, name: 'studentId_unique' });
 
@@ -165,7 +182,7 @@ UserSchema.index(
     secondName: 'text', 
     thirdName: 'text', 
     fourthName: 'text', 
-    email: 'text',
+    phoneNumber: 'text',
     studentId: 'text'
   },
   { 
@@ -176,7 +193,7 @@ UserSchema.index(
       secondName: 10,
       thirdName: 5,
       fourthName: 5,
-      email: 3,
+      phoneNumber: 3,
       studentId: 8
     }
   }
@@ -188,10 +205,12 @@ UserSchema.methods.comparePassword = async function(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Static method to find user by email (case-insensitive)
-UserSchema.statics.findByEmail = function(email) {
+// Static method to find user by phone number
+UserSchema.statics.findByPhoneNumber = function(phoneNumber) {
+  // Normalize phone number (remove spaces, handle +20 prefix)
+  const normalized = phoneNumber.trim().replace(/\s+/g, '');
   return this.findOne({ 
-    email: { $regex: new RegExp(`^${email.toLowerCase().trim()}$`, 'i') }
+    phoneNumber: normalized
   });
 };
 

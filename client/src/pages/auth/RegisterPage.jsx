@@ -12,7 +12,6 @@ import {
   Eye, 
   EyeOff, 
   Lock, 
-  Mail, 
   User, 
   Phone, 
   MapPin, 
@@ -35,7 +34,7 @@ const RegisterPage = () => {
     secondName: '',
     thirdName: '',
     fourthName: '',
-    email: '',
+    phoneNumber: '',
     password: '',
     confirmPassword: '',
     phoneStudent: '',
@@ -132,21 +131,10 @@ const RegisterPage = () => {
     // Debug: Log form data before submission
     console.log('Form data before submission:', formData);
     console.log('Password field value:', formData.password);
-    console.log('Email field value:', formData.email);
+    console.log('Phone number field value:', formData.phoneNumber);
     
     // Client-side validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^(\+20|0)?1[0125][0-9]{8}$/;
-    
-    // Validate password is not an email address
-    if (emailRegex.test(formData.password)) {
-      toast({
-        title: "خطأ في كلمة المرور",
-        description: "كلمة المرور لا يمكن أن تكون عنوان بريد إلكتروني",
-        variant: "destructive",
-      });
-      return;
-    }
     
     if (formData.password !== formData.confirmPassword) {
       toast({
@@ -157,7 +145,17 @@ const RegisterPage = () => {
       return;
     }
 
-    // Validate Egyptian phone numbers
+    // Validate main phone number (used for authentication)
+    if (!phoneRegex.test(formData.phoneNumber)) {
+      toast({
+        title: "خطأ في رقم الهاتف",
+        description: "يرجى إدخال رقم هاتف مصري صحيح (مثال: 01234567890)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate Egyptian phone numbers for students
     if (formData.role === 'student') {
       if (!phoneRegex.test(formData.phoneStudent)) {
         toast({
@@ -184,7 +182,7 @@ const RegisterPage = () => {
       secondName: formData.secondName.trim(),
       thirdName: formData.thirdName.trim(),
       fourthName: formData.fourthName.trim(),
-      email: formData.email.toLowerCase().trim(), // Backend expects 'email', not 'userEmail'
+      phoneNumber: formData.phoneNumber.trim().replace(/\s+/g, ''), // Normalize phone number
       password: formData.password,
       role: formData.role
     };
@@ -196,7 +194,6 @@ const RegisterPage = () => {
       backendData.governorate = formData.governorate;
       backendData.grade = formData.grade; // This will be the Arabic grade value
     } else if (formData.role === 'parent') {
-      backendData.phoneNumber = formData.phoneStudent.trim();
       backendData.relation = formData.studentRelation;
     }
 
@@ -620,34 +617,7 @@ const RegisterPage = () => {
                 </div>
               </motion.div>
 
-              {/* Email */}
-              <motion.div 
-                className="space-y-3"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.8 }}
-              >
-                <Label htmlFor="email" className="text-gray-200 font-bold text-lg">
-                  البريد الإلكتروني
-                </Label>
-                <div className="relative group">
-                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-6 w-6 group-focus-within:text-purple-400 transition-colors" />
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="أدخل بريدك الإلكتروني"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className="pl-14 h-16 bg-slate-700/50 border-slate-600 text-white placeholder-gray-400 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all duration-300 text-lg relative z-10"
-                  />
-                  <motion.div
-                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/10 to-cyan-500/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"
-                    initial={false}
-                  />
-                </div>
-              </motion.div>
+              
 
               {/* Dynamic Fields Based on Account Type */}
               <AnimatePresence mode="wait">
@@ -806,25 +776,26 @@ const RegisterPage = () => {
                   >
                     {/* Parent Specific Fields */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Note: phoneNumber is already captured above, this is just for display consistency */}
                       <div className="space-y-2">
-                        <Label htmlFor="phoneStudent" className="text-gray-700 dark:text-gray-300 font-medium">
-                          رقم الهاتف
+                        <Label htmlFor="phoneNumber" className="text-gray-700 dark:text-gray-300 font-medium">
+                          رقم الهاتف الرئيسي
                         </Label>
                         <div className="relative">
                           <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                           <Input
-                            id="phoneStudent"
-                            name="phoneStudent"
+                            id="phoneNumber"
+                            name="phoneNumber"
                             type="tel"
                             placeholder="01234567890"
-                            value={formData.phoneStudent}
+                            value={formData.phoneNumber}
                             onChange={handleChange}
                             required
                             className="pl-12 h-12 rounded-xl border-2 focus:border-orange-500 transition-all duration-300"
                           />
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          مثال: 01234567890 أو +201234567890
+                         <p className="text-xs text-gray-500 dark:text-gray-400">
+                          سيتم استخدام هذا الرقم لتسجيل الدخول
                         </p>
                       </div>
 
@@ -852,6 +823,38 @@ const RegisterPage = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Phone Number */}
+              <motion.div 
+                className="space-y-3"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+              >
+                <Label htmlFor="phoneNumber" className="text-gray-200 font-bold text-lg">
+                  رقم الهاتف
+                </Label>
+                <div className="relative group">
+                  <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-6 w-6 group-focus-within:text-purple-400 transition-colors" />
+                  <Input
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    type="tel"
+                    placeholder="أدخل رقم هاتفك (مثال: 01234567890)"
+                    value={formData.phoneNumber}
+                    onChange={handleChange}
+                    required
+                    className="pl-14 h-16 bg-slate-700/50 border-slate-600 text-white placeholder-gray-400 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all duration-300 text-lg relative z-10"
+                  />
+                  <motion.div
+                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/10 to-cyan-500/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"
+                    initial={false}
+                  />
+                </div>
+                <p className="text-xs text-gray-400">
+                  سيتم استخدام هذا الرقم لتسجيل الدخول
+                </p>
+              </motion.div>
 
               {/* Password Fields */}
               <motion.div 

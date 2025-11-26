@@ -283,7 +283,7 @@ const Navigation = () => {
                               {user.firstName} {user.secondName}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {user.userEmail}
+                              {user.phoneNumber}
                             </p>
                             <div className="flex items-center space-x-1 mt-1">
                               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -471,7 +471,7 @@ const Navigation = () => {
                         {user.firstName} {user.secondName}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {user.userEmail}
+                        {user.phoneNumber}
                       </p>
                       <div className="flex items-center space-x-1 mt-1">
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
