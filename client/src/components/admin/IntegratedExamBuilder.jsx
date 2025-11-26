@@ -134,73 +134,132 @@ const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode }) => {
     }));
   };
 
-  // Save exam
-  const saveExam = () => {
-    if (!examForm.title.trim()) {
-      toast({
-        title: 'خطأ في البيانات',
-        description: 'يرجى إدخال عنوان الامتحان',
-        variant: 'destructive'
+    // Normalize questions before saving - convert correctAnswer to proper format
+    const normalizeQuestionsForSave = (questions) => {
+      return questions.map((question) => {
+        // For MCQ questions, convert correctAnswer from option.id to index
+        if (question.type === 'mcq' && question.correctAnswer && question.options) {
+          // Find the index of the option with matching id
+          const correctIndex = question.options.findIndex(opt => opt.id === question.correctAnswer);
+          if (correctIndex >= 0) {
+            return {
+              ...question,
+              correctAnswer: correctIndex, // Convert to index
+              options: question.options.map(opt => opt.text || opt.optionText || '') // Convert to strings
+            };
+          }
+        }
+        
+        // For true_false questions, ensure correctAnswer is boolean
+        if (question.type === 'true_false') {
+          let correctAnswer = question.correctAnswer;
+          if (typeof correctAnswer === 'number') {
+            correctAnswer = correctAnswer === 0; // 0 = true (صحيح), 1 = false (خطأ)
+          } else if (typeof correctAnswer === 'string') {
+            correctAnswer = correctAnswer === 'true' || correctAnswer === 'صحيح';
+          }
+          return {
+            ...question,
+            correctAnswer: Boolean(correctAnswer)
+          };
+        }
+        
+        // For MCQ, convert options to strings if they're objects
+        if (question.type === 'mcq' && question.options) {
+          return {
+            ...question,
+            options: question.options.map(opt => 
+              typeof opt === 'object' ? (opt.text || opt.optionText || '') : String(opt)
+            )
+          };
+        }
+        
+        return question;
       });
-      return;
-    }
-    
-    if (examForm.questions.length === 0) {
-      toast({
-        title: 'خطأ في البيانات',
-        description: 'يرجى إضافة سؤال واحد على الأقل',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    // Validate questions
-    for (let i = 0; i < examForm.questions.length; i++) {
-      const question = examForm.questions[i];
-      
-      if (!question.questionText.trim()) {
+    };
+
+    // Save exam
+    const saveExam = () => {
+      if (!examForm.title.trim()) {
         toast({
           title: 'خطأ في البيانات',
-          description: `يرجى إدخال نص السؤال ${i + 1}`,
+          description: 'يرجى إدخال عنوان الامتحان',
           variant: 'destructive'
         });
         return;
       }
       
-      if (question.type === 'mcq') {
-        if (question.options.length < 2) {
+      if (examForm.questions.length === 0) {
+        toast({
+          title: 'خطأ في البيانات',
+          description: 'يرجى إضافة سؤال واحد على الأقل',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      // Validate questions
+      for (let i = 0; i < examForm.questions.length; i++) {
+        const question = examForm.questions[i];
+        
+        if (!question.questionText.trim()) {
           toast({
             title: 'خطأ في البيانات',
-            description: `السؤال ${i + 1} يجب أن يحتوي على خيارين على الأقل`,
+            description: `يرجى إدخال نص السؤال ${i + 1}`,
             variant: 'destructive'
           });
           return;
         }
         
-        if (!question.correctAnswer) {
-          toast({
-            title: 'خطأ في البيانات',
-            description: `يرجى اختيار الإجابة الصحيحة للسؤال ${i + 1}`,
-            variant: 'destructive'
-          });
-          return;
+        if (question.type === 'mcq') {
+          if (question.options.length < 2) {
+            toast({
+              title: 'خطأ في البيانات',
+              description: `السؤال ${i + 1} يجب أن يحتوي على خيارين على الأقل`,
+              variant: 'destructive'
+            });
+            return;
+          }
+          
+          // Check if correctAnswer is set (could be option.id or index)
+          if (!question.correctAnswer && question.correctAnswer !== 0) {
+            toast({
+              title: 'خطأ في البيانات',
+              description: `يرجى اختيار الإجابة الصحيحة للسؤال ${i + 1}`,
+              variant: 'destructive'
+            });
+            return;
+          }
+        }
+        
+        if (question.type === 'true_false') {
+          if (question.correctAnswer === null || question.correctAnswer === undefined) {
+            toast({
+              title: 'خطأ في البيانات',
+              description: `يرجى اختيار الإجابة الصحيحة للسؤال ${i + 1}`,
+              variant: 'destructive'
+            });
+            return;
+          }
         }
       }
-    }
-    
-    const examData = {
-      id: editingExam?.id || `exam_${Date.now()}`,
-      title: examForm.title,
-      type: 'internal_exam',
-      totalMarks: calculateTotalMarks(), // استخدام النقاط المحسوبة تلقائياً
-      totalPoints: calculateTotalMarks(), // إضافة totalPoints أيضاً
-      duration: 30,
-      passingScore: 60,
-      questions: examForm.questions,
-      migratedFromGoogleForm: false,
-      migrationNote: '',
-      createdAt: editingExam?.createdAt || new Date().toISOString()
-    };
+      
+      // Normalize questions before saving
+      const normalizedQuestions = normalizeQuestionsForSave(examForm.questions);
+      
+      const examData = {
+        id: editingExam?.id || `exam_${Date.now()}`,
+        title: examForm.title,
+        type: 'internal_exam',
+        totalMarks: calculateTotalMarks(), // استخدام النقاط المحسوبة تلقائياً
+        totalPoints: calculateTotalMarks(), // إضافة totalPoints أيضاً
+        duration: 30,
+        passingScore: 60,
+        questions: normalizedQuestions, // Use normalized questions
+        migratedFromGoogleForm: false,
+        migrationNote: '',
+        createdAt: editingExam?.createdAt || new Date().toISOString()
+      };
     
     let updatedExams;
     if (editingExam) {
@@ -228,13 +287,97 @@ const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode }) => {
     setEditingExam(null);
   };
 
+  // Convert correctAnswer from server format to UI display format
+  const convertCorrectAnswerForDisplay = (question) => {
+    if (!question || question.correctAnswer === null || question.correctAnswer === undefined) {
+      return null;
+    }
+
+    if (question.type === 'true_false') {
+      // Convert boolean to index: true (صحيح) = 0, false (خطأ) = 1
+      if (typeof question.correctAnswer === 'boolean') {
+        return question.correctAnswer ? 0 : 1;
+      }
+      // If it's already a number, return it
+      if (typeof question.correctAnswer === 'number') {
+        return question.correctAnswer;
+      }
+      return null;
+    } else if (question.type === 'multiple_choice' || question.type === 'mcq') {
+      // If it's already a number (index), return it
+      if (typeof question.correctAnswer === 'number') {
+        return question.correctAnswer;
+      }
+      // If it's a string (option text), find the matching option index
+      if (typeof question.correctAnswer === 'string' && question.options) {
+        const correctAnswerText = question.correctAnswer.trim();
+        const index = question.options.findIndex(opt => {
+          const optText = typeof opt === 'string' ? opt : (opt.text || opt.optionText || '');
+          return String(optText).trim() === correctAnswerText;
+        });
+        return index >= 0 ? index : null;
+      }
+      return null;
+    }
+
+    return question.correctAnswer;
+  };
+
   // Edit exam
   const editExam = (exam) => {
     setEditingExam(exam);
+    
+    // Convert questions for display - convert correctAnswer to UI format
+    const questionsForDisplay = exam.questions ? exam.questions.map(q => {
+      // Convert options to objects with id if they're strings
+      let optionsForDisplay = [];
+      if (q.options && Array.isArray(q.options)) {
+        optionsForDisplay = q.options.map((opt, optIndex) => {
+          if (typeof opt === 'object' && opt !== null) {
+            return opt; // Already an object, keep it
+          }
+          // Convert string to object with id
+          return {
+            id: `opt_${Date.now()}_${optIndex}_${Math.random().toString(36).substr(2, 9)}`,
+            text: String(opt).trim()
+          };
+        });
+      }
+      
+      // Convert correctAnswer to display format
+      let displayCorrectAnswer = q.correctAnswer;
+      
+      if (q.type === 'true_false') {
+        // Convert boolean to index for display
+        if (typeof q.correctAnswer === 'boolean') {
+          displayCorrectAnswer = q.correctAnswer ? 0 : 1;
+        }
+      } else if (q.type === 'multiple_choice' || q.type === 'mcq') {
+        // Convert index to option.id for display
+        if (typeof q.correctAnswer === 'number' && optionsForDisplay[q.correctAnswer]) {
+          displayCorrectAnswer = optionsForDisplay[q.correctAnswer].id;
+        } else if (typeof q.correctAnswer === 'string') {
+          // Try to find matching option by text
+          const matchingOption = optionsForDisplay.find(opt => 
+            (opt.text || opt.optionText || '') === q.correctAnswer
+          );
+          if (matchingOption) {
+            displayCorrectAnswer = matchingOption.id;
+          }
+        }
+      }
+      
+      return {
+        ...q,
+        options: optionsForDisplay,
+        correctAnswer: displayCorrectAnswer
+      };
+    }) : [];
+    
     setExamForm({
       title: exam.title,
       totalMarks: exam.totalMarks,
-      questions: exam.questions
+      questions: questionsForDisplay
     });
     setShowExamBuilder(true);
   };

@@ -305,22 +305,135 @@ const CourseManagement = () => {
         });
       }
 
+      /**
+       * Normalize exam data before sending to server
+       * Converts correctAnswer to proper format and ensures data consistency
+       */
+      const normalizeExamForServer = (exam) => {
+        if (!exam || exam.type !== 'internal_exam' || !exam.questions) {
+          return exam;
+        }
+
+        const normalizedQuestions = exam.questions.map((question, qIndex) => {
+          // Clean question text
+          const questionText = question.questionText 
+            ? String(question.questionText).trim() 
+            : '';
+
+          // Normalize options - ensure they are strings
+          let normalizedOptions = [];
+          if (question.options && Array.isArray(question.options)) {
+            normalizedOptions = question.options.map((opt, optIndex) => {
+              // If option is an object, extract text
+              if (typeof opt === 'object' && opt !== null) {
+                return String(opt.text || opt.optionText || opt.value || '').trim();
+              }
+              // If option is a string, use it directly
+              return String(opt).trim();
+            }).filter(opt => opt.length > 0);
+          }
+
+          // Normalize correctAnswer based on question type
+          let normalizedCorrectAnswer = question.correctAnswer;
+
+          if (question.type === 'true_false') {
+            // For true/false questions, correctAnswer must be boolean
+            if (typeof normalizedCorrectAnswer === 'number') {
+              normalizedCorrectAnswer = normalizedCorrectAnswer === 0; // 0 = true (صحيح)
+            } else if (typeof normalizedCorrectAnswer === 'string') {
+              normalizedCorrectAnswer = normalizedCorrectAnswer === 'true' || 
+                                       normalizedCorrectAnswer === 'صحيح' ||
+                                       normalizedCorrectAnswer === '0';
+            } else if (normalizedCorrectAnswer === null || normalizedCorrectAnswer === undefined) {
+              normalizedCorrectAnswer = false;
+            }
+            normalizedCorrectAnswer = Boolean(normalizedCorrectAnswer);
+          } else if (question.type === 'multiple_choice' || question.type === 'mcq') {
+            // For multiple choice, correctAnswer should be index (number) or option text (string)
+            if (normalizedCorrectAnswer === null || normalizedCorrectAnswer === undefined) {
+              normalizedCorrectAnswer = null;
+            } else if (typeof normalizedCorrectAnswer === 'number') {
+              // Keep as number (index) - this is correct
+              normalizedCorrectAnswer = normalizedCorrectAnswer;
+            } else if (typeof normalizedCorrectAnswer === 'string') {
+              // If it's a string, try to find matching option index
+              const correctAnswerText = normalizedCorrectAnswer.trim();
+              const index = normalizedOptions.findIndex(opt => 
+                String(opt).trim() === correctAnswerText
+              );
+              normalizedCorrectAnswer = index >= 0 ? index : null;
+            }
+          }
+
+          // Ensure points is a valid number
+          const points = Math.max(1, parseInt(question.points || question.marks || 1) || 1);
+
+          return {
+            id: question.id || `q_${Date.now()}_${qIndex}`,
+            questionText,
+            type: question.type || 'multiple_choice',
+            options: normalizedOptions,
+            correctAnswer: normalizedCorrectAnswer,
+            points,
+            ...(question.sampleAnswer && { sampleAnswer: question.sampleAnswer }),
+            ...(question.explanation && { explanation: question.explanation }),
+            ...(question.order !== undefined && { order: question.order })
+          };
+        });
+
+        return {
+          ...exam,
+          questions: normalizedQuestions
+        };
+      };
+
       // Process exams from enhanced form data
       const exams = [];
       if (formData.exams && Array.isArray(formData.exams)) {
-        formData.exams.forEach((exam, index) => {
-          exams.push({
-            title: exam.title || `Exam ${index + 1}`,
-            type: exam.type || 'internal_exam',
-            url: exam.url || '',
-            totalMarks: exam.totalMarks || 0, // سيتم حسابه تلقائياً
-            duration: exam.duration || 30,
-            passingScore: exam.passingScore || 60,
-            questions: exam.questions || [],
-            migratedFromGoogleForm: exam.migratedFromGoogleForm || false,
-            migrationNote: exam.migrationNote || ''
+        try {
+          formData.exams.forEach((exam, index) => {
+            // Normalize exam data before adding
+            const normalizedExam = normalizeExamForServer(exam);
+            
+            // Validate that all questions have correctAnswer
+            if (normalizedExam.type === 'internal_exam' && normalizedExam.questions) {
+              for (let i = 0; i < normalizedExam.questions.length; i++) {
+                const q = normalizedExam.questions[i];
+                if (q.type === 'multiple_choice' || q.type === 'mcq') {
+                  if (q.correctAnswer === null || q.correctAnswer === undefined) {
+                    throw new Error(`السؤال ${i + 1} في الامتحان "${normalizedExam.title || `Exam ${index + 1}`}" لا يحتوي على إجابة صحيحة محددة`);
+                  }
+                }
+                if (q.type === 'true_false') {
+                  if (q.correctAnswer === null || q.correctAnswer === undefined) {
+                    throw new Error(`السؤال ${i + 1} في الامتحان "${normalizedExam.title || `Exam ${index + 1}`}" لا يحتوي على إجابة صحيحة محددة`);
+                  }
+                }
+              }
+            }
+            
+            exams.push({
+              title: normalizedExam.title || `Exam ${index + 1}`,
+              type: normalizedExam.type || 'internal_exam',
+              url: normalizedExam.url || '',
+              totalMarks: normalizedExam.totalMarks || normalizedExam.totalPoints || 0,
+              duration: normalizedExam.duration || 30,
+              passingScore: normalizedExam.passingScore || 60,
+              questions: normalizedExam.questions || [],
+              migratedFromGoogleForm: normalizedExam.migratedFromGoogleForm || false,
+              migrationNote: normalizedExam.migrationNote || ''
+            });
           });
-        });
+        } catch (error) {
+          toast({
+            title: 'خطأ في بيانات الامتحانات',
+            description: error.message || 'يرجى التأكد من أن جميع الأسئلة تحتوي على إجابة صحيحة محددة',
+            variant: 'destructive',
+            duration: 8000
+          });
+          setIsCreating(false);
+          return;
+        }
       }
 
       // Add videos and exams as JSON strings

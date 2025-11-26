@@ -98,6 +98,141 @@ const EditCourse = () => {
     return newExam.questions.reduce((total, question) => total + (question.points || question.marks || 1), 0);
   };
 
+  /**
+   * Normalize and clean exam data before sending to server
+   * This ensures consistent data structure and fixes common issues:
+   * - Converts true_false correctAnswer from index (0/1) to boolean
+   * - Ensures options are strings, not objects
+   * - Validates and cleans all question fields
+   */
+  const normalizeExamData = (exam) => {
+    if (!exam || exam.type !== 'internal_exam' || !exam.questions) {
+      return exam;
+    }
+
+    const normalizedQuestions = exam.questions.map((question, qIndex) => {
+      // Clean question text
+      const questionText = question.questionText 
+        ? String(question.questionText).trim() 
+        : '';
+
+      // Normalize options - ensure they are strings
+      let normalizedOptions = [];
+      if (question.options && Array.isArray(question.options)) {
+        normalizedOptions = question.options.map((opt, optIndex) => {
+          // If option is an object, extract text
+          if (typeof opt === 'object' && opt !== null) {
+            return String(opt.text || opt.optionText || opt.value || '').trim();
+          }
+          // If option is a string, use it directly
+          return String(opt).trim();
+        }).filter(opt => opt.length > 0); // Remove empty options
+      }
+
+      // Normalize correctAnswer based on question type
+      let normalizedCorrectAnswer = question.correctAnswer;
+
+      if (question.type === 'true_false') {
+        // For true/false questions, correctAnswer must be boolean
+        // If it's a number (0 or 1), convert to boolean
+        if (typeof normalizedCorrectAnswer === 'number') {
+          // 0 = false (خطأ), 1 = true (صحيح)
+          // But we need to check: optIndex 0 = صحيح (true), optIndex 1 = خطأ (false)
+          // So if correctAnswer is 0, it means صحيح (true)
+          // If correctAnswer is 1, it means خطأ (false)
+          normalizedCorrectAnswer = normalizedCorrectAnswer === 0;
+        } else if (typeof normalizedCorrectAnswer === 'string') {
+          // Handle string values
+          normalizedCorrectAnswer = normalizedCorrectAnswer === 'true' || 
+                                     normalizedCorrectAnswer === 'صحيح' ||
+                                     normalizedCorrectAnswer === '0';
+        } else if (normalizedCorrectAnswer === null || normalizedCorrectAnswer === undefined) {
+          // Default to false if not set
+          normalizedCorrectAnswer = false;
+        }
+        // Ensure it's a boolean
+        normalizedCorrectAnswer = Boolean(normalizedCorrectAnswer);
+      } else if (question.type === 'multiple_choice' || question.type === 'mcq') {
+        // For multiple choice, correctAnswer should be the index (number) or option text (string)
+        if (normalizedCorrectAnswer === null || normalizedCorrectAnswer === undefined) {
+          normalizedCorrectAnswer = null;
+        } else if (typeof normalizedCorrectAnswer === 'number') {
+          // Keep as number (index)
+          normalizedCorrectAnswer = normalizedCorrectAnswer;
+        } else if (typeof normalizedCorrectAnswer === 'string') {
+          // Keep as string (option text)
+          normalizedCorrectAnswer = normalizedCorrectAnswer.trim();
+        }
+      }
+
+      // Ensure points is a valid number
+      const points = Math.max(1, parseInt(question.points || question.marks || 1) || 1);
+
+      return {
+        id: question.id || `q_${Date.now()}_${qIndex}`,
+        questionText,
+        type: question.type || 'multiple_choice',
+        options: normalizedOptions,
+        correctAnswer: normalizedCorrectAnswer,
+        points,
+        // Preserve other fields if they exist
+        ...(question.sampleAnswer && { sampleAnswer: question.sampleAnswer }),
+        ...(question.explanation && { explanation: question.explanation }),
+        ...(question.order !== undefined && { order: question.order })
+      };
+    });
+
+    return {
+      ...exam,
+      questions: normalizedQuestions
+    };
+  };
+
+  /**
+   * Convert correctAnswer from server format to UI display format
+   * - For true_false: boolean -> index (true = 0, false = 1)
+   * - For multiple_choice: string -> index (find matching option)
+   * - For multiple_choice: number -> keep as is
+   */
+  const convertCorrectAnswerForDisplay = (question) => {
+    if (!question || question.correctAnswer === null || question.correctAnswer === undefined) {
+      return null;
+    }
+
+    if (question.type === 'true_false') {
+      // Convert boolean to index: true (صحيح) = 0, false (خطأ) = 1
+      if (typeof question.correctAnswer === 'boolean') {
+        return question.correctAnswer ? 0 : 1;
+      }
+      // If it's already a number, return it
+      if (typeof question.correctAnswer === 'number') {
+        return question.correctAnswer;
+      }
+      // If it's a string, try to convert
+      if (typeof question.correctAnswer === 'string') {
+        return question.correctAnswer === 'true' || question.correctAnswer === 'صحيح' ? 0 : 1;
+      }
+      return null;
+    } else if (question.type === 'multiple_choice' || question.type === 'mcq') {
+      // If it's already a number (index), return it
+      if (typeof question.correctAnswer === 'number') {
+        return question.correctAnswer;
+      }
+      // If it's a string, find the matching option index
+      if (typeof question.correctAnswer === 'string' && question.options) {
+        const correctAnswerText = question.correctAnswer.trim();
+        const index = question.options.findIndex(opt => {
+          const optText = typeof opt === 'string' ? opt : (opt.text || opt.optionText || '');
+          return String(optText).trim() === correctAnswerText;
+        });
+        return index >= 0 ? index : null;
+      }
+      return null;
+    }
+
+    return question.correctAnswer;
+  };
+
   // Fetch course data on component mount
   useEffect(() => {
     fetchCourseData();
@@ -130,7 +265,46 @@ const EditCourse = () => {
         
         // Load videos and exams with proper initialization
         const videosData = courseData.videos || [];
-        const examsData = courseData.exams || [];
+        let examsData = courseData.exams || [];
+        
+        // Normalize exams data when loading from server
+        // This fixes issues with options being objects instead of strings
+        // AND converts correctAnswer to display format (index) for UI
+        examsData = examsData.map(exam => {
+          if (exam.type === 'internal_exam' && exam.questions) {
+            const normalizedQuestions = exam.questions.map(q => {
+              // Normalize options - convert objects to strings
+              let normalizedOptions = [];
+              if (q.options && Array.isArray(q.options)) {
+                normalizedOptions = q.options.map(opt => {
+                  if (typeof opt === 'object' && opt !== null) {
+                    return String(opt.text || opt.optionText || opt.value || '').trim();
+                  }
+                  return String(opt).trim();
+                }).filter(opt => opt.length > 0);
+              }
+              
+              // Convert correctAnswer to display format (index) for UI
+              // This ensures the correct answer is displayed when editing
+              const displayCorrectAnswer = convertCorrectAnswerForDisplay({
+                ...q,
+                options: normalizedOptions.length > 0 ? normalizedOptions : (q.options || [])
+              });
+              
+              return {
+                ...q,
+                options: normalizedOptions.length > 0 ? normalizedOptions : (q.options || []),
+                correctAnswer: displayCorrectAnswer // Store as index for UI display
+              };
+            });
+            
+            return {
+              ...exam,
+              questions: normalizedQuestions
+            };
+          }
+          return exam;
+        });
         
         console.log('🎥 Videos loaded:', videosData);
         console.log('📝 Exams loaded:', examsData);
@@ -368,12 +542,33 @@ const EditCourse = () => {
 
   const handleEditExam = (exam) => {
     // Deep clone exam to avoid reference issues
+    // Normalize options and convert correctAnswer for display
     const clonedExam = {
       ...exam,
-      questions: exam.questions ? exam.questions.map(q => ({
-        ...q,
-        options: q.options ? [...q.options] : []
-      })) : []
+      questions: exam.questions ? exam.questions.map(q => {
+        // Normalize options - ensure they are strings
+        let normalizedOptions = [];
+        if (q.options && Array.isArray(q.options)) {
+          normalizedOptions = q.options.map(opt => {
+            if (typeof opt === 'object' && opt !== null) {
+              return String(opt.text || opt.optionText || opt.value || '').trim();
+            }
+            return String(opt).trim();
+          }).filter(opt => opt.length > 0);
+        }
+        
+        // Convert correctAnswer to display format (index)
+        const displayCorrectAnswer = convertCorrectAnswerForDisplay({
+          ...q,
+          options: normalizedOptions.length > 0 ? normalizedOptions : (q.options || [])
+        });
+        
+        return {
+          ...q,
+          options: normalizedOptions.length > 0 ? normalizedOptions : (q.options || []),
+          correctAnswer: displayCorrectAnswer // Store as index for UI display
+        };
+      }) : []
     };
     
     setEditingExam(clonedExam);
@@ -554,6 +749,31 @@ const EditCourse = () => {
       }
 
       // Prepare update data with proper structure
+      // Normalize and clean exam data before sending
+      const normalizedExams = exams.map((exam, index) => {
+        // Normalize exam data using the cleaning function
+        const normalizedExam = normalizeExamData(exam);
+        
+        const totalMarks = normalizedExam.type === 'internal_exam' 
+          ? (normalizedExam.questions?.reduce((total, question) => total + (question.points || 1), 0) || 0)
+          : 0;
+
+        return {
+          id: normalizedExam.id || `exam_${Date.now()}_${index}`,
+          title: (normalizedExam.title || `Exam ${index + 1}`).trim(),
+          type: normalizedExam.type || 'internal_exam',
+          url: normalizedExam.url?.trim() || '',
+          totalMarks,
+          duration: parseInt(normalizedExam.duration) || 30,
+          passingScore: parseInt(normalizedExam.passingScore) || 60,
+          questions: normalizedExam.type === 'internal_exam' && normalizedExam.questions 
+            ? normalizedExam.questions
+            : [],
+          migratedFromGoogleForm: normalizedExam.migratedFromGoogleForm || false,
+          migrationNote: normalizedExam.migrationNote || ''
+        };
+      });
+
       const updateData = {
         title: courseForm.title.trim(),
         description: courseForm.description.trim(),
@@ -568,32 +788,7 @@ const EditCourse = () => {
           thumbnail: video.thumbnail || '',
           ...video // Include any additional fields
         })),
-        exams: exams.map((exam, index) => {
-          const totalMarks = exam.type === 'internal_exam' 
-            ? (exam.questions?.reduce((total, question) => total + (question.points || 1), 0) || 0)
-            : 0;
-
-          return {
-            id: exam.id || `exam_${Date.now()}_${index}`,
-            title: exam.title || `Exam ${index + 1}`,
-            type: exam.type || 'internal_exam',
-            url: exam.url || '',
-            totalMarks,
-            duration: exam.duration || 30,
-            passingScore: exam.passingScore || 60,
-            questions: exam.type === 'internal_exam' && exam.questions 
-              ? exam.questions.map(q => ({
-                  ...q,
-                  questionText: (q.questionText ? String(q.questionText).trim() : '') || '',
-                  options: q.options?.map(opt => (opt ? String(opt).trim() : '')) || [],
-                  points: q.points || 1,
-                  correctAnswer: q.correctAnswer
-                }))
-              : [],
-            migratedFromGoogleForm: exam.migratedFromGoogleForm || false,
-            migrationNote: exam.migrationNote || ''
-          };
-        })
+        exams: normalizedExams
       };
 
       console.log('📤 Sending update data:', updateData);
@@ -1371,159 +1566,295 @@ const EditCourse = () => {
         )}
       </AnimatePresence>
 
-      {/* Enhanced Exam Modal */}
-      <AnimatePresence
-      
-      >
+      {/* Enhanced Exam Modal - Redesigned */}
+      <AnimatePresence>
         {showExamModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 "
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowExamModal(false);
+                setEditingExam(null);
+                setNewExam({
+                  title: '',
+                  url: '',
+                  type: 'internal_exam',
+                  totalMarks: 0,
+                  duration: 30,
+                  passingScore: 60,
+                  questions: []
+                });
+              }
+            }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 md:p-6"
+            style={{ direction: 'rtl' }}
           >
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-             
-              className="w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col"
+              style={{ backgroundColor: colors.background, borderRadius: borderRadius.lg }}
             >
-              <LuxuryCard className="p-6 form-container">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600">
-                      <FileCheck size={24} className="text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                        {editingExam ? 'تعديل الامتحان' : 'إضافة امتحان جديد'}
-                      </h3>
-                      <p className="text-gray-600 dark:text-gray-400">
-                        {editingExam ? 'قم بتعديل بيانات الامتحان' : 'أضف امتحان جديد للدورة'}
-                      </p>
-                    </div>
-                  </div>
-                  <LuxuryButton
-                    variant="ghost"
-                    onClick={() => {
-                      setShowExamModal(false);
-                      setEditingExam(null);
-                      setNewExam({
-                        title: '',
-                        url: '',
-                        type: 'internal_exam',
-                        totalMarks: 0,
-                        duration: 30,
-                        passingScore: 60,
-                        questions: []
-                      });
+              {/* Sticky Header */}
+              <div 
+                className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b-2 flex-shrink-0"
+                style={{ 
+                  borderColor: colors.border,
+                  backgroundColor: colors.background,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+                }}
+              >
+                <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                  <div 
+                    className="p-2.5 sm:p-3 rounded-xl flex-shrink-0"
+                    style={{ 
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
                     }}
-                    className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800"
                   >
-                    <X size={20} />
-                  </LuxuryButton>
+                    <FileCheck size={22} className="text-white sm:w-6 sm:h-6" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 
+                      className="text-lg sm:text-xl md:text-2xl font-bold truncate"
+                      style={{ color: colors.text }}
+                    >
+                      {editingExam ? 'تعديل الامتحان' : 'إضافة امتحان جديد'}
+                    </h3>
+                    <p 
+                      className="text-xs sm:text-sm mt-0.5 truncate"
+                      style={{ color: colors.textMuted }}
+                    >
+                      {editingExam ? 'قم بتعديل بيانات الامتحان' : 'أضف امتحان جديد للدورة'}
+                    </p>
+                  </div>
                 </div>
+                <LuxuryButton
+                  variant="ghost"
+                  onClick={() => {
+                    setShowExamModal(false);
+                    setEditingExam(null);
+                    setNewExam({
+                      title: '',
+                      url: '',
+                      type: 'internal_exam',
+                      totalMarks: 0,
+                      duration: 30,
+                      passingScore: 60,
+                      questions: []
+                    });
+                  }}
+                  className="p-2 sm:p-2.5 rounded-xl hover:bg-opacity-80 flex-shrink-0 transition-all duration-200"
+                  style={{ 
+                    backgroundColor: colors.error + '15',
+                    color: colors.error
+                  }}
+                >
+                  <X size={18} className="sm:w-5 sm:h-5" />
+                </LuxuryButton>
+              </div>
 
+              {/* Scrollable Content */}
+              <div 
+                className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6"
+                style={{ backgroundColor: colors.background }}
+              >
                 {/* Exam Type Selection */}
-                <div className="mb-6">
-                  <label className="block text-sm font-bold mb-3 text-gray-900 dark:text-white">
+                <div className="mb-6 sm:mb-8">
+                  <label 
+                    className="block text-sm sm:text-base font-bold mb-3 sm:mb-4"
+                    style={{ color: colors.text }}
+                  >
                     نوع الامتحان *
                   </label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div
-                      className={`p-4 rounded-xl border-2 cursor-pointer transition-colors duration-150 ${
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`p-4 sm:p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                         newExam.type === 'internal_exam'
-                          ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'
+                          ? 'shadow-lg'
+                          : 'hover:shadow-md'
                       }`}
+                      style={{
+                        borderColor: newExam.type === 'internal_exam' ? '#10b981' : colors.border,
+                        backgroundColor: newExam.type === 'internal_exam' 
+                          ? 'rgba(16, 185, 129, 0.1)' 
+                          : colors.background
+                      }}
                       onClick={() => setNewExam(prev => ({ ...prev, type: 'internal_exam' }))}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg transition-colors duration-150 ${
-                          newExam.type === 'internal_exam' ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'
-                        }`}>
-                          <BookOpen size={20} className={newExam.type === 'internal_exam' ? 'text-white' : 'text-gray-600'} />
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        <div 
+                          className={`p-2.5 sm:p-3 rounded-lg transition-all duration-200 flex-shrink-0 ${
+                            newExam.type === 'internal_exam' 
+                              ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md' 
+                              : 'bg-gray-200 dark:bg-gray-700'
+                          }`}
+                        >
+                          <BookOpen 
+                            size={20} 
+                            className={newExam.type === 'internal_exam' ? 'text-white' : 'text-gray-600 dark:text-gray-400'} 
+                          />
                         </div>
-                        <div>
-                          <h4 className="font-semibold text-gray-900 dark:text-white">امتحان داخلي</h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">امتحان مع أسئلة مخصصة</p>
+                        <div className="flex-1 min-w-0">
+                          <h4 
+                            className="font-bold text-sm sm:text-base mb-1"
+                            style={{ color: colors.text }}
+                          >
+                            امتحان داخلي
+                          </h4>
+                          <p 
+                            className="text-xs sm:text-sm leading-relaxed"
+                            style={{ color: colors.textMuted }}
+                          >
+                            امتحان مع أسئلة مخصصة
+                          </p>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
 
-                    <div
-                      className={`p-4 rounded-xl border-2 cursor-pointer transition-colors duration-150 ${
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`p-4 sm:p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                         newExam.type === 'google_form'
-                          ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'
+                          ? 'shadow-lg'
+                          : 'hover:shadow-md'
                       }`}
+                      style={{
+                        borderColor: newExam.type === 'google_form' ? '#10b981' : colors.border,
+                        backgroundColor: newExam.type === 'google_form' 
+                          ? 'rgba(16, 185, 129, 0.1)' 
+                          : colors.background
+                      }}
                       onClick={() => setNewExam(prev => ({ ...prev, type: 'google_form' }))}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg transition-colors duration-150 ${
-                          newExam.type === 'google_form' ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'
-                        }`}>
-                          <ExternalLink size={20} className={newExam.type === 'google_form' ? 'text-white' : 'text-gray-600'} />
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        <div 
+                          className={`p-2.5 sm:p-3 rounded-lg transition-all duration-200 flex-shrink-0 ${
+                            newExam.type === 'google_form' 
+                              ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md' 
+                              : 'bg-gray-200 dark:bg-gray-700'
+                          }`}
+                        >
+                          <ExternalLink 
+                            size={20} 
+                            className={newExam.type === 'google_form' ? 'text-white' : 'text-gray-600 dark:text-gray-400'} 
+                          />
                         </div>
-                        <div>
-                          <h4 className="font-semibold text-gray-900 dark:text-white">Google Form</h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">رابط Google Form</p>
+                        <div className="flex-1 min-w-0">
+                          <h4 
+                            className="font-bold text-sm sm:text-base mb-1"
+                            style={{ color: colors.text }}
+                          >
+                            Google Form
+                          </h4>
+                          <p 
+                            className="text-xs sm:text-sm leading-relaxed"
+                            style={{ color: colors.textMuted }}
+                          >
+                            رابط Google Form
+                          </p>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
 
-                    <div
-                      className={`p-4 rounded-xl border-2 cursor-pointer transition-colors duration-150 ${
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`p-4 sm:p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                         newExam.type === 'external'
-                          ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-emerald-300'
+                          ? 'shadow-lg'
+                          : 'hover:shadow-md'
                       }`}
+                      style={{
+                        borderColor: newExam.type === 'external' ? '#10b981' : colors.border,
+                        backgroundColor: newExam.type === 'external' 
+                          ? 'rgba(16, 185, 129, 0.1)' 
+                          : colors.background
+                      }}
                       onClick={() => setNewExam(prev => ({ ...prev, type: 'external' }))}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg transition-colors duration-150 ${
-                          newExam.type === 'external' ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'
-                        }`}>
-                          <ExternalLink size={20} className={newExam.type === 'external' ? 'text-white' : 'text-gray-600'} />
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        <div 
+                          className={`p-2.5 sm:p-3 rounded-lg transition-all duration-200 flex-shrink-0 ${
+                            newExam.type === 'external' 
+                              ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md' 
+                              : 'bg-gray-200 dark:bg-gray-700'
+                          }`}
+                        >
+                          <ExternalLink 
+                            size={20} 
+                            className={newExam.type === 'external' ? 'text-white' : 'text-gray-600 dark:text-gray-400'} 
+                          />
                         </div>
-                        <div>
-                          <h4 className="font-semibold text-gray-900 dark:text-white">رابط خارجي</h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">رابط امتحان خارجي</p>
+                        <div className="flex-1 min-w-0">
+                          <h4 
+                            className="font-bold text-sm sm:text-base mb-1"
+                            style={{ color: colors.text }}
+                          >
+                            رابط خارجي
+                          </h4>
+                          <p 
+                            className="text-xs sm:text-sm leading-relaxed"
+                            style={{ color: colors.textMuted }}
+                          >
+                            رابط امتحان خارجي
+                          </p>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   </div>
                 </div>
 
                 {/* Basic Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
                   <div>
-                    <label className="block text-sm font-bold mb-2 text-gray-900 dark:text-white">
+                    <label 
+                      className="block text-sm sm:text-base font-bold mb-2"
+                      style={{ color: colors.text }}
+                    >
                       عنوان الامتحان *
                     </label>
                     <input
                       type="text"
                       value={newExam.title}
                       onChange={(e) => setNewExam(prev => ({ ...prev, title: e.target.value }))}
-                      className="stable-field w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors duration-150
-"
+                      className="stable-field w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2"
+                      style={{
+                        borderColor: colors.border,
+                        backgroundColor: colors.background,
+                        color: colors.text,
+                        '--tw-ring-color': '#10b981'
+                      }}
                       placeholder="أدخل عنوان الامتحان"
                     />
                   </div>
 
                   {newExam.type !== 'internal_exam' && (
                     <div>
-                      <label className="block text-sm font-bold mb-2 text-gray-900 dark:text-white">
+                      <label 
+                        className="block text-sm sm:text-base font-bold mb-2"
+                        style={{ color: colors.text }}
+                      >
                         رابط الامتحان *
                       </label>
                       <input
                         type="url"
                         value={newExam.url}
                         onChange={(e) => setNewExam(prev => ({ ...prev, url: e.target.value }))}
-                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors duration-150
-"
+                        className="w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2"
+                        style={{
+                          borderColor: colors.border,
+                          backgroundColor: colors.background,
+                          color: colors.text,
+                          '--tw-ring-color': '#10b981'
+                        }}
                         placeholder="https://forms.google.com/..."
                       />
                     </div>
@@ -1532,58 +1863,122 @@ const EditCourse = () => {
 
                 {/* Exam Settings */}
                 {newExam.type === 'internal_exam' && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
                     <div>
-                      <label className="block text-sm font-bold mb-2 text-gray-900 dark:text-white">
+                      <label 
+                        className="block text-sm sm:text-base font-bold mb-2"
+                        style={{ color: colors.text }}
+                      >
                         مدة الامتحان (دقيقة)
                       </label>
-                      <input
-                        type="number"
-                        value={newExam.duration}
-                        onChange={(e) => setNewExam(prev => ({ ...prev, duration: parseInt(e.target.value) || 30 }))}
-                        min="1"
-                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors duration-150
-"
-                      />
+                      <div className="relative">
+                        <Clock 
+                          size={18} 
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                          style={{ color: colors.textMuted }}
+                        />
+                        <input
+                          type="number"
+                          value={newExam.duration}
+                          onChange={(e) => setNewExam(prev => ({ ...prev, duration: parseInt(e.target.value) || 30 }))}
+                          min="1"
+                          className="w-full pr-10 pl-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2"
+                          style={{
+                            borderColor: colors.border,
+                            backgroundColor: colors.background,
+                            color: colors.text,
+                            '--tw-ring-color': '#10b981'
+                          }}
+                        />
+                      </div>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-bold mb-2 text-gray-900 dark:text-white">
+                      <label 
+                        className="block text-sm sm:text-base font-bold mb-2"
+                        style={{ color: colors.text }}
+                      >
                         درجة النجاح (%)
                       </label>
-                      <input
-                        type="number"
-                        value={newExam.passingScore}
-                        onChange={(e) => setNewExam(prev => ({ ...prev, passingScore: parseInt(e.target.value) || 60 }))}
-                        min="0"
-                        max="100"
-                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors duration-150
-"
-                      />
+                      <div className="relative">
+                        <div 
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm font-semibold"
+                          style={{ color: colors.textMuted }}
+                        >
+                          %
+                        </div>
+                        <input
+                          type="number"
+                          value={newExam.passingScore}
+                          onChange={(e) => setNewExam(prev => ({ ...prev, passingScore: parseInt(e.target.value) || 60 }))}
+                          min="0"
+                          max="100"
+                          className="w-full pr-10 pl-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2"
+                          style={{
+                            borderColor: colors.border,
+                            backgroundColor: colors.background,
+                            color: colors.text,
+                            '--tw-ring-color': '#10b981'
+                          }}
+                        />
+                      </div>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-bold mb-2 text-gray-900 dark:text-white">
+                      <label 
+                        className="block text-sm sm:text-base font-bold mb-2"
+                        style={{ color: colors.text }}
+                      >
                         إجمالي الدرجات
                       </label>
-                      <div className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white font-semibold">
+                      <div 
+                        className="w-full px-4 py-3 rounded-xl border-2 font-bold text-center"
+                        style={{
+                          borderColor: colors.border,
+                          backgroundColor: colors.accent + '15',
+                          color: colors.accent
+                        }}
+                      >
                         {newExam.questions?.reduce((total, question) => total + (question.points || 1), 0) || 0} نقطة
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        يتم حسابها تلقائياً من مجموع نقاط الأسئلة
+                      <p 
+                        className="text-xs mt-1.5 text-center"
+                        style={{ color: colors.textMuted }}
+                      >
+                        يتم حسابها تلقائياً
                       </p>
                     </div>
                   </div>
                 )}
 
-                {/* Quick Add Questions for Internal Exam */}
+                {/* Questions Section */}
                 {newExam.type === 'internal_exam' && (
                   <div className="mb-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        أسئلة الامتحان ({newExam.questions?.length || 0})
-                      </h4>
-                      <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-5">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div 
+                          className="p-2 rounded-lg"
+                          style={{ backgroundColor: colors.accent + '20' }}
+                        >
+                          <FileText size={20} color={colors.accent} />
+                        </div>
+                        <h4 
+                          className="text-base sm:text-lg font-bold"
+                          style={{ color: colors.text }}
+                        >
+                          أسئلة الامتحان
+                          <span 
+                            className="mr-2 px-2 py-0.5 rounded-full text-xs font-semibold"
+                            style={{ 
+                              backgroundColor: colors.accent + '20',
+                              color: colors.accent
+                            }}
+                          >
+                            {newExam.questions?.length || 0}
+                          </span>
+                        </h4>
+                      </div>
+                      <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                         <LuxuryButton
                           onClick={() => {
                             const newQuestion = {
@@ -1599,9 +1994,9 @@ const EditCourse = () => {
                               questions: [...(prev.questions || []), newQuestion]
                             }));
                           }}
-                          className="px-4 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-semibold transition-colors duration-150"
+                          className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200 text-sm"
                         >
-                          <Plus size={16} className="mr-2" />
+                          <Plus size={16} className="ml-1.5 inline" />
                           اختيار من متعدد
                         </LuxuryButton>
                         <LuxuryButton
@@ -1619,25 +2014,46 @@ const EditCourse = () => {
                               questions: [...(prev.questions || []), newQuestion]
                             }));
                           }}
-                          className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-semibold transition-colors duration-150"
+                          className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200 text-sm"
                         >
-                          <Plus size={16} className="mr-2" />
+                          <Plus size={16} className="ml-1.5 inline" />
                           صح وخطأ
                         </LuxuryButton>
                       </div>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-4 sm:space-y-5">
                       {newExam.questions?.map((question, index) => (
-                        <div key={question.id || `q_${index}`} className="p-4 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                              <h5 className="font-semibold text-gray-900 dark:text-white">سؤال {index + 1}</h5>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                question.type === 'multiple_choice' 
-                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-                                  : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                              }`}>
+                        <motion.div
+                          key={question.id || `q_${index}`}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="p-4 sm:p-5 rounded-xl border-2 transition-all duration-200 hover:shadow-md"
+                          style={{
+                            borderColor: colors.border,
+                            backgroundColor: colors.background
+                          }}
+                        >
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 pb-3 border-b"
+                            style={{ borderColor: colors.border }}
+                          >
+                            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                              <div 
+                                className="px-3 py-1 rounded-lg font-bold text-sm"
+                                style={{ 
+                                  backgroundColor: colors.accent + '20',
+                                  color: colors.accent
+                                }}
+                              >
+                                سؤال {index + 1}
+                              </div>
+                              <span 
+                                className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                  question.type === 'multiple_choice' 
+                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                                    : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                }`}
+                              >
                                 {question.type === 'multiple_choice' ? 'اختيار من متعدد' : 'صح وخطأ'}
                               </span>
                             </div>
@@ -1648,97 +2064,157 @@ const EditCourse = () => {
                                   questions: prev.questions?.filter(q => q.id !== question.id) || []
                                 }));
                               }}
-                              className="p-1 rounded-lg bg-red-100 hover:bg-red-200 text-red-600 hover:text-red-700 transition-colors duration-150"
+                              className="p-2 rounded-lg hover:scale-110 transition-transform duration-200"
+                              style={{ 
+                                backgroundColor: colors.error + '15',
+                                color: colors.error
+                              }}
                             >
-                              <Trash2 size={14} />
+                              <Trash2 size={16} />
                             </LuxuryButton>
                           </div>
 
                           <div className="space-y-4">
-                            <input
-                              type="text"
-                              value={question.questionText || ''}
-                              className="stable-field w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors duration-150"
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                setNewExam(prev => {
-                                  const updatedQuestions = (prev.questions || []).map((q, i) => 
-                                    i === index ? { ...q, questionText: value } : q
-                                  );
-                                  return { ...prev, questions: updatedQuestions };
-                                });
-                              }}
-                              placeholder="نص السؤال..."
-                            />
+                            <div>
+                              <label 
+                                className="block text-sm font-semibold mb-2"
+                                style={{ color: colors.text }}
+                              >
+                                نص السؤال *
+                              </label>
+                              <textarea
+                                value={question.questionText || ''}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  setNewExam(prev => {
+                                    const updatedQuestions = (prev.questions || []).map((q, i) => 
+                                      i === index ? { ...q, questionText: value } : q
+                                    );
+                                    return { ...prev, questions: updatedQuestions };
+                                  });
+                                }}
+                                rows={2}
+                                className="stable-field w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2 resize-none"
+                                style={{
+                                  borderColor: colors.border,
+                                  backgroundColor: colors.background,
+                                  color: colors.text,
+                                  '--tw-ring-color': '#10b981'
+                                }}
+                                placeholder="أدخل نص السؤال هنا..."
+                              />
+                            </div>
 
                             {/* Options */}
-                            <div className="space-y-2">
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <div>
+                              <label 
+                                className="block text-sm font-semibold mb-3"
+                                style={{ color: colors.text }}
+                              >
                                 الخيارات:
                               </label>
-                              {question.options?.map((option, optIndex) => (
-                                <div key={optIndex} className="flex items-center gap-3">
-                                  <button
-                                    type="button"
-                                    className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors duration-150 flex-shrink-0 ${
+                              <div className="space-y-2.5">
+                                {question.options?.map((option, optIndex) => (
+                                  <motion.div
+                                    key={optIndex}
+                                    whileHover={{ x: -4 }}
+                                    className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all duration-200 ${
                                       question.correctAnswer === optIndex
-                                        ? 'border-emerald-500 bg-emerald-500'
-                                        : 'border-gray-300 dark:border-gray-600 hover:border-emerald-400 bg-white dark:bg-gray-800'
+                                        ? 'shadow-md'
+                                        : ''
                                     }`}
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      setNewExam(prev => {
-                                        const updatedQuestions = (prev.questions || []).map((q, i) => 
-                                          i === index ? { ...q, correctAnswer: optIndex } : q
-                                        );
-                                        return { ...prev, questions: updatedQuestions };
-                                      });
+                                    style={{
+                                      borderColor: question.correctAnswer === optIndex 
+                                        ? '#10b981' 
+                                        : colors.border,
+                                      backgroundColor: question.correctAnswer === optIndex 
+                                        ? 'rgba(16, 185, 129, 0.1)' 
+                                        : colors.background
                                     }}
-                                    aria-label={`اختر الخيار ${optIndex + 1} كإجابة صحيحة`}
                                   >
-                                    {question.correctAnswer === optIndex && (
-                                      <div className="w-2 h-2 rounded-full bg-white"></div>
-                                    )}
-                                  </button>
-                                  <input
-                                    type="text"
-                                    value={option || ''}
-                                    onChange={(e) => {
-                                      const value = e.target.value;
-                                      setNewExam(prev => {
-                                        const updatedQuestions = (prev.questions || []).map((q, i) => {
-                                          if (i === index) {
-                                            const updatedOptions = [...(q.options || [])];
-                                            updatedOptions[optIndex] = value;
-                                            return { ...q, options: updatedOptions };
-                                          }
-                                          return q;
+                                    <button
+                                      type="button"
+                                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-200 flex-shrink-0 hover:scale-110 ${
+                                        question.correctAnswer === optIndex
+                                          ? 'border-emerald-500 bg-emerald-500 shadow-md'
+                                          : 'border-gray-300 dark:border-gray-600 hover:border-emerald-400 bg-white dark:bg-gray-800'
+                                      }`}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setNewExam(prev => {
+                                          const updatedQuestions = (prev.questions || []).map((q, i) => 
+                                            i === index ? { ...q, correctAnswer: optIndex } : q
+                                          );
+                                          return { ...prev, questions: updatedQuestions };
                                         });
-                                        return { ...prev, questions: updatedQuestions };
-                                      });
-                                    }}
-                                    className={`stable-field flex-1 px-3 py-2 rounded-lg border-2 transition-colors duration-150 ${
-                                      question.correctAnswer === optIndex
-                                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'
-                                    } text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20`}
-                                    placeholder={question.type === 'true_false' ? (optIndex === 0 ? 'صحيح' : 'خطأ') : `الخيار ${optIndex + 1}`}
-                                    readOnly={question.type === 'true_false'}
-                                  />
-                                  {question.correctAnswer === optIndex && (
-                                    <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 flex-shrink-0">
-                                      <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                      <span className="text-xs font-medium">صحيح</span>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
+                                      }}
+                                      aria-label={`اختر الخيار ${optIndex + 1} كإجابة صحيحة`}
+                                    >
+                                      {question.correctAnswer === optIndex && (
+                                        <div className="w-2.5 h-2.5 rounded-full bg-white"></div>
+                                      )}
+                                    </button>
+                                    <input
+                                      type="text"
+                                      value={option || ''}
+                                      onChange={(e) => {
+                                        const value = e.target.value;
+                                        setNewExam(prev => {
+                                          const updatedQuestions = (prev.questions || []).map((q, i) => {
+                                            if (i === index) {
+                                              const updatedOptions = [...(q.options || [])];
+                                              updatedOptions[optIndex] = value;
+                                              return { ...q, options: updatedOptions };
+                                            }
+                                            return q;
+                                          });
+                                          return { ...prev, questions: updatedQuestions };
+                                        });
+                                      }}
+                                      className={`stable-field flex-1 px-2 py-2.5 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2 ${
+                                        question.correctAnswer === optIndex
+                                          ? 'border-emerald-500'
+                                          : ''
+                                      }`}
+                                      style={{
+                                        borderColor: question.correctAnswer === optIndex 
+                                          ? '#10b981' 
+                                          : colors.border,
+                                        backgroundColor: colors.background,
+                                        color: colors.text,
+                                        '--tw-ring-color': '#10b981'
+                                      }}
+                                      placeholder={question.type === 'true_false' 
+                                        ? (optIndex === 0 ? 'صحيح' : 'خطأ') 
+                                        : `الخيار ${optIndex + 1}`}
+                                      readOnly={question.type === 'true_false'}
+                                    />
+                                    {question.correctAnswer === optIndex && (
+                                      <div 
+                                        className="flex items-center gap-1.5 flex-shrink-0 px-2 py-1 rounded-lg"
+                                        style={{ 
+                                          backgroundColor: '#10b981',
+                                          color: 'white'
+                                        }}
+                                      >
+                                        <div className="w-2 h-2 rounded-full bg-white"></div>
+                                        <span className="text-xs font-bold">صحيح</span>
+                                      </div>
+                                    )}
+                                  </motion.div>
+                                ))}
+                              </div>
                             </div>
 
                             {/* Points */}
-                            <div className="flex items-center gap-4">
-                              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <div className="flex items-center gap-3 pt-2 border-t"
+                              style={{ borderColor: colors.border }}
+                            >
+                              <label 
+                                className="text-sm font-semibold whitespace-nowrap"
+                                style={{ color: colors.text }}
+                              >
                                 عدد النقاط:
                               </label>
                               <input
@@ -1754,60 +2230,97 @@ const EditCourse = () => {
                                   });
                                 }}
                                 min="1"
-                                className="w-20 px-3 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors duration-150"
+                                className="w-24 px-3 py-2 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2"
+                                style={{
+                                  borderColor: colors.border,
+                                  backgroundColor: colors.background,
+                                  color: colors.text,
+                                  '--tw-ring-color': '#10b981'
+                                }}
                                 placeholder="نقاط"
                               />
                             </div>
                           </div>
-                        </div>
+                        </motion.div>
                       ))}
 
                       {(!newExam.questions || newExam.questions.length === 0) && (
-                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                          <FileCheck size={48} className="mx-auto mb-4 opacity-50" />
-                          <p>لا توجد أسئلة بعد. اضغط "إضافة سؤال" لبدء إنشاء الامتحان.</p>
+                        <div 
+                          className="text-center py-12 sm:py-16 rounded-xl border-2 border-dashed"
+                          style={{ 
+                            borderColor: colors.border,
+                            backgroundColor: colors.background + '80'
+                          }}
+                        >
+                          <FileCheck 
+                            size={56} 
+                            className="mx-auto mb-4 opacity-40"
+                            style={{ color: colors.textMuted }}
+                          />
+                          <p 
+                            className="text-base font-medium mb-1"
+                            style={{ color: colors.text }}
+                          >
+                            لا توجد أسئلة بعد
+                          </p>
+                          <p 
+                            className="text-sm"
+                            style={{ color: colors.textMuted }}
+                          >
+                            اضغط على أحد الأزرار أعلاه لإضافة سؤال جديد
+                          </p>
                         </div>
                       )}
                     </div>
                   </div>
                 )}
+              </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-                  <LuxuryButton
-                    variant="ghost"
-                    onClick={() => {
-                      setShowExamModal(false);
-                      setEditingExam(null);
-                      setNewExam({
-                        title: '',
-                        url: '',
-                        type: 'internal_exam',
-                        totalMarks: 0,
-                        duration: 30,
-                        passingScore: 60,
-                        questions: []
-                      });
-                    }}
-                    className="flex-1 px-6 py-3 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold transition-colors duration-150
- "
-                  >
-                    إلغاء
-                  </LuxuryButton>
-                  <LuxuryButton
-                    onClick={() => {
-                      if (editingExam) {
-                        handleUpdateExam(newExam);
-                      } else {
-                        handleAddExam(newExam);
-                      }
-                    }}
-                    className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold shadow-lg hover:shadow-xl transform  transition-all duration-300 border-0"
-                  >
-                    {editingExam ? 'تحديث الامتحان' : 'إضافة الامتحان'}
-                  </LuxuryButton>
-                </div>
-              </LuxuryCard>
+              {/* Sticky Footer */}
+              <div 
+                className="flex flex-col sm:flex-row gap-3 sm:gap-4 px-4 sm:px-6 py-4 sm:py-5 border-t-2 flex-shrink-0"
+                style={{ 
+                  borderColor: colors.border,
+                  backgroundColor: colors.background,
+                  boxShadow: '0 -2px 8px rgba(0,0,0,0.05)'
+                }}
+              >
+                <LuxuryButton
+                  variant="ghost"
+                  onClick={() => {
+                    setShowExamModal(false);
+                    setEditingExam(null);
+                    setNewExam({
+                      title: '',
+                      url: '',
+                      type: 'internal_exam',
+                      totalMarks: 0,
+                      duration: 30,
+                      passingScore: 60,
+                      questions: []
+                    });
+                  }}
+                  className="flex-1 sm:flex-none sm:min-w-[120px] px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105"
+                  style={{ 
+                    backgroundColor: colors.border + '30',
+                    color: colors.text
+                  }}
+                >
+                  إلغاء
+                </LuxuryButton>
+                <LuxuryButton
+                  onClick={() => {
+                    if (editingExam) {
+                      handleUpdateExam(newExam);
+                    } else {
+                      handleAddExam(newExam);
+                    }
+                  }}
+                  className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-0"
+                >
+                  {editingExam ? 'تحديث الامتحان' : 'إضافة الامتحان'}
+                </LuxuryButton>
+              </div>
             </motion.div>
           </motion.div>
         )}
