@@ -147,7 +147,7 @@ async function initializeServer() {
           register: {
             url: 'POST /api/auth/register',
             description: 'Register a new user',
-            requiredFields: ['name', 'email', 'password'],
+            requiredFields: ['firstName', 'secondName', 'thirdName', 'fourthName', 'phoneNumber', 'password'],
             optionalFields: ['role']
           },
           testDb: {

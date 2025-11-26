@@ -48,7 +48,7 @@ function AuthPage() {
   function checkIfSignInFormIsValid() {
     return (
       signInFormData &&
-      signInFormData.userEmail?.trim() !== "" &&
+      signInFormData.phoneNumber?.trim() !== "" &&
       signInFormData.password?.trim() !== ""
     );
   }
@@ -60,7 +60,7 @@ function AuthPage() {
       signUpFormData.secondName?.trim() !== "" &&
       signUpFormData.thirdName?.trim() !== "" &&
       signUpFormData.fourthName?.trim() !== "" &&
-      signUpFormData.userEmail?.trim() !== "" &&
+      signUpFormData.phoneNumber?.trim() !== "" &&
       signUpFormData.password?.trim() !== "" &&
       signUpFormData.phoneStudent?.trim() !== "" &&
       signUpFormData.guardianPhone?.trim() !== "" &&
@@ -155,7 +155,7 @@ function AuthPage() {
               <CardHeader>
                 <CardTitle>تسجيل الدخول إلى حسابك</CardTitle>
                 <CardDescription>
-                  أدخل بريدك الإلكتروني وكلمة المرور للوصول إلى حسابك
+                  أدخل رقم هاتفك وكلمة المرور للوصول إلى حسابك
                 </CardDescription>
               </CardHeader>
               <CardContent>

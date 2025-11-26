@@ -52,10 +52,10 @@ export const signUpFormControls = [
     required: true,
   },
   {
-    name: "email",
-    label: "البريد الإلكتروني",
-    placeholder: "أدخل بريدك الإلكتروني",
-    type: "email",
+    name: "phoneNumber",
+    label: "رقم الهاتف",
+    placeholder: "أدخل رقم هاتفك (مثال: 01234567890)",
+    type: "tel",
     componentType: "input",
     required: true,
   },
@@ -135,10 +135,10 @@ export const signUpFormControls = [
 // Sign In Form Controls
 export const signInFormControls = [
   {
-    name: "email",
-    label: "البريد الإلكتروني",
-    placeholder: "أدخل بريدك الإلكتروني",
-    type: "email",
+    name: "phoneNumber",
+    label: "رقم الهاتف",
+    placeholder: "أدخل رقم هاتفك (مثال: 01234567890)",
+    type: "tel",
     componentType: "input",
     required: true,
   },
@@ -154,7 +154,7 @@ export const signInFormControls = [
 
 // Initial Form Data
 export const initialSignInFormData = {
-  userEmail: "",
+  phoneNumber: "",
   password: "",
 };
 
@@ -163,7 +163,7 @@ export const initialSignUpFormData = {
   secondName: "",
   thirdName: "",
   fourthName: "",
-  userEmail: "",
+  phoneNumber: "",
   password: "",
   phoneStudent: "",
   guardianPhone: "",

@@ -32,7 +32,8 @@ const UserSchema = new mongoose.Schema({
   phoneNumber: { 
     type: String, 
     required: [true, 'Phone number is required'],
-    unique: true,
+    unique: false,
+    // ddddddddddddddddddddd
     trim: true,
     match: [/^(\+20|0)?1[0125][0-9]{8}$/, 'Please enter a valid Egyptian phone number']
   },
@@ -131,23 +132,31 @@ UserSchema.pre('save', async function(next) {
 });
 
 // Pre-save middleware to normalize phone number
+// UserSchema.pre('save', async function(next) {
+//   // Normalize phone number (remove spaces, ensure consistent format)
+//   if (this.isModified('phoneNumber') && this.phoneNumber) {
+//     // Remove spaces and normalize
+//     let normalized = this.phoneNumber.trim().replace(/\s+/g, '');
+//     // If starts with +20, keep it; if starts with 0, convert to +20; if starts with 1, add +20
+//     if (normalized.startsWith('+20')) {
+//       normalized = normalized;
+//     } else if (normalized.startsWith('0')) {
+//       normalized = '+20' + normalized.substring(1);
+//     } else if (normalized.startsWith('1')) {
+//       normalized = '+20' + normalized;
+//     }
+//     this.phoneNumber = normalized;
+//   }
+//   next();
+// });
+
 UserSchema.pre('save', async function(next) {
-  // Normalize phone number (remove spaces, ensure consistent format)
   if (this.isModified('phoneNumber') && this.phoneNumber) {
-    // Remove spaces and normalize
-    let normalized = this.phoneNumber.trim().replace(/\s+/g, '');
-    // If starts with +20, keep it; if starts with 0, convert to +20; if starts with 1, add +20
-    if (normalized.startsWith('+20')) {
-      normalized = normalized;
-    } else if (normalized.startsWith('0')) {
-      normalized = '+20' + normalized.substring(1);
-    } else if (normalized.startsWith('1')) {
-      normalized = '+20' + normalized;
-    }
-    this.phoneNumber = normalized;
+    this.phoneNumber = this.phoneNumber.trim().replace(/\s+/g, '');
   }
   next();
 });
+
 
 // Pre-save middleware to generate student ID for students
 UserSchema.pre('save', async function(next) {
@@ -160,9 +169,9 @@ UserSchema.pre('save', async function(next) {
 });
 
 // Indexes - PHONE NUMBER BASED
-UserSchema.index({ phoneNumber: 1 }, { unique: true, name: 'phoneNumber_unique' });
+UserSchema.index({ phoneNumber: 1 }, { unique: false, name: 'phoneNumber_unique' });
 UserSchema.index({ role: 1 }, { name: 'role_index' });
-UserSchema.index({ studentId: 1 }, { unique: true, sparse: true, name: 'studentId_unique' });
+UserSchema.index({ studentId: 1 }, { unique: false, sparse: true, name: 'studentId_unique' });
 
 // Search optimization indexes
 UserSchema.index({ 

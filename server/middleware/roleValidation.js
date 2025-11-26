@@ -24,7 +24,8 @@ const commonFields = {
   }),
   phoneNumber: Joi.string().pattern(/^(\+20|0)?1[0125][0-9]{8}$/).required().messages({
     'string.empty': 'Phone number is required',
-    'string.pattern.base': 'Please provide a valid Egyptian phone number'
+    'any.required': 'Phone number is required',
+    'string.pattern.base': 'Please provide a valid Egyptian phone number (format: 01234567890 or +201234567890)'
   }),
   password: Joi.string().min(6).required().messages({
     'string.empty': 'Password is required',
@@ -40,11 +41,13 @@ const studentSchema = Joi.object({
   ...commonFields,
   phoneStudent: Joi.string().pattern(/^(\+20|0)?1[0125][0-9]{8}$/).required().messages({
     'string.empty': 'Phone number is required for students',
-    'string.pattern.base': 'Please provide a valid Egyptian phone number'
+    'any.required': 'Phone number is required for students',
+    'string.pattern.base': 'Please provide a valid Egyptian phone number (format: 01234567890 or +201234567890)'
   }),
   guardianPhone: Joi.string().pattern(/^(\+20|0)?1[0125][0-9]{8}$/).required().messages({
     'string.empty': 'Guardian phone number is required for students',
-    'string.pattern.base': 'Please provide a valid Egyptian guardian phone number'
+    'any.required': 'Guardian phone number is required for students',
+    'string.pattern.base': 'Please provide a valid Egyptian guardian phone number (format: 01234567890 or +201234567890)'
   }),
   governorate: Joi.string().valid(
     "Cairo", "Giza", "Qalyubia", "Alexandria", "Port Said", "Ismailia",
@@ -97,7 +100,14 @@ const parentSchema = Joi.object({
 
 // Role-aware validation middleware
 const validateRoleBasedRegistration = (req, res, next) => {
-  console.log('🔍 Incoming registration body:', JSON.stringify(req.body, null, 2));
+  console.log('🔍 RAW REQUEST BODY:', JSON.stringify(req.body, null, 2));
+  console.log('📋 Request keys:', Object.keys(req.body));
+  console.log('🎭 Role:', req.body.role);
+  console.log('📱 PhoneNumber:', req.body.phoneNumber, '| Type:', typeof req.body.phoneNumber);
+  console.log('📞 PhoneStudent:', req.body.phoneStudent, '| Type:', typeof req.body.phoneStudent);
+  console.log('👨‍👩‍👧 GuardianPhone:', req.body.guardianPhone, '| Type:', typeof req.body.guardianPhone);
+  console.log('📍 Governorate:', req.body.governorate, '| Type:', typeof req.body.governorate);
+  console.log('📚 Grade:', req.body.grade, '| Type:', typeof req.body.grade, '| Length:', req.body.grade?.length);
   
   const { role } = req.body;
   
@@ -137,12 +147,14 @@ const validateRoleBasedRegistration = (req, res, next) => {
   });
 
   if (error) {
-    console.log('❌ Validation errors:', error.details);
+    console.log('❌ Validation errors:', JSON.stringify(error.details, null, 2));
     
     const validationErrors = error.details.map(detail => ({
       field: detail.path.join('.'),
       message: detail.message,
-      value: detail.context?.value || null
+      value: detail.context?.value || null,
+      type: detail.type,
+      code: detail.type
     }));
 
     // Create a more descriptive error message
@@ -154,7 +166,18 @@ const validateRoleBasedRegistration = (req, res, next) => {
       error: 'Validation failed',
       message: errorMessage,
       details: validationErrors,
-      schema: schemaName
+      schema: schemaName,
+      receivedData: {
+        role: req.body.role,
+        hasPhoneNumber: !!req.body.phoneNumber,
+        phoneNumberValue: req.body.phoneNumber,
+        hasGrade: !!req.body.grade,
+        gradeValue: req.body.grade,
+        hasGovernorate: !!req.body.governorate,
+        governorateValue: req.body.governorate,
+        hasPhoneStudent: !!req.body.phoneStudent,
+        hasGuardianPhone: !!req.body.guardianPhone
+      }
     });
   }
 

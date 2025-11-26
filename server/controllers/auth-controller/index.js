@@ -50,12 +50,24 @@ const registerUser = async (req, res) => {
     });
 
     // Normalize phone number for lookup
-    const normalizedPhone = phoneNumber.trim().replace(/\s+/g, '');
+    let normalizedPhone = phoneNumber.trim().replace(/\s+/g, '');
+    // Remove any non-digit characters except +
+    normalizedPhone = normalizedPhone.replace(/[^\d+]/g, '');
+    
+    // Ensure proper format - handle common variations
+    if (!normalizedPhone.startsWith('+20') && !normalizedPhone.startsWith('0') && !normalizedPhone.startsWith('1')) {
+      // Try to fix common issues
+      if (normalizedPhone.length === 10 && normalizedPhone.startsWith('1')) {
+        normalizedPhone = '0' + normalizedPhone;
+      } else if (normalizedPhone.length === 9 && normalizedPhone.startsWith('1')) {
+        normalizedPhone = '01' + normalizedPhone;
+      }
+    }
     
     // Check if user already exists
     const existingUser = await User.findOne({ phoneNumber: normalizedPhone });
     if (existingUser) {
-      console.log('❌ User already exists with phone number:', phoneNumber);
+      console.log('❌ User already exists with phone number:', normalizedPhone);
       return res.status(400).json({
         success: false,
         error: "User with this phone number already exists"
@@ -78,18 +90,45 @@ const registerUser = async (req, res) => {
 
     // Add role-specific fields
     if (role === 'student') {
-      userData.phoneStudent = phoneStudent;
-      userData.governorate = governorate;
-      userData.grade = grade;
+      // Normalize phoneStudent and guardianPhone
+      if (phoneStudent) {
+        let normalizedPhoneStudent = phoneStudent.trim().replace(/\s+/g, '').replace(/[^\d+]/g, '');
+        if (!normalizedPhoneStudent.startsWith('+20') && !normalizedPhoneStudent.startsWith('0') && normalizedPhoneStudent.startsWith('1')) {
+          if (normalizedPhoneStudent.length === 10) {
+            normalizedPhoneStudent = '0' + normalizedPhoneStudent;
+          }
+        }
+        userData.phoneStudent = normalizedPhoneStudent;
+      }
+      
+      if (guardianPhone) {
+        let normalizedGuardianPhone = guardianPhone.trim().replace(/\s+/g, '').replace(/[^\d+]/g, '');
+        if (!normalizedGuardianPhone.startsWith('+20') && !normalizedGuardianPhone.startsWith('0') && normalizedGuardianPhone.startsWith('1')) {
+          if (normalizedGuardianPhone.length === 10) {
+            normalizedGuardianPhone = '0' + normalizedGuardianPhone;
+          }
+        }
+        userData.guardianPhone = normalizedGuardianPhone;
+      }
+      
+      userData.governorate = governorate?.trim();
+      userData.grade = grade?.trim();
+      
       // Generate unique student ID for students
       const timestamp = Date.now().toString().slice(-6);
       const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
       userData.studentId = 'STU' + timestamp + random;
-      console.log('📚 Student data prepared:', { phoneStudent, governorate, grade, studentId: userData.studentId });
+      console.log('📚 Student data prepared:', { 
+        phoneStudent: userData.phoneStudent, 
+        guardianPhone: userData.guardianPhone,
+        governorate: userData.governorate, 
+        grade: userData.grade, 
+        studentId: userData.studentId 
+      });
     } else if (role === 'parent') {
-      userData.relation = relation;
+      userData.relation = relation?.trim();
       // Parents don't get studentId
-      console.log('👨‍👩‍👧‍👦 Parent data prepared:', { phoneNumber: normalizedPhone, relation });
+      console.log('👨‍👩‍👧‍👦 Parent data prepared:', { phoneNumber: normalizedPhone, relation: userData.relation });
     }
 
     console.log('💾 User data to create:', JSON.stringify(userData, null, 2));

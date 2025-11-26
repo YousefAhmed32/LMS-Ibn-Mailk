@@ -1,0 +1,125 @@
+{
+  "info": {
+    "name": "Registration Debug Tests",
+    "description": "Test collection for debugging registration 400 errors",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Valid Student Registration",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"أحمد\",\n  \"secondName\": \"محمد\",\n  \"thirdName\": \"علي\",\n  \"fourthName\": \"حسن\",\n  \"phoneNumber\": \"01234567890\",\n  \"password\": \"password123\",\n  \"role\": \"student\",\n  \"phoneStudent\": \"01234567890\",\n  \"guardianPhone\": \"01234567891\",\n  \"governorate\": \"Cairo\",\n  \"grade\": \"أولى إعدادي\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/auth/register",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "auth", "register"]
+        }
+      }
+    },
+    {
+      "name": "2. Test Missing PhoneNumber",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"أحمد\",\n  \"secondName\": \"محمد\",\n  \"thirdName\": \"علي\",\n  \"fourthName\": \"حسن\",\n  \"password\": \"password123\",\n  \"role\": \"student\",\n  \"phoneStudent\": \"01234567890\",\n  \"guardianPhone\": \"01234567891\",\n  \"governorate\": \"Cairo\",\n  \"grade\": \"أولى إعدادي\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/auth/register",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "auth", "register"]
+        }
+      }
+    },
+    {
+      "name": "3. Test Invalid Grade",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"أحمد\",\n  \"secondName\": \"محمد\",\n  \"thirdName\": \"علي\",\n  \"fourthName\": \"حسن\",\n  \"phoneNumber\": \"01234567890\",\n  \"password\": \"password123\",\n  \"role\": \"student\",\n  \"phoneStudent\": \"01234567890\",\n  \"guardianPhone\": \"01234567891\",\n  \"governorate\": \"Cairo\",\n  \"grade\": \"invalid_grade\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/auth/register",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "auth", "register"]
+        }
+      }
+    },
+    {
+      "name": "4. Test Invalid Phone Format",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"أحمد\",\n  \"secondName\": \"محمد\",\n  \"thirdName\": \"علي\",\n  \"fourthName\": \"حسن\",\n  \"phoneNumber\": \"123456\",\n  \"password\": \"password123\",\n  \"role\": \"student\",\n  \"phoneStudent\": \"01234567890\",\n  \"guardianPhone\": \"01234567891\",\n  \"governorate\": \"Cairo\",\n  \"grade\": \"أولى إعدادي\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/auth/register",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "auth", "register"]
+        }
+      }
+    },
+    {
+      "name": "5. Valid Parent Registration",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"محمد\",\n  \"secondName\": \"أحمد\",\n  \"thirdName\": \"علي\",\n  \"fourthName\": \"حسن\",\n  \"phoneNumber\": \"01234567890\",\n  \"password\": \"password123\",\n  \"role\": \"parent\",\n  \"relation\": \"father\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/auth/register",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "auth", "register"]
+        }
+      }
+    }
+  ]
+}
+
