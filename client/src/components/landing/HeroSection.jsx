@@ -66,7 +66,7 @@ const HeroSection = () => {
               <Zap className="w-5 h-5 mr-3 text-cyan-500 drop-shadow-lg" />
             </div>
             <span className="relative z-10 bg-gradient-to-r from-cyan-700 to-blue-700 dark:from-cyan-300 dark:to-blue-300 bg-clip-text text-transparent font-bold mt-2">
-              مع الأستاذة / جميلة السيد - معلمة اللغة العربية
+              مع الأستاذة / جميلة السيد - خبيرة  اللغة العربية
             </span>
           </motion.div>
 
