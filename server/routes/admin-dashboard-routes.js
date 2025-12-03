@@ -110,6 +110,26 @@ router.get('/dashboard-stats-simple', async (req, res) => {
       { $sort: { count: -1 } }
     ]);
 
+    // Get monthly revenue for charts
+    const monthlyRevenue = await Payment.aggregate([
+      {
+        $match: {
+          status: 'accepted',
+          createdAt: { $gte: startDate, $lte: endDate }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            month: { $month: '$createdAt' },
+            year: { $year: '$createdAt' }
+          },
+          revenue: { $sum: '$amount' }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } }
+    ]);
+
     // Get recent payments
     const recentPayments = await Payment.find({
       createdAt: { $gte: startDate, $lte: endDate }
@@ -157,6 +177,85 @@ router.get('/dashboard-stats-simple', async (req, res) => {
     .sort({ createdAt: -1 })
     .limit(10)
     .lean();
+
+    // Get course performance data
+    const coursePerformanceData = await Course.aggregate([
+      {
+        $lookup: {
+          from: 'payments',
+          localField: '_id',
+          foreignField: 'courseId',
+          as: 'payments'
+        }
+      },
+      {
+        $addFields: {
+          enrollmentCount: { $size: '$payments' },
+          completedPayments: {
+            $size: {
+              $filter: {
+                input: '$payments',
+                as: 'payment',
+                cond: { $eq: ['$$payment.status', 'accepted'] }
+              }
+            }
+          }
+        }
+      },
+      {
+        $addFields: {
+          completionRate: {
+            $cond: [
+              { $gt: ['$enrollmentCount', 0] },
+              { $multiply: [{ $divide: ['$completedPayments', '$enrollmentCount'] }, 100] },
+              0
+            ]
+          }
+        }
+      },
+      { $sort: { enrollmentCount: -1 } },
+      { $limit: 5 }
+    ]);
+
+    // Get student engagement data (by grade)
+    const studentEngagementRaw = await User.aggregate([
+      { $match: { role: 'student' } },
+      {
+        $group: {
+          _id: '$grade',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } }
+    ]);
+
+    // Calculate percentages
+    const studentEngagementData = studentEngagementRaw.map(item => ({
+      ...item,
+      percentage: totalStudents > 0 ? Math.round((item.count / totalStudents) * 100) : 0
+    }));
+
+    // Calculate revenue growth percentage (compare with previous period)
+    const previousPeriod = getDateRange(period === 'today' ? 'week' : period === 'week' ? 'month' : 'year');
+    const previousRevenue = await Payment.aggregate([
+      {
+        $match: {
+          status: 'accepted',
+          createdAt: { $gte: previousPeriod.startDate, $lt: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: '$amount' }
+        }
+      }
+    ]);
+    
+    const previousRevenueAmount = previousRevenue.length > 0 ? previousRevenue[0].totalRevenue : 0;
+    const revenueGrowthPercent = previousRevenueAmount > 0 
+      ? Math.round(((totalRevenue - previousRevenueAmount) / previousRevenueAmount) * 100 * 100) / 100
+      : 0;
     
     const response = {
       success: true,
@@ -167,7 +266,7 @@ router.get('/dashboard-stats-simple', async (req, res) => {
           totalCourses,
           totalRevenue,
           totalPayments,
-          revenueGrowthPercent: 0
+          revenueGrowthPercent
         },
         paymentStats: {
           pending: pendingPayments,
@@ -178,7 +277,10 @@ router.get('/dashboard-stats-simple', async (req, res) => {
           rejectedAmount: rejectedAmount
         },
         charts: {
-          revenueGrowth: [],
+          revenueGrowth: monthlyRevenue.map(item => ({
+            month: `${item._id.month}/${item._id.year}`,
+            revenue: item.revenue
+          })),
           usersByGrade: usersByGrade.map(item => ({
             grade: `الصف ${item._id}`,
             count: item.count
@@ -215,8 +317,16 @@ router.get('/dashboard-stats-simple', async (req, res) => {
           joinDate: student.createdAt
         }))
       },
-      coursePerformance: [],
-      studentEngagement: []
+      coursePerformance: coursePerformanceData.map(course => ({
+        title: course.title,
+        enrollments: course.enrollmentCount || 0,
+        completionRate: Math.round(course.completionRate || 0)
+      })),
+      studentEngagement: studentEngagementData.map(item => ({
+        category: `الصف ${item._id || 'غير محدد'}`,
+        count: item.count,
+        percentage: Math.round(item.percentage || 0)
+      }))
     };
     
     console.log('✅ Simple dashboard data sent:', {

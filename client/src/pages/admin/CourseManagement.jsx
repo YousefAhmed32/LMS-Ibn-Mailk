@@ -1317,57 +1317,57 @@ const CourseManagement = () => {
 
   // Courses List View
   return (
-    <div className="min-h-screen p-6 bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen p-6 bg-gray-50 dark:bg-gray-950">
       {/* Enhanced Header with Gradient Background */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border-b border-gray-200 dark:border-gray-700 p-8">
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-0 right-0 w-96 h-96 rounded-full" style={{
-            background: `radial-gradient(circle, ${colors.accent} 0%, transparent 70%)`
-          }}></div>
-        </div>
-        
-        <div className="relative z-10  mx-auto px-6 py-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="flex items-center gap-6">
-              <div className="p-4 rounded-2xl" style={{
-                background: `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`,
-                border: `2px solid ${colors.accent}30`,
-                boxShadow: `0 8px 25px ${colors.accent}20`
-              }}>
-                <Crown size={40} color={colors.accent} />
+        <div className="relative overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 border-b border-gray-200 dark:border-gray-700  ">
+          <div className="absolute inset-0 opacity-5">
+            <div className="absolute top-0 right-0 w-96 h-96 rounded-full" style={{
+              background: `radial-gradient(circle, ${colors.accent} 0%, transparent 70%)`
+            }}></div>
+          </div>
+          
+          <div className="relative z-10  mx-auto px-6 py-8">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="flex items-center gap-6">
+                <div className="p-4 rounded-2xl" style={{
+                  background: `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`,
+                  border: `2px solid ${colors.accent}30`,
+                  boxShadow: `0 8px 25px ${colors.accent}20`
+                }}>
+                  <Crown size={40} color={colors.accent} />
+                </div>
+                <div>
+                  <h1 className="text-4xl lg:text-6xl font-bold mb-3 p-5 text-gray-900 dark:text-white">
+                    إدارة الدورات المتقدمة
+                  </h1>
+                  <p className="text-xl font-medium text-gray-700 dark:text-gray-300">
+                    إدارة شاملة لجميع الدورات التعليمية والمواد الدراسية
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-4xl lg:text-6xl font-bold mb-3 p-5 text-gray-900 dark:text-white">
-                  إدارة الدورات المتقدمة
-                </h1>
-                <p className="text-xl font-medium text-gray-700 dark:text-gray-300">
-                  إدارة شاملة لجميع الدورات التعليمية والمواد الدراسية
-                </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4">
+              
+                <LuxuryButton
+                  variant="primary"
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex items-center gap-3 shadow-lg hover:scale-105 transition-transform"
+                  style={{
+                    background: `linear-gradient(135deg, ${colors.accent}, ${colors.accent}dd)`,
+                    boxShadow: `0 8px 32px ${colors.accent}30`,
+                    borderRadius: borderRadius.lg,
+                    padding: `${spacing.md} ${spacing.lg}`,
+                    fontWeight: '700',
+                    fontSize: typography.fontSize.md
+                  }}
+                >
+                  <Plus size={22} />
+                  إضافة دورة جديدة
+                </LuxuryButton>
               </div>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-4">
-             
-              <LuxuryButton
-                variant="primary"
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-3 shadow-lg hover:scale-105 transition-transform"
-                style={{
-                  background: `linear-gradient(135deg, ${colors.accent}, ${colors.accent}dd)`,
-                  boxShadow: `0 8px 32px ${colors.accent}30`,
-                  borderRadius: borderRadius.lg,
-                  padding: `${spacing.md} ${spacing.lg}`,
-                  fontWeight: '700',
-                  fontSize: typography.fontSize.md
-                }}
-              >
-                <Plus size={22} />
-                إضافة دورة جديدة
-              </LuxuryButton>
             </div>
           </div>
         </div>
-      </div>
 
       {/* Luxury Filters Section */}
       <div className=" mx-auto px-6 py-8">

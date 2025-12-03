@@ -219,7 +219,7 @@ const EnhancedUsersPage = () => {
                   <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-blue-800 dark:from-white dark:to-blue-200 bg-clip-text text-transparent mb-2">
                     إدارة المستخدمين
                   </h1>
-                  <p className="text-lg text-gray-600 dark:text-gray-300 font-medium">
+                  <p className="text-lg text-gray-50 dark:text-gray-300 font-medium">
                     إدارة شاملة لجميع المستخدمين والأدوار في النظام
                   </p>
                 </div>

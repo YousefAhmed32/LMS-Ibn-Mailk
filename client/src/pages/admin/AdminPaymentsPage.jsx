@@ -820,7 +820,7 @@ const AdminPaymentsPage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.1 }}
           >
-            <LuxuryCard className="h-full" style={{
+            <LuxuryCard className="h-full rounded-2xl" style={{
               background: `linear-gradient(135deg, ${colors.surface} 0%, ${colors.background} 100%)`,
               border: `1px solid ${colors.border}`,
               boxShadow: shadows.md
@@ -847,7 +847,7 @@ const AdminPaymentsPage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.2 }}
           >
-            <LuxuryCard className="h-full" style={{
+            <LuxuryCard className="h-full rounded-2xl" style={{
               background: `linear-gradient(135deg, ${colors.surface} 0%, ${colors.background} 100%)`,
               border: `1px solid ${colors.border}`,
               boxShadow: shadows.md
@@ -874,7 +874,7 @@ const AdminPaymentsPage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.3 }}
           >
-            <LuxuryCard className="h-full" style={{
+            <LuxuryCard className="h-full rounded-2xl" style={{
               background: `linear-gradient(135deg, ${colors.surface} 0%, ${colors.background} 100%)`,
               border: `1px solid ${colors.border}`,
               boxShadow: shadows.md
@@ -901,7 +901,7 @@ const AdminPaymentsPage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.4 }}
           >
-            <LuxuryCard className="h-full" style={{
+            <LuxuryCard className="h-full rounded-2xl" style={{
               background: `linear-gradient(135deg, ${colors.surface} 0%, ${colors.background} 100%)`,
               border: `1px solid ${colors.border}`,
               boxShadow: shadows.md
@@ -928,7 +928,7 @@ const AdminPaymentsPage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.5 }}
           >
-            <LuxuryCard className="h-full" style={{
+            <LuxuryCard className="h-full rounded-2xl" style={{
               background: `linear-gradient(135deg, ${colors.surface} 0%, ${colors.background} 100%)`,
               border: `1px solid ${colors.border}`,
               boxShadow: shadows.md
@@ -952,7 +952,7 @@ const AdminPaymentsPage = () => {
         </div>
 
         {/* Filters */}
-        <LuxuryCard className="overflow-hidden mb-8" style={{
+        <LuxuryCard className="overflow-hidden mb-8 rounded-2xl" style={{
           background: `linear-gradient(135deg, ${colors.surface} 0%, ${colors.background} 100%)`,
           border: `1px solid ${colors.border}`,
           boxShadow: shadows.lg
@@ -1044,395 +1044,158 @@ const AdminPaymentsPage = () => {
         </LuxuryCard>
 
         {/* Desktop Table View */}
-        <LuxuryCard className="hidden lg:block overflow-hidden" style={{
-          background: `linear-gradient(135deg, ${colors.surface} 0%, ${colors.background} 100%)`,
-          border: `1px solid ${colors.border}`,
-          boxShadow: shadows.lg
-        }}>
-          <div className="overflow-x-auto -mx-2 sm:mx-0">
-            <table className="w-full">
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${colors.border}` }}>
-                  <th className="px-3 lg:px-6 py-3 lg:py-4 text-right text-xs lg:text-sm font-semibold" style={{ color: colors.text }}>
-                    بيانات الطالب
-                  </th>
-                  <th className="px-3 lg:px-6 py-3 lg:py-4 text-right text-xs lg:text-sm font-semibold" style={{ color: colors.text }}>
-                    تفاصيل الدورة
-                  </th>
-                  <th className="px-3 lg:px-6 py-3 lg:py-4 text-right text-xs lg:text-sm font-semibold" style={{ color: colors.text }}>
-                    قيمة الدفع
-                  </th>
-                  <th className="px-3 lg:px-6 py-3 lg:py-4 text-right text-xs lg:text-sm font-semibold" style={{ color: colors.text }}>
-                    رقم المعاملة
-                  </th>
-                  <th className="px-3 lg:px-6 py-3 lg:py-4 text-right text-xs lg:text-sm font-semibold" style={{ color: colors.text }}>
-                    حالة المعاملة
-                  </th>
-                  <th className="px-3 lg:px-6 py-3 lg:py-4 text-right text-xs lg:text-sm font-semibold" style={{ color: colors.text }}>
-                    تاريخ الإرسال
-                  </th>
-                  <th className="px-3 lg:px-6 py-3 lg:py-4 text-right text-xs lg:text-sm font-semibold" style={{ color: colors.text }}>
-                    إجراءات التحكم
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPayments.map((payment) => (
-                  <motion.tr
-                    key={payment._id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    style={{ borderBottom: `1px solid ${colors.border}` }}
-                    className="hover:bg-opacity-50 transition-colors duration-200"
-                  >
-                    <td className="px-3 lg:px-6 py-3 lg:py-4">
-                      <div>
-                        <p className="font-medium text-sm lg:text-base" style={{ color: colors.text }}>
-                          {payment.studentName}
-                        </p>
-                        <p className="text-xs lg:text-sm flex items-center gap-1" style={{ color: colors.textMuted }}>
-                          <Phone size={10} className="lg:w-3 lg:h-3" />
-                          {payment.studentPhone}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-3 lg:px-6 py-3 lg:py-4">
-                      <div>
-                        <p className="font-medium text-sm lg:text-base" style={{ color: colors.text }}>
-                          {payment.courseId?.title}
-                        </p>
-                        <p className="text-xs lg:text-sm" style={{ color: colors.textMuted }}>
-                          {payment.courseId?.subject} • الصف {payment.courseId?.grade}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-3 lg:px-6 py-3 lg:py-4">
-                      <div className="flex items-center gap-1">
-                        <DollarSign size={14} className="lg:w-4 lg:h-4" color={colors.accent} />
-                        <span className="font-bold text-sm lg:text-base" style={{ color: colors.accent }}>
-                          {formatCurrency(payment.amount)}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 lg:px-6 py-3 lg:py-4">
-                      <p className="text-xs lg:text-sm font-mono" style={{ color: colors.textMuted }}>
-                        {payment.transactionId || 'غير محدد'}
-                      </p>
-                    </td>
-                    <td className="px-3 lg:px-6 py-3 lg:py-4">
-                      {getStatusBadge(payment.status)}
-                    </td>
-                    <td className="px-3 lg:px-6 py-3 lg:py-4">
-                      <div className="flex items-center gap-1 text-xs lg:text-sm" style={{ color: colors.textMuted }}>
-                        <Calendar size={10} className="lg:w-3 lg:h-3" />
-                        {formatDate(payment.createdAt)}
-                      </div>
-                    </td>
-                    <td className="px-3 lg:px-6 py-3 lg:py-4">
-                      <div className="flex items-center gap-1 lg:gap-2">
-                        <LuxuryButton
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewImage(payment)}
-                          className="h-10 w-10 p-0 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                        >
-                          <Eye size={24} className="text-blue-600 dark:text-blue-400" />
-                        </LuxuryButton>
-                        
-                        {payment.status === 'pending' ? (
-                          <>
-                            <LuxuryButton
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleAcceptPayment(payment._id)}
-                              disabled={actionLoading[payment._id]}
-                              className="h-10 w-10 p-0 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 dark:hover:from-green-900/30 dark:hover:to-emerald-900/30 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                              style={{
-                                borderColor: colors.success + '30',
-                                color: colors.success
-                              }}
-                            >
-                              {actionLoading[payment._id] === 'accepting' ? (
-                                <motion.div
-                                  animate={{ rotate: 360 }}
-                                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                >
-                                  <RefreshCw size={18} />
-                                </motion.div>
-                              ) : (
-                                <CheckCircle size={18} />
-                              )}
-                            </LuxuryButton>
-                            
-                            <LuxuryButton
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleRejectPayment(payment._id)}
-                              disabled={actionLoading[payment._id]}
-                              className="h-10 w-10 p-0 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 dark:hover:from-red-900/30 dark:hover:to-pink-900/30 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                              style={{
-                                borderColor: colors.error + '30',
-                                color: colors.error
-                              }}
-                            >
-                              {actionLoading[payment._id] === 'rejecting' ? (
-                                <motion.div
-                                  animate={{ rotate: 360 }}
-                                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                >
-                                  <RefreshCw size={18} />
-                                </motion.div>
-                              ) : (
-                                <XCircle size={18} />
-                              )}
-                            </LuxuryButton>
-                          </>
-                        ) : (
-                          <div className="flex items-center gap-2 text-sm" style={{ color: colors.textMuted }}>
-                            {payment.status === 'accepted' && (
-                              <>
-                                <CheckCircle size={16} color={colors.success} />
-                                <span style={{ color: colors.success }}>تم القبول</span>
-                              </>
-                            )}
-                            {payment.status === 'rejected' && (
-                              <>
-                                <XCircle size={16} color={colors.error} />
-                                <span style={{ color: colors.error }}>تم الرفض</span>
-                              </>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Delete button - always visible */}
-                        <LuxuryButton
-                          variant="outline"
-                          size="sm"
-                          onClick={() => confirmDeletePayment(payment)}
-                          disabled={actionLoading[payment._id]}
-                          className="h-10 w-10 p-0 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 dark:hover:from-orange-900/30 dark:hover:to-red-900/30 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                          style={{
-                            borderColor: colors.warning + '30',
-                            color: colors.warning
-                          }}
-                        >
-                          {actionLoading[payment._id] === 'deleting' ? (
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                            >
-                              <RefreshCw size={18} />
-                            </motion.div>
-                          ) : (
-                            <Trash2 size={18} />
-                          )}
-                        </LuxuryButton>
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Empty State */}
-          {filteredPayments.length === 0 && (
-            <div className="text-center py-16">
-              <div className="relative inline-block mb-8">
-                <div className="absolute inset-0 rounded-full opacity-20" style={{
-                  background: `radial-gradient(circle, ${colors.accent} 0%, transparent 70%)`
-                }}></div>
-                <div className="relative p-8 rounded-full" style={{
-                  background: `linear-gradient(135deg, ${colors.accent}20, ${colors.accent}10)`,
-                  border: `2px solid ${colors.accent}30`
-                }}>
-                  <CreditCard size={80} color={colors.accent} />
-                </div>
-              </div>
-              
-              <h3 className="text-2xl font-bold mb-4" style={{ color: colors.text }}>
-                لا توجد معاملات
-              </h3>
-              
-              <p className="text-lg mb-8 max-w-md mx-auto" style={{ color: colors.textMuted }}>
-                لم يتم العثور على أي معاملات مالية تطابق معايير البحث المحددة.
-              </p>
-            </div>
-          )}
-        </LuxuryCard>
-
-        {/* Mobile/Tablet Card View */}
-        <div className="lg:hidden space-y-3 lg:space-y-4">
-          {filteredPayments.map((payment, index) => (
-            <motion.div
-              key={payment._id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
+<LuxuryCard
+  className="hidden lg:block overflow-hidden rounded-2xl"
+  style={{
+    background: `linear-gradient(135deg, ${colors.surface} 0%, ${colors.background} 100%)`,
+    border: `1px solid ${colors.border}`,
+    boxShadow: shadows.xl,
+  }}
+>
+  <div className="overflow-x-auto -mx-2 sm:mx-0">
+    <table className="w-full">
+      <thead>
+        <tr style={{ borderBottom: `1px solid ${colors.border}` }}>
+          {[
+            "بيانات الطالب",
+            "تفاصيل الدورة",
+            "قيمة الدفع",
+            "رقم المعاملة",
+            "حالة المعاملة",
+            "تاريخ الإرسال",
+            "إجراءات التحكم",
+          ].map((title, idx) => (
+            <th
+              key={idx}
+              className="px-3 lg:px-6 py-3 lg:py-4 text-right text-xs lg:text-sm font-semibold"
+              style={{ color: colors.text }}
             >
-              <LuxuryCard className="overflow-hidden" style={{
-                background: `linear-gradient(135deg, ${colors.surface} 0%, ${colors.background} 100%)`,
-                border: `1px solid ${colors.border}`,
-                boxShadow: shadows.lg
-              }}>
-                <div className="p-3 lg:p-4">
-                  {/* Payment Header */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{
-                        backgroundColor: colors.accent + '20'
-                      }}>
-                        <User size={20} color={colors.accent} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold" style={{ color: colors.text }}>
-                          {payment.studentName}
-                        </p>
-                        <p className="text-xs flex items-center gap-1" style={{ color: colors.textMuted }}>
-                          <Phone size={12} />
-                          {payment.studentPhone}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* Status */}
-                    {getStatusBadge(payment.status)}
-                  </div>
+              {title}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {filteredPayments.map((payment) => (
+          <motion.tr
+            key={payment._id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="hover:bg-opacity-30 hover:scale-105 transition-all duration-200 cursor-pointer"
+            style={{
+              borderBottom: `1px solid ${colors.border}`,
+              boxShadow: shadows.sm,
+            }}
+          >
+            {/* بيانات الطالب */}
+            <td className="px-3 lg:px-6 py-3 lg:py-4">
+              <div>
+                <p
+                  className="font-medium text-sm lg:text-base"
+                  style={{ color: colors.text }}
+                >
+                  {payment.studentName}
+                </p>
+                <p
+                  className="text-xs lg:text-sm flex items-center gap-1"
+                  style={{ color: colors.textMuted }}
+                >
+                  <Phone size={12} className="lg:w-4 lg:h-4" />
+                  {payment.studentPhone}
+                </p>
+              </div>
+            </td>
 
-                  {/* Payment Details */}
-                  <div className="space-y-3 mb-4">
-                    {/* Course */}
-                    <div className="flex items-center gap-2">
-                      <BookOpen size={16} color={colors.info} />
-                      <div>
-                        <p className="text-sm font-medium" style={{ color: colors.text }}>
-                          {payment.courseId?.title}
-                        </p>
-                        <p className="text-xs" style={{ color: colors.textMuted }}>
-                          {payment.courseId?.subject} • الصف {payment.courseId?.grade}
-                        </p>
-                      </div>
-                    </div>
+            {/* تفاصيل الدورة */}
+            <td className="px-3 lg:px-6 py-3 lg:py-4">
+              <div>
+                <p
+                  className="font-medium text-sm lg:text-base"
+                  style={{ color: colors.text }}
+                >
+                  {payment.courseId?.title}
+                </p>
+                <p
+                  className="text-xs lg:text-sm"
+                  style={{ color: colors.textMuted }}
+                >
+                  {payment.courseId?.subject} • الصف {payment.courseId?.grade}
+                </p>
+              </div>
+            </td>
 
-                    {/* Amount */}
-                    <div className="flex items-center gap-2">
-                      <DollarSign size={16} color={colors.accent} />
-                      <span className="text-sm font-bold" style={{ color: colors.accent }}>
-                        {formatCurrency(payment.amount)}
-                      </span>
-                    </div>
+            {/* قيمة الدفع */}
+            <td className="px-3 lg:px-6 py-3 lg:py-4">
+              <div className="flex items-center gap-1">
+                <DollarSign size={16} className="lg:w-5 lg:h-5" color={colors.accent} />
+                <span
+                  className="font-bold text-sm lg:text-base"
+                  style={{ color: colors.accent }}
+                >
+                  {formatCurrency(payment.amount)}
+                </span>
+              </div>
+            </td>
 
-                    {/* Transaction ID */}
-                    <div className="flex items-center gap-2">
-                      <CreditCard size={16} color={colors.textMuted} />
-                      <span className="text-sm font-mono" style={{ color: colors.textMuted }}>
-                        {payment.transactionId || 'غير محدد'}
-                      </span>
-                    </div>
+            {/* رقم المعاملة */}
+            <td className="px-3 lg:px-6 py-3 lg:py-4">
+              <p
+                className="text-xs lg:text-sm font-mono truncate max-w-[150px]"
+                style={{ color: colors.textMuted }}
+              >
+                {payment.transactionId || "غير محدد"}
+              </p>
+            </td>
 
-                    {/* Date */}
-                    <div className="flex items-center gap-2">
-                      <Calendar size={16} color={colors.textMuted} />
-                      <span className="text-sm" style={{ color: colors.textMuted }}>
-                        {formatDate(payment.createdAt)}
-                      </span>
-                    </div>
-                  </div>
+            {/* حالة المعاملة */}
+            <td className="px-3 lg:px-6 py-3 lg:py-4">
+              {getStatusBadge(payment.status)}
+            </td>
 
-                  {/* Actions */}
-                  <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: colors.border }}>
-                    <div className="flex items-center gap-2">
-                      {/* View Image */}
-                      <LuxuryButton
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleViewImage(payment)}
-                        className="h-10 w-10 p-0 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                      >
-                        <Eye size={24} className="text-blue-600 dark:text-blue-400" />
-                      </LuxuryButton>
-                    </div>
+            {/* تاريخ الإرسال */}
+            <td className="px-3 lg:px-6 py-3 lg:py-4">
+              <div
+                className="flex items-center gap-1 text-xs lg:text-sm"
+                style={{ color: colors.textMuted }}
+              >
+                <Calendar size={12} className="lg:w-4 lg:h-4" />
+                {formatDate(payment.createdAt)}
+              </div>
+            </td>
 
-                    {/* Status Actions */}
-                    {payment.status === 'pending' ? (
-                      <div className="flex items-center gap-2">
-                        <LuxuryButton
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleAcceptPayment(payment._id)}
-                          disabled={actionLoading[payment._id]}
-                          className="h-10 w-10 p-0 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 dark:hover:from-green-900/30 dark:hover:to-emerald-900/30 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                          style={{
-                            borderColor: colors.success + '30',
-                            color: colors.success
-                          }}
-                        >
-                          {actionLoading[payment._id] === 'accepting' ? (
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                            >
-                              <RefreshCw size={18} />
-                            </motion.div>
-                          ) : (
-                            <CheckCircle size={18} />
-                          )}
-                        </LuxuryButton>
-                        
-                        <LuxuryButton
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleRejectPayment(payment._id)}
-                          disabled={actionLoading[payment._id]}
-                          className="h-10 w-10 p-0 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 dark:hover:from-red-900/30 dark:hover:to-pink-900/30 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                          style={{
-                            borderColor: colors.error + '30',
-                            color: colors.error
-                          }}
-                        >
-                          {actionLoading[payment._id] === 'rejecting' ? (
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                            >
-                              <RefreshCw size={18} />
-                            </motion.div>
-                          ) : (
-                            <XCircle size={18} />
-                          )}
-                        </LuxuryButton>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-sm" style={{ color: colors.textMuted }}>
-                        {payment.status === 'accepted' && (
-                          <>
-                            <CheckCircle size={16} color={colors.success} />
-                            <span style={{ color: colors.success }}>تم القبول</span>
-                          </>
-                        )}
-                        {payment.status === 'rejected' && (
-                          <>
-                            <XCircle size={16} color={colors.error} />
-                            <span style={{ color: colors.error }}>تم الرفض</span>
-                          </>
-                        )}
-                      </div>
-                    )}
+            {/* إجراءات التحكم */}
+            <td className="px-3 lg:px-6 py-3 lg:py-4">
+              <div className="flex items-center gap-2">
+                {/* View Image */}
+                <LuxuryButton
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleViewImage(payment)}
+                  className="h-10 w-10 p-0 hover:scale-105 hover:shadow-xl rounded-xl transition-all duration-200"
+                  style={{
+                    background: `linear-gradient(135deg, ${colors.blue}10, ${colors.blue}20)`,
+                    borderColor: colors.blue + "40",
+                  }}
+                >
+                  <Eye size={24} className="text-blue-600 dark:text-blue-400" />
+                </LuxuryButton>
 
-                    {/* Delete button - always visible */}
+                {/* Accept / Reject */}
+                {payment.status === "pending" && (
+                  <>
                     <LuxuryButton
                       variant="outline"
                       size="sm"
-                      onClick={() => confirmDeletePayment(payment)}
+                      onClick={() => handleAcceptPayment(payment._id)}
                       disabled={actionLoading[payment._id]}
-                      className="h-10 w-10 p-0 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 dark:hover:from-orange-900/30 dark:hover:to-red-900/30 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                      className="h-10 w-10 p-0 hover:scale-105 hover:shadow-xl rounded-xl transition-all duration-200"
                       style={{
-                        borderColor: colors.warning + '30',
-                        color: colors.warning
+                        borderColor: colors.success + "40",
+                        color: colors.success,
                       }}
                     >
-                      {actionLoading[payment._id] === 'deleting' ? (
+                      {actionLoading[payment._id] === "accepting" ? (
                         <motion.div
                           animate={{ rotate: 360 }}
                           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -1440,15 +1203,287 @@ const AdminPaymentsPage = () => {
                           <RefreshCw size={18} />
                         </motion.div>
                       ) : (
-                        <Trash2 size={18} />
+                        <CheckCircle size={18} />
                       )}
                     </LuxuryButton>
-                  </div>
-                </div>
-              </LuxuryCard>
-            </motion.div>
-          ))}
+
+                    <LuxuryButton
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRejectPayment(payment._id)}
+                      disabled={actionLoading[payment._id]}
+                      className="h-10 w-10 p-0 hover:scale-105 hover:shadow-xl rounded-xl transition-all duration-200"
+                      style={{
+                        borderColor: colors.error + "40",
+                        color: colors.error,
+                      }}
+                    >
+                      {actionLoading[payment._id] === "rejecting" ? (
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        >
+                          <RefreshCw size={18} />
+                        </motion.div>
+                      ) : (
+                        <XCircle size={18} />
+                      )}
+                    </LuxuryButton>
+                  </>
+                )}
+
+                {/* Delete */}
+                <LuxuryButton
+                  variant="outline"
+                  size="sm"
+                  onClick={() => confirmDeletePayment(payment)}
+                  disabled={actionLoading[payment._id]}
+                  className="h-10 w-10 p-0 hover:scale-105 hover:shadow-xl rounded-xl transition-all duration-200"
+                  style={{
+                    borderColor: colors.warning + "40",
+                    color: colors.warning,
+                  }}
+                >
+                  {actionLoading[payment._id] === "deleting" ? (
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    >
+                      <RefreshCw size={18} />
+                    </motion.div>
+                  ) : (
+                    <Trash2 size={18} />
+                  )}
+                </LuxuryButton>
+              </div>
+            </td>
+          </motion.tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  {/* Empty State */}
+  {filteredPayments.length === 0 && (
+    <div className="text-center py-16">
+      <div className="relative inline-block mb-8 animate-pulse">
+        <div
+          className="absolute inset-0 rounded-full opacity-20"
+          style={{
+            background: `radial-gradient(circle, ${colors.accent} 0%, transparent 70%)`,
+          }}
+        ></div>
+        <div
+          className="relative p-8 rounded-full"
+          style={{
+            background: `linear-gradient(135deg, ${colors.accent}20, ${colors.accent}10)`,
+            border: `2px solid ${colors.accent}30`,
+          }}
+        >
+          <CreditCard size={80} color={colors.accent} />
         </div>
+      </div>
+
+      <h3 className="text-2xl font-bold mb-4" style={{ color: colors.text }}>
+        لا توجد معاملات
+      </h3>
+
+      <p className="text-lg mb-8 max-w-md mx-auto" style={{ color: colors.textMuted }}>
+        لم يتم العثور على أي معاملات مالية تطابق معايير البحث المحددة.
+      </p>
+    </div>
+  )}
+</LuxuryCard>
+
+
+      {/* Mobile/Tablet Card View */}
+<div className="lg:hidden space-y-3 lg:space-y-4">
+  {filteredPayments.map((payment, index) => (
+    <motion.div
+      key={payment._id}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05, duration: 0.35 }}
+    >
+      <LuxuryCard
+        className="overflow-hidden rounded-2xl shadow-xl hover:scale-105 transition-all duration-200"
+        style={{
+          background: `linear-gradient(135deg, ${colors.surface} 0%, ${colors.background} 100%)`,
+          border: `1px solid ${colors.border}`,
+        }}
+      >
+        <div className="p-3 lg:p-4">
+          {/* Payment Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div
+                className="w-12 h-12 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: colors.accent + "20" }}
+              >
+                <User size={20} color={colors.accent} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: colors.text }}>
+                  {payment.studentName}
+                </p>
+                <p className="text-xs flex items-center gap-1" style={{ color: colors.textMuted }}>
+                  <Phone size={12} />
+                  {payment.studentPhone}
+                </p>
+              </div>
+            </div>
+            
+            {/* Status */}
+            {getStatusBadge(payment.status)}
+          </div>
+
+          {/* Payment Details */}
+          <div className="space-y-3 mb-4">
+            <div className="flex items-center gap-2">
+              <BookOpen size={16} color={colors.info} />
+              <div>
+                <p className="text-sm font-medium" style={{ color: colors.text }}>
+                  {payment.courseId?.title}
+                </p>
+                <p className="text-xs" style={{ color: colors.textMuted }}>
+                  {payment.courseId?.subject} • الصف {payment.courseId?.grade}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <DollarSign size={16} color={colors.accent} />
+              <span className="text-sm font-bold" style={{ color: colors.accent }}>
+                {formatCurrency(payment.amount)}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <CreditCard size={16} color={colors.textMuted} />
+              <span className="text-sm font-mono truncate" style={{ color: colors.textMuted }}>
+                {payment.transactionId || "غير محدد"}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Calendar size={16} color={colors.textMuted} />
+              <span className="text-sm" style={{ color: colors.textMuted }}>
+                {formatDate(payment.createdAt)}
+              </span>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: colors.border }}>
+            <div className="flex items-center gap-2">
+              {/* View Image */}
+              <LuxuryButton
+                variant="outline"
+                size="sm"
+                onClick={() => handleViewImage(payment)}
+                className="h-10 w-10 p-0 hover:scale-105 hover:shadow-xl rounded-xl transition-all duration-200"
+                style={{
+                  background: `linear-gradient(135deg, ${colors.blue}10, ${colors.blue}20)`,
+                  borderColor: colors.blue + "40",
+                }}
+              >
+                <Eye size={24} className="text-blue-600 dark:text-blue-400" />
+              </LuxuryButton>
+            </div>
+
+            {payment.status === "pending" ? (
+              <div className="flex items-center gap-2">
+                <LuxuryButton
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAcceptPayment(payment._id)}
+                  disabled={actionLoading[payment._id]}
+                  className="h-10 w-10 p-0 hover:scale-105 hover:shadow-xl rounded-xl transition-all duration-200"
+                  style={{ borderColor: colors.success + "40", color: colors.success }}
+                >
+                  {actionLoading[payment._id] === "accepting" ? (
+                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+                      <RefreshCw size={18} />
+                    </motion.div>
+                  ) : (
+                    <CheckCircle size={18} />
+                  )}
+                </LuxuryButton>
+
+                <LuxuryButton
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleRejectPayment(payment._id)}
+                  disabled={actionLoading[payment._id]}
+                  className="h-10 w-10 p-0 hover:scale-105 hover:shadow-xl rounded-xl transition-all duration-200"
+                  style={{ borderColor: colors.error + "40", color: colors.error }}
+                >
+                  {actionLoading[payment._id] === "rejecting" ? (
+                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+                      <RefreshCw size={18} />
+                    </motion.div>
+                  ) : (
+                    <XCircle size={18} />
+                  )}
+                </LuxuryButton>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm" style={{ color: colors.textMuted }}>
+                {payment.status === "accepted" && (
+                  <>
+                    <CheckCircle size={16} color={colors.success} />
+                    <span style={{ color: colors.success }}>تم القبول</span>
+                  </>
+                )}
+                {payment.status === "rejected" && (
+                  <>
+                    <XCircle size={16} color={colors.error} />
+                    <span style={{ color: colors.error }}>تم الرفض</span>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Delete */}
+            <LuxuryButton
+              variant="outline"
+              size="sm"
+              onClick={() => confirmDeletePayment(payment)}
+              disabled={actionLoading[payment._id]}
+              className="h-10 w-10 p-0 hover:scale-105 hover:shadow-xl rounded-xl transition-all duration-200"
+              style={{ borderColor: colors.warning + "40", color: colors.warning }}
+            >
+              {actionLoading[payment._id] === "deleting" ? (
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}>
+                  <RefreshCw size={18} />
+                </motion.div>
+              ) : (
+                <Trash2 size={18} />
+              )}
+            </LuxuryButton>
+          </div>
+        </div>
+      </LuxuryCard>
+    </motion.div>
+  ))}
+
+  {/* Empty State */}
+  {filteredPayments.length === 0 && (
+    <div className="text-center py-16">
+      <div className="relative inline-block mb-8 animate-pulse">
+        <div className="absolute inset-0 rounded-full opacity-20" style={{ background: `radial-gradient(circle, ${colors.accent} 0%, transparent 70%)` }}></div>
+        <div className="relative p-8 rounded-full" style={{ background: `linear-gradient(135deg, ${colors.accent}20, ${colors.accent}10)`, border: `2px solid ${colors.accent}30` }}>
+          <CreditCard size={80} color={colors.accent} />
+        </div>
+      </div>
+      <h3 className="text-2xl font-bold mb-4" style={{ color: colors.text }}>لا توجد معاملات</h3>
+      <p className="text-lg mb-8 max-w-md mx-auto" style={{ color: colors.textMuted }}>
+        لم يتم العثور على أي معاملات مالية تطابق معايير البحث المحددة.
+      </p>
+    </div>
+  )}
+</div>
+
 
         {/* Pagination */}
         {totalPages > 1 && (

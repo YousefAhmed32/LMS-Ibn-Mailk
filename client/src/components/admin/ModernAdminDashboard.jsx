@@ -355,7 +355,7 @@ const ModernAdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-950 dark:to-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
         <motion.div
@@ -566,35 +566,44 @@ const ModernAdminDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <AreaChart data={safeStats.charts.revenueGrowth}>
-                    <defs>
-                      <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={colors.primary} stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor={colors.primary} stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#E5E7EB'} />
-                    <XAxis 
-                      dataKey="month" 
-                      stroke={isDark ? '#9CA3AF' : '#6B7280'}
-                      fontSize={12}
-                    />
-                    <YAxis 
-                      stroke={isDark ? '#9CA3AF' : '#6B7280'}
-                      fontSize={12}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Area 
-                      type="monotone" 
-                      dataKey="revenue" 
-                      stroke={colors.primary} 
-                      strokeWidth={3}
-                      fillOpacity={1} 
-                      fill="url(#revenueGradient)" 
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                {safeStats.charts.revenueGrowth && safeStats.charts.revenueGrowth.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <AreaChart data={safeStats.charts.revenueGrowth}>
+                      <defs>
+                        <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={colors.primary} stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor={colors.primary} stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#E5E7EB'} />
+                      <XAxis 
+                        dataKey="month" 
+                        stroke={isDark ? '#9CA3AF' : '#6B7280'}
+                        fontSize={12}
+                      />
+                      <YAxis 
+                        stroke={isDark ? '#9CA3AF' : '#6B7280'}
+                        fontSize={12}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Area 
+                        type="monotone" 
+                        dataKey="revenue" 
+                        stroke={colors.primary} 
+                        strokeWidth={3}
+                        fillOpacity={1} 
+                        fill="url(#revenueGradient)" 
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
+                    <div className="text-center">
+                      <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>لا توجد بيانات متاحة للعرض</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
@@ -615,27 +624,36 @@ const ModernAdminDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={safeStats.charts.usersByGrade}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#E5E7EB'} />
-                    <XAxis 
-                      dataKey="grade" 
-                      stroke={isDark ? '#9CA3AF' : '#6B7280'}
-                      fontSize={12}
-                    />
-                    <YAxis 
-                      stroke={isDark ? '#9CA3AF' : '#6B7280'}
-                      fontSize={12}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar 
-                      dataKey="count" 
-                      fill={colors.secondary} 
-                      radius={[8, 8, 0, 0]}
-                      className="hover:opacity-80 transition-opacity"
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
+                {safeStats.charts.usersByGrade && safeStats.charts.usersByGrade.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={safeStats.charts.usersByGrade}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#E5E7EB'} />
+                      <XAxis 
+                        dataKey="grade" 
+                        stroke={isDark ? '#9CA3AF' : '#6B7280'}
+                        fontSize={12}
+                      />
+                      <YAxis 
+                        stroke={isDark ? '#9CA3AF' : '#6B7280'}
+                        fontSize={12}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Bar 
+                        dataKey="count" 
+                        fill={colors.secondary} 
+                        radius={[8, 8, 0, 0]}
+                        className="hover:opacity-80 transition-opacity"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
+                    <div className="text-center">
+                      <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>لا توجد بيانات متاحة للعرض</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </motion.div>
@@ -776,25 +794,34 @@ const ModernAdminDashboard = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <RechartsPieChart>
-                        <Pie
-                          data={safeStats.charts.usersByGrade}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="count"
-                        >
-                          {safeStats.charts.usersByGrade.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={Object.values(colors)[index % Object.values(colors).length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip content={<CustomTooltip />} />
-                      </RechartsPieChart>
-                    </ResponsiveContainer>
+                    {safeStats.charts.usersByGrade && safeStats.charts.usersByGrade.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <RechartsPieChart>
+                          <Pie
+                            data={safeStats.charts.usersByGrade}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="count"
+                          >
+                            {safeStats.charts.usersByGrade.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={Object.values(colors)[index % Object.values(colors).length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip content={<CustomTooltip />} />
+                        </RechartsPieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
+                        <div className="text-center">
+                          <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                          <p>لا توجد بيانات متاحة للعرض</p>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -947,25 +974,34 @@ const ModernAdminDashboard = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <RechartsPieChart>
-                        <Pie
-                          data={safeStats.charts.courseDistribution}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="count"
-                        >
-                          {safeStats.charts.courseDistribution.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={Object.values(colors)[index % Object.values(colors).length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip content={<CustomTooltip />} />
-                      </RechartsPieChart>
-                    </ResponsiveContainer>
+                    {safeStats.charts.courseDistribution && safeStats.charts.courseDistribution.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <RechartsPieChart>
+                          <Pie
+                            data={safeStats.charts.courseDistribution}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                            outerRadius={80}
+                            fill="#8884d8"
+                            dataKey="count"
+                          >
+                            {safeStats.charts.courseDistribution.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={Object.values(colors)[index % Object.values(colors).length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip content={<CustomTooltip />} />
+                        </RechartsPieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
+                        <div className="text-center">
+                          <PieChart className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                          <p>لا توجد بيانات متاحة للعرض</p>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -1084,28 +1120,37 @@ const ModernAdminDashboard = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <RechartsLineChart data={safeStats.charts.revenueGrowth}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#E5E7EB'} />
-                        <XAxis 
-                          dataKey="month" 
-                          stroke={isDark ? '#9CA3AF' : '#6B7280'}
-                          fontSize={12}
-                        />
-                        <YAxis 
-                          stroke={isDark ? '#9CA3AF' : '#6B7280'}
-                          fontSize={12}
-                        />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Line 
-                          type="monotone" 
-                          dataKey="revenue" 
-                          stroke={colors.primary} 
-                          strokeWidth={3}
-                          dot={{ fill: colors.primary, strokeWidth: 2, r: 6 }}
-                        />
-                      </RechartsLineChart>
-                    </ResponsiveContainer>
+                    {safeStats.charts.revenueGrowth && safeStats.charts.revenueGrowth.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <RechartsLineChart data={safeStats.charts.revenueGrowth}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#E5E7EB'} />
+                          <XAxis 
+                            dataKey="month" 
+                            stroke={isDark ? '#9CA3AF' : '#6B7280'}
+                            fontSize={12}
+                          />
+                          <YAxis 
+                            stroke={isDark ? '#9CA3AF' : '#6B7280'}
+                            fontSize={12}
+                          />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Line 
+                            type="monotone" 
+                            dataKey="revenue" 
+                            stroke={colors.primary} 
+                            strokeWidth={3}
+                            dot={{ fill: colors.primary, strokeWidth: 2, r: 6 }}
+                          />
+                        </RechartsLineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
+                        <div className="text-center">
+                          <TrendingUp className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                          <p>لا توجد بيانات متاحة للعرض</p>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -1313,26 +1358,35 @@ const ModernAdminDashboard = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={safeStats.charts.revenueGrowth}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#E5E7EB'} />
-                        <XAxis 
-                          dataKey="month" 
-                          stroke={isDark ? '#9CA3AF' : '#6B7280'}
-                          fontSize={12}
-                        />
-                        <YAxis 
-                          stroke={isDark ? '#9CA3AF' : '#6B7280'}
-                          fontSize={12}
-                        />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Bar 
-                          dataKey="revenue" 
-                          fill={colors.purple} 
-                          radius={[8, 8, 0, 0]}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {safeStats.charts.revenueGrowth && safeStats.charts.revenueGrowth.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={safeStats.charts.revenueGrowth}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#E5E7EB'} />
+                          <XAxis 
+                            dataKey="month" 
+                            stroke={isDark ? '#9CA3AF' : '#6B7280'}
+                            fontSize={12}
+                          />
+                          <YAxis 
+                            stroke={isDark ? '#9CA3AF' : '#6B7280'}
+                            fontSize={12}
+                          />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Bar 
+                            dataKey="revenue" 
+                            fill={colors.purple} 
+                            radius={[8, 8, 0, 0]}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
+                        <div className="text-center">
+                          <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                          <p>لا توجد بيانات متاحة للعرض</p>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -1346,28 +1400,37 @@ const ModernAdminDashboard = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <RechartsLineChart data={safeStats.charts.revenueGrowth}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#E5E7EB'} />
-                        <XAxis 
-                          dataKey="month" 
-                          stroke={isDark ? '#9CA3AF' : '#6B7280'}
-                          fontSize={12}
-                        />
-                        <YAxis 
-                          stroke={isDark ? '#9CA3AF' : '#6B7280'}
-                          fontSize={12}
-                        />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Line 
-                          type="monotone" 
-                          dataKey="revenue" 
-                          stroke={colors.orange} 
-                          strokeWidth={3}
-                          dot={{ fill: colors.orange, strokeWidth: 2, r: 6 }}
-                        />
-                      </RechartsLineChart>
-                    </ResponsiveContainer>
+                    {safeStats.charts.revenueGrowth && safeStats.charts.revenueGrowth.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <RechartsLineChart data={safeStats.charts.revenueGrowth}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#E5E7EB'} />
+                          <XAxis 
+                            dataKey="month" 
+                            stroke={isDark ? '#9CA3AF' : '#6B7280'}
+                            fontSize={12}
+                          />
+                          <YAxis 
+                            stroke={isDark ? '#9CA3AF' : '#6B7280'}
+                            fontSize={12}
+                          />
+                          <Tooltip content={<CustomTooltip />} />
+                          <Line 
+                            type="monotone" 
+                            dataKey="revenue" 
+                            stroke={colors.orange} 
+                            strokeWidth={3}
+                            dot={{ fill: colors.orange, strokeWidth: 2, r: 6 }}
+                          />
+                        </RechartsLineChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-[300px] text-gray-500 dark:text-gray-400">
+                        <div className="text-center">
+                          <LineChart className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                          <p>لا توجد بيانات متاحة للعرض</p>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>

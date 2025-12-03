@@ -189,7 +189,7 @@ const ModernUsersTable = ({ users = [], loading = false }) => {
       // Success notification
       toast({
         title: 'تم نسخ معرف الطالب',
-        description: `تم نسخ معرف الطالب: ${studentId}`,
+        description: ` ${studentId}`,
         variant: 'success',
       });
     } catch (error) {
