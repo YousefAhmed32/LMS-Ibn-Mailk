@@ -372,7 +372,7 @@ const PaymentGatewayIntegration = ({ courseId, courseTitle, coursePrice, onSucce
                       className="text-lg font-bold"
                       style={{ color: colors.accent }}
                     >
-                      01012345678
+                      +201234567890
                     </p>
                   </div>
                   <LuxuryButton

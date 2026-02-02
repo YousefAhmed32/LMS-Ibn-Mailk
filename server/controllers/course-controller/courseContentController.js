@@ -2,6 +2,7 @@ const Course = require('../../models/Course');
 const UserCourseProgress = require('../../models/UserCourseProgress');
 const ExamResult = require('../../models/ExamResult');
 const mongoose = require('mongoose');
+const { getYouTubeEmbedUrl } = require('../../utils/videoUtils');
 
 // Get course content for enrolled students
 const getCourseContent = async (req, res) => {
@@ -180,22 +181,11 @@ const getCourseContent = async (req, res) => {
   }
 };
 
-// Helper function to convert YouTube URL to embed URL
+// Helper: convert any YouTube URL (watch, youtu.be, shorts, embed, params) to embed URL
 const convertToEmbedUrl = (url) => {
   if (!url) return '';
-  
-  // Convert YouTube watch URL to embed URL
-  if (url.includes('youtube.com/watch?v=')) {
-    const videoId = url.split('v=')[1]?.split('&')[0];
-    return `https://www.youtube.com/embed/${videoId}`;
-  }
-  
-  // If already an embed URL, return as is
-  if (url.includes('youtube.com/embed/')) {
-    return url;
-  }
-  
-  return url;
+  const embedUrl = getYouTubeEmbedUrl(url);
+  return embedUrl || url;
 };
 
 // Helper function to calculate overall progress

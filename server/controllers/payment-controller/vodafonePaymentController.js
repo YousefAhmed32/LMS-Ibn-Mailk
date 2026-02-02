@@ -4,6 +4,7 @@ const User = require('../../models/User');
 const { uploadImageToGridFS } = require('../../utils/simpleGridfsUpload');
 const NotificationService = require('../../services/notificationService');
 const MongoDBErrorHandler = require('../../utils/mongoErrorHandler');
+const { isValidPhone, normalizeForStorage } = require('../../utils/phoneUtils');
 
 // Submit payment proof for course enrollment
 const submitPayment = async (req, res) => {
@@ -26,12 +27,10 @@ const submitPayment = async (req, res) => {
       });
     }
 
-    // Validate phone number format
-    const phoneRegex = /^01[0-9]{9}$/;
-    if (!phoneRegex.test(studentPhone)) {
+    if (!isValidPhone(studentPhone)) {
       return res.status(400).json({
         success: false,
-        error: 'Please enter a valid Egyptian phone number (e.g., 01012345678)'
+        error: 'Please enter a valid international phone number (e.g. +201234567890)'
       });
     }
 
@@ -127,12 +126,15 @@ const submitPayment = async (req, res) => {
       });
     }
 
+    // Normalize phone to E.164 before storage
+    const studentPhoneE164 = normalizeForStorage(studentPhone);
+
     // Create payment record
     const payment = new Payment({
       studentId,
       courseId,
       studentName: studentName.trim(),
-      studentPhone,
+      studentPhone: studentPhoneE164,
       amount: parseFloat(amount),
       transactionId: transactionId ? transactionId.trim() : undefined,
       screenshot: screenshotUrl,

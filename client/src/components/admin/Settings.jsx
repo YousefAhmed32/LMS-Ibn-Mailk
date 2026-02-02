@@ -401,7 +401,7 @@ const Settings = () => {
                   id="vodafoneCash"
                   value={paymentSettings.vodafoneCashNumber}
                   onChange={(e) => setPaymentSettings({...paymentSettings, vodafoneCashNumber: e.target.value})}
-                  placeholder="01022880651"
+                  placeholder="+201022880651"
                   className="font-mono"
                 />
               </div>

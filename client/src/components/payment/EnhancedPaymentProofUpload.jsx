@@ -5,6 +5,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from '../../hooks/use-toast';
 import { uploadPaymentProof } from '../../store/slices/paymentSlice';
 import paymentService from '../../services/paymentService';
+import PhoneInput from '../ui/PhoneInput';
 import LuxuryButton from '../ui/LuxuryButton';
 import { 
   Upload, 
@@ -61,6 +62,12 @@ const EnhancedPaymentProofUpload = ({ courseId, courseTitle, coursePrice, onSucc
         [name]: ''
       }));
     }
+  };
+
+  // Phone fields: value is E.164 from PhoneInput
+  const handlePhoneChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value || '' }));
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
   // Handle file selection
@@ -143,19 +150,19 @@ const EnhancedPaymentProofUpload = ({ courseId, courseTitle, coursePrice, onSucc
     if (!formData.senderPhone.trim()) {
       newErrors.senderPhone = 'رقم المرسل مطلوب';
     } else if (!paymentService.validatePhoneNumber(formData.senderPhone)) {
-      newErrors.senderPhone = 'رقم هاتف غير صحيح. يجب أن يبدأ بـ 01 ويحتوي على 11 رقم';
+      newErrors.senderPhone = 'يرجى إدخال رقم هاتف دولي صحيح (مثال: +201234567890)';
     }
 
     // Validate student phone
     if (!formData.studentPhone.trim()) {
       newErrors.studentPhone = 'رقم الطالبة مطلوب';
     } else if (!paymentService.validatePhoneNumber(formData.studentPhone)) {
-      newErrors.studentPhone = 'رقم هاتف غير صحيح. يجب أن يبدأ بـ 01 ويحتوي على 11 رقم';
+      newErrors.studentPhone = 'يرجى إدخال رقم هاتف دولي صحيح (مثال: +201234567890)';
     }
 
     // Validate parent phone (optional)
     if (formData.parentPhone && !paymentService.validatePhoneNumber(formData.parentPhone)) {
-      newErrors.parentPhone = 'رقم هاتف غير صحيح. يجب أن يبدأ بـ 01 ويحتوي على 11 رقم';
+      newErrors.parentPhone = 'يرجى إدخال رقم هاتف دولي صحيح (مثال: +201234567890)';
     }
 
     // Validate amount
@@ -423,27 +430,21 @@ const EnhancedPaymentProofUpload = ({ courseId, courseTitle, coursePrice, onSucc
               >
                 رقم المرسل <span style={{ color: colors.error }}>*</span>
               </label>
-              <div className="relative">
-                <Phone 
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4"
-                  style={{ color: colors.textMuted }}
-                />
-                <input
-                  type="tel"
-                  name="senderPhone"
+              <div
+                className={`rounded-xl border-2 transition-all duration-200 focus-within:ring-2 ${errors.senderPhone ? 'border-red-500' : ''}`}
+                style={{
+                  borderColor: errors.senderPhone ? colors.error : colors.border,
+                  backgroundColor: colors.background,
+                  '--tw-ring-color': colors.accent + '30'
+                }}
+              >
+                <PhoneInput
                   value={formData.senderPhone}
-                  onChange={handleInputChange}
-                  placeholder="01012345678"
-                  className={`w-full px-4 py-3 pr-10 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2 ${
-                    errors.senderPhone ? 'border-red-500' : ''
-                  }`}
-                  style={{
-                    borderColor: errors.senderPhone ? colors.error : colors.border,
-                    backgroundColor: colors.background,
-                    color: colors.text,
-                    '--tw-ring-color': colors.accent + '30'
-                  }}
-                  dir="ltr"
+                  onChange={(val) => handlePhoneChange('senderPhone', val)}
+                  placeholder="+201234567890"
+                  defaultCountry="EG"
+                  className="!border-0 !bg-transparent"
+                  id="senderPhone"
                 />
               </div>
               {errors.senderPhone && (
@@ -466,27 +467,21 @@ const EnhancedPaymentProofUpload = ({ courseId, courseTitle, coursePrice, onSucc
               >
                 رقم الطالبة <span style={{ color: colors.error }}>*</span>
               </label>
-              <div className="relative">
-                <User 
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4"
-                  style={{ color: colors.textMuted }}
-                />
-                <input
-                  type="tel"
-                  name="studentPhone"
+              <div
+                className={`rounded-xl border-2 transition-all duration-200 focus-within:ring-2 ${errors.studentPhone ? 'border-red-500' : ''}`}
+                style={{
+                  borderColor: errors.studentPhone ? colors.error : colors.border,
+                  backgroundColor: colors.background,
+                  '--tw-ring-color': colors.accent + '30'
+                }}
+              >
+                <PhoneInput
                   value={formData.studentPhone}
-                  onChange={handleInputChange}
-                  placeholder="01012345678"
-                  className={`w-full px-4 py-3 pr-10 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2 ${
-                    errors.studentPhone ? 'border-red-500' : ''
-                  }`}
-                  style={{
-                    borderColor: errors.studentPhone ? colors.error : colors.border,
-                    backgroundColor: colors.background,
-                    color: colors.text,
-                    '--tw-ring-color': colors.accent + '30'
-                  }}
-                  dir="ltr"
+                  onChange={(val) => handlePhoneChange('studentPhone', val)}
+                  placeholder="+201234567890"
+                  defaultCountry="EG"
+                  className="!border-0 !bg-transparent"
+                  id="studentPhone"
                 />
               </div>
               {errors.studentPhone && (
@@ -509,27 +504,21 @@ const EnhancedPaymentProofUpload = ({ courseId, courseTitle, coursePrice, onSucc
               >
                 رقم ولي الأمر (اختياري)
               </label>
-              <div className="relative">
-                <Phone 
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4"
-                  style={{ color: colors.textMuted }}
-                />
-                <input
-                  type="tel"
-                  name="parentPhone"
+              <div
+                className={`rounded-xl border-2 transition-all duration-200 focus-within:ring-2 ${errors.parentPhone ? 'border-red-500' : ''}`}
+                style={{
+                  borderColor: errors.parentPhone ? colors.error : colors.border,
+                  backgroundColor: colors.background,
+                  '--tw-ring-color': colors.accent + '30'
+                }}
+              >
+                <PhoneInput
                   value={formData.parentPhone}
-                  onChange={handleInputChange}
-                  placeholder="01012345678"
-                  className={`w-full px-4 py-3 pr-10 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2 ${
-                    errors.parentPhone ? 'border-red-500' : ''
-                  }`}
-                  style={{
-                    borderColor: errors.parentPhone ? colors.error : colors.border,
-                    backgroundColor: colors.background,
-                    color: colors.text,
-                    '--tw-ring-color': colors.accent + '30'
-                  }}
-                  dir="ltr"
+                  onChange={(val) => handlePhoneChange('parentPhone', val)}
+                  placeholder="+201234567890"
+                  defaultCountry="EG"
+                  className="!border-0 !bg-transparent"
+                  id="parentPhone"
                 />
               </div>
               {errors.parentPhone && (

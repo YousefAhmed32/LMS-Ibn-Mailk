@@ -2,6 +2,7 @@ const User = require("../../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { validateRoleBasedRegistration } = require("../../middleware/roleValidation");
+const { normalizeForStorage } = require("../../utils/phoneUtils");
 
 // Generate JWT Token with longer expiry
 const generateToken = (userId) => {
@@ -49,20 +50,8 @@ const registerUser = async (req, res) => {
       phoneNumber, role, phoneStudent, guardianPhone, governorate, grade, relation
     });
 
-    // Normalize phone number for lookup
-    let normalizedPhone = phoneNumber.trim().replace(/\s+/g, '');
-    // Remove any non-digit characters except +
-    normalizedPhone = normalizedPhone.replace(/[^\d+]/g, '');
-    
-    // Ensure proper format - handle common variations
-    if (!normalizedPhone.startsWith('+20') && !normalizedPhone.startsWith('0') && !normalizedPhone.startsWith('1')) {
-      // Try to fix common issues
-      if (normalizedPhone.length === 10 && normalizedPhone.startsWith('1')) {
-        normalizedPhone = '0' + normalizedPhone;
-      } else if (normalizedPhone.length === 9 && normalizedPhone.startsWith('1')) {
-        normalizedPhone = '01' + normalizedPhone;
-      }
-    }
+    // Normalize to E.164 for storage and lookup (any country)
+    const normalizedPhone = normalizeForStorage(phoneNumber) || phoneNumber.trim().replace(/\s+/g, '');
     
     // Check if user already exists
     const existingUser = await User.findOne({ phoneNumber: normalizedPhone });
@@ -88,28 +77,10 @@ const registerUser = async (req, res) => {
       guardianPhone
     };
 
-    // Add role-specific fields
+    // Add role-specific fields (E.164 for all phone fields)
     if (role === 'student') {
-      // Normalize phoneStudent and guardianPhone
-      if (phoneStudent) {
-        let normalizedPhoneStudent = phoneStudent.trim().replace(/\s+/g, '').replace(/[^\d+]/g, '');
-        if (!normalizedPhoneStudent.startsWith('+20') && !normalizedPhoneStudent.startsWith('0') && normalizedPhoneStudent.startsWith('1')) {
-          if (normalizedPhoneStudent.length === 10) {
-            normalizedPhoneStudent = '0' + normalizedPhoneStudent;
-          }
-        }
-        userData.phoneStudent = normalizedPhoneStudent;
-      }
-      
-      if (guardianPhone) {
-        let normalizedGuardianPhone = guardianPhone.trim().replace(/\s+/g, '').replace(/[^\d+]/g, '');
-        if (!normalizedGuardianPhone.startsWith('+20') && !normalizedGuardianPhone.startsWith('0') && normalizedGuardianPhone.startsWith('1')) {
-          if (normalizedGuardianPhone.length === 10) {
-            normalizedGuardianPhone = '0' + normalizedGuardianPhone;
-          }
-        }
-        userData.guardianPhone = normalizedGuardianPhone;
-      }
+      if (phoneStudent) userData.phoneStudent = normalizeForStorage(phoneStudent) || phoneStudent.trim().replace(/\s+/g, '');
+      if (guardianPhone) userData.guardianPhone = normalizeForStorage(guardianPhone) || guardianPhone.trim().replace(/\s+/g, '');
       
       userData.governorate = governorate?.trim();
       userData.grade = grade?.trim();
@@ -229,8 +200,8 @@ const loginUser = async (req, res) => {
 
     console.log('🔍 Searching for user with phone number:', phoneNumber);
     
-    // Normalize phone number for lookup
-    const normalizedPhone = phoneNumber.trim().replace(/\s+/g, '');
+    // Normalize to E.164 for lookup (any country)
+    const normalizedPhone = normalizeForStorage(phoneNumber) || phoneNumber.trim().replace(/\s+/g, '');
     const user = await User.findOne({ phoneNumber: normalizedPhone });
     
     if (!user) {

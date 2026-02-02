@@ -5,10 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
 import Label from '../../components/ui/label';
+import PhoneInput from '../../components/ui/PhoneInput';
 import Badge from '../../components/ui/badge';
 import { toast } from '../../hooks/use-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { isValidPhone } from '../../utils/phoneUtils';
 import { 
   Phone, 
   CreditCard, 
@@ -50,7 +52,7 @@ const SubscriptionFlow = () => {
   const [errors, setErrors] = useState({});
   const [showVodafoneNumber, setShowVodafoneNumber] = useState(false);
 
-  const vodafoneNumber = "01022880651";
+  const vodafoneNumber = "+201022880651";
 
   useEffect(() => {
     fetchCourseData();
@@ -109,20 +111,18 @@ const SubscriptionFlow = () => {
     // Validate sender phone
     if (!paymentForm.senderPhone) {
       newErrors.senderPhone = 'رقم هاتف المرسل مطلوب';
-    } else if (!/^01[0-9]{9}$/.test(paymentForm.senderPhone)) {
-      newErrors.senderPhone = 'رقم هاتف غير صحيح (مثال: 01012345678)';
+    } else if (!isValidPhone(paymentForm.senderPhone)) {
+      newErrors.senderPhone = 'يرجى إدخال رقم هاتف دولي صحيح (مثال: +201234567890)';
     }
 
-    // Validate student phone
     if (!paymentForm.studentPhone) {
       newErrors.studentPhone = 'رقم هاتف الطالب مطلوب';
-    } else if (!/^01[0-9]{9}$/.test(paymentForm.studentPhone)) {
-      newErrors.studentPhone = 'رقم هاتف غير صحيح (مثال: 01012345678)';
+    } else if (!isValidPhone(paymentForm.studentPhone)) {
+      newErrors.studentPhone = 'يرجى إدخال رقم هاتف دولي صحيح (مثال: +201234567890)';
     }
 
-    // Validate parent phone (optional)
-    if (paymentForm.parentPhone && !/^01[0-9]{9}$/.test(paymentForm.parentPhone)) {
-      newErrors.parentPhone = 'رقم هاتف غير صحيح (مثال: 01012345678)';
+    if (paymentForm.parentPhone && !isValidPhone(paymentForm.parentPhone)) {
+      newErrors.parentPhone = 'يرجى إدخال رقم هاتف دولي صحيح (مثال: +201234567890)';
     }
 
     // Validate transfer time
@@ -505,14 +505,16 @@ const SubscriptionFlow = () => {
                       {/* Sender Phone */}
                       <div className="space-y-2">
                         <Label htmlFor="senderPhone">رقم هاتف من أرسل المال</Label>
-                        <Input
-                          id="senderPhone"
-                          type="tel"
-                          value={paymentForm.senderPhone}
-                          onChange={(e) => handleInputChange('senderPhone', e.target.value)}
-                          placeholder="01xxxxxxxxx"
-                          className={errors.senderPhone ? 'border-red-500' : ''}
-                        />
+                        <div className={errors.senderPhone ? 'rounded-md border border-red-500' : ''}>
+                          <PhoneInput
+                            id="senderPhone"
+                            value={paymentForm.senderPhone}
+                            onChange={(val) => setPaymentForm(prev => ({ ...prev, senderPhone: val || '' }))}
+                            placeholder="+201234567890"
+                            defaultCountry="EG"
+                            className={errors.senderPhone ? '!border-0' : ''}
+                          />
+                        </div>
                         {errors.senderPhone && (
                           <p className="text-sm text-red-500">{errors.senderPhone}</p>
                         )}
@@ -522,14 +524,16 @@ const SubscriptionFlow = () => {
                       {/* Student Phone */}
                       <div className="space-y-2">
                         <Label htmlFor="studentPhone">رقم هاتف الطالب</Label>
-                        <Input
-                          id="studentPhone"
-                          type="tel"
-                          value={paymentForm.studentPhone}
-                          onChange={(e) => handleInputChange('studentPhone', e.target.value)}
-                          placeholder="01xxxxxxxxx"
-                          className={errors.studentPhone ? 'border-red-500' : ''}
-                        />
+                        <div className={errors.studentPhone ? 'rounded-md border border-red-500' : ''}>
+                          <PhoneInput
+                            id="studentPhone"
+                            value={paymentForm.studentPhone}
+                            onChange={(val) => setPaymentForm(prev => ({ ...prev, studentPhone: val || '' }))}
+                            placeholder="+201234567890"
+                            defaultCountry="EG"
+                            className={errors.studentPhone ? '!border-0' : ''}
+                          />
+                        </div>
                         {errors.studentPhone && (
                           <p className="text-sm text-red-500">{errors.studentPhone}</p>
                         )}
@@ -539,12 +543,12 @@ const SubscriptionFlow = () => {
                       {/* Parent Phone */}
                       <div className="space-y-2">
                         <Label htmlFor="parentPhone">رقم هاتف ولي الأمر (اختياري)</Label>
-                        <Input
+                        <PhoneInput
                           id="parentPhone"
-                          type="tel"
                           value={paymentForm.parentPhone}
-                          onChange={(e) => handleInputChange('parentPhone', e.target.value)}
-                          placeholder="01xxxxxxxxx"
+                          onChange={(val) => setPaymentForm(prev => ({ ...prev, parentPhone: val || '' }))}
+                          placeholder="+201234567890"
+                          defaultCountry="EG"
                         />
                       </div>
 

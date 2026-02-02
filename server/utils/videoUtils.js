@@ -2,8 +2,12 @@
  * Video utility functions for handling YouTube videos and thumbnails
  */
 
+// Use youtubeUtils for robust extraction (supports watch, embed, shorts, youtu.be, params)
+const { extractVideoId: extractFromYoutubeUtils, normalizeToEmbedUrl: normalizeToEmbed } = require('./youtubeUtils');
+
 /**
  * Extract YouTube video ID from various YouTube URL formats
+ * Supports: watch?v=, embed/, shorts/, youtu.be/, and URLs with &list, &si, etc.
  * @param {string} url - YouTube URL
  * @returns {string|null} - YouTube video ID or null if not found
  */
@@ -11,22 +15,7 @@ const extractYouTubeVideoId = (url) => {
   if (!url || typeof url !== 'string') {
     return null;
   }
-
-  // Regular expressions for different YouTube URL formats
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-    /youtube\.com\/v\/([^&\n?#]+)/,
-    /youtube\.com\/watch\?.*v=([^&\n?#]+)/
-  ];
-
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match && match[1]) {
-      return match[1];
-    }
-  }
-
-  return null;
+  return extractFromYoutubeUtils(url);
 };
 
 /**
@@ -76,36 +65,22 @@ const getVideoThumbnail = (videoUrl, customThumbnail = null, quality = 'hqdefaul
 };
 
 /**
- * Check if URL is a YouTube video
+ * Check if URL is a valid YouTube video URL (any supported format)
  * @param {string} url - Video URL
  * @returns {boolean} - True if YouTube URL
  */
 const isYouTubeUrl = (url) => {
-  if (!url || typeof url !== 'string') {
-    return false;
-  }
-
-  const youtubePatterns = [
-    /youtube\.com\/watch\?v=/,
-    /youtu\.be\//,
-    /youtube\.com\/embed\//,
-    /youtube\.com\/v\//
-  ];
-
-  return youtubePatterns.some(pattern => pattern.test(url));
+  return extractYouTubeVideoId(url) !== null;
 };
 
 /**
- * Get YouTube embed URL
+ * Get YouTube embed URL from any YouTube URL (watch, youtu.be, shorts, embed, with params)
+ * Use for storage and iframe - rejects non-YouTube URLs (returns null)
  * @param {string} videoUrl - YouTube video URL
- * @returns {string|null} - YouTube embed URL or null
+ * @returns {string|null} - https://www.youtube.com/embed/VIDEO_ID or null
  */
 const getYouTubeEmbedUrl = (videoUrl) => {
-  const videoId = extractYouTubeVideoId(videoUrl);
-  if (videoId) {
-    return `https://www.youtube.com/embed/${videoId}`;
-  }
-  return null;
+  return normalizeToEmbed(videoUrl);
 };
 
 /**

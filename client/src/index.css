@@ -247,6 +247,28 @@
   }
 }
 
+/* International phone input - dark theme support */
+.phone-input-wrapper.PhoneInput {
+  --PhoneInputCountryFlagHeight: 1.25rem;
+  --PhoneInputCountryFlagBorderColor: hsl(var(--border));
+  --PhoneInputCountrySelectArrowColor: hsl(var(--muted-foreground));
+}
+.phone-input-wrapper .PhoneInputInput {
+  background: inherit;
+  color: inherit;
+  border: none;
+  outline: none;
+  font: inherit;
+}
+.dark .phone-input-wrapper .PhoneInputCountrySelect {
+  background: hsl(var(--muted));
+  color: hsl(var(--foreground));
+}
+.dark .phone-input-wrapper .PhoneInputInput {
+  background: transparent;
+  color: hsl(var(--foreground));
+}
+
 /* High contrast mode support */
 @media (prefers-contrast: high) {
   .luxury-card {

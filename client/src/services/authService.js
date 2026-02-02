@@ -1,5 +1,6 @@
 // client/src/services/authService.js - Production-ready auth service
 import axiosInstance from '../api/axiosInstance';
+import { isValidPhone } from '../utils/phoneUtils';
 
 // Registration service with proper error handling
 export const registerService = async (userData) => {
@@ -28,10 +29,9 @@ export const registerService = async (userData) => {
       throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
     }
     
-    // Validate phone number format (Egyptian phone numbers)
-    const phoneRegex = /^(\+20|0)?1[0125][0-9]{8}$/;
-    if (!phoneRegex.test(mappedData.phoneNumber)) {
-      throw new Error('Please enter a valid Egyptian phone number');
+    // Validate international phone (E.164 / any country)
+    if (!isValidPhone(mappedData.phoneNumber)) {
+      throw new Error('Please enter a valid international phone number (e.g. +201234567890)');
     }
 
     // Role-specific validation

@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from '../../hooks/use-toast';
 import axiosInstance from '../../api/axiosInstance';
+import PhoneInput from '../../components/ui/PhoneInput';
 import { 
   BookOpen, 
   Award, 
@@ -1788,13 +1789,14 @@ const StudentProfile = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      رقم الهاتف
+                      رقم الهاتف (دولي)
                     </label>
-                    <input
-                      type="tel"
+                    <PhoneInput
                       value={editForm.phoneNumber || editForm.phoneStudent || ''}
-                      onChange={(e) => setEditForm({...editForm, phoneNumber: e.target.value})}
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      onChange={(v) => setEditForm({...editForm, phoneNumber: v || ''})}
+                      placeholder="رقم الهاتف"
+                      defaultCountry="EG"
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     />
                   </div>
                   <div>

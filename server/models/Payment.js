@@ -16,12 +16,14 @@ const PaymentSchema = new mongoose.Schema({
   studentPhone: {
     type: String,
     required: [true, "Student phone number is required"],
+    trim: true,
     validate: {
       validator: function(v) {
-        // Egyptian phone number validation - accepts 01xxxxxxxxx format
-        return /^01[0-9]{9}$/.test(v);
+        if (!v || typeof v !== 'string') return false;
+        const { isValidPhone } = require('../utils/phoneUtils');
+        return isValidPhone(v.trim());
       },
-      message: 'Please enter a valid Egyptian phone number (e.g., 01012345678)'
+      message: 'Please enter a valid international phone number (e.g. +201234567890)'
     }
   },
   

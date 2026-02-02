@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from '../../hooks/use-toast';
+import { isValidPhone } from '../../utils/phoneUtils';
+import PhoneInput from '../../components/ui/PhoneInput';
 import { Eye, EyeOff, Lock, Phone, Users, ArrowRight, AlertCircle } from 'lucide-react';
 
 const ParentLoginPage = () => {
@@ -50,12 +52,10 @@ const ParentLoginPage = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Validate phone number format
-    const phoneRegex = /^(\+20|0)?1[0125][0-9]{8}$/;
-    if (!phoneRegex.test(formData.phoneNumber)) {
+    if (!formData.phoneNumber || !isValidPhone(formData.phoneNumber)) {
       toast({
         title: "خطأ في رقم الهاتف",
-        description: "يرجى إدخال رقم هاتف مصري صحيح (مثال: 01234567890)",
+        description: "يرجى إدخال رقم هاتف دولي صحيح (مثال: +201234567890)",
         variant: "destructive",
       });
       return;
@@ -166,23 +166,18 @@ const ParentLoginPage = () => {
           className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-2xl"
         >
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Phone Number Field */}
+            {/* Phone Number - International */}
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-white">
                 رقم الهاتف
               </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  type="tel"
-                  name="phoneNumber"
-                  placeholder="أدخل رقم هاتفك (مثال: 01234567890)"
-                  value={formData.phoneNumber}
-                  onChange={handleChange}
-                  required
-                  className="w-full pl-12 pr-4 py-4 rounded-xl border border-white/20 bg-white/10 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-transparent transition-all duration-300"
-                />
-              </div>
+              <PhoneInput
+                value={formData.phoneNumber}
+                onChange={(v) => setFormData({ ...formData, phoneNumber: v || '' })}
+                placeholder="أدخل رقم هاتفك (اختر الدولة ثم الرقم)"
+                defaultCountry="EG"
+                className="w-full py-4 rounded-xl border border-white/20 bg-white/10 text-white"
+              />
             </div>
 
             {/* Password Field */}

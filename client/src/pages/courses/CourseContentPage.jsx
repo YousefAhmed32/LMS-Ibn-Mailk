@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNotification } from '../../hooks/useNotification';
 import { courseService } from '../../services/courseService';
+import { getEmbedUrlFromAnyYouTubeUrl } from '../../utils/youtubeUtils';
 import { 
   Play, 
   Clock, 
@@ -480,17 +481,8 @@ const CourseContentPage = () => {
 
   const convertToEmbedUrl = (url) => {
     if (!url) return '';
-    
-    if (url.includes('youtube.com/watch?v=')) {
-      const videoId = url.split('v=')[1]?.split('&')[0];
-      return `https://www.youtube.com/embed/${videoId}`;
-    }
-    
-    if (url.includes('youtube.com/embed/')) {
-      return url;
-    }
-    
-    return url;
+    const embedUrl = getEmbedUrlFromAnyYouTubeUrl(url);
+    return embedUrl || url;
   };
 
   const calculateProgress = () => {

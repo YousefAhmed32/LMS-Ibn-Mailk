@@ -3,8 +3,8 @@
  * Handles YouTube URL parsing, video ID extraction, and embed URL generation
  */
 
-// YouTube URL regex patterns
-const YT_REGEX = /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/i;
+// YouTube URL regex patterns - supports watch, embed, shorts, youtu.be, and any query params
+const YT_REGEX = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/i;
 const IFRAME_REGEX = /<iframe[^>]*src=["']([^"']+)["'][^>]*>(?:<\/iframe>)?/i;
 
 // Allowed YouTube domains
@@ -30,6 +30,7 @@ const ALLOWED_IFRAME_ATTRIBUTES = [
 
 /**
  * Extract YouTube video ID from various URL formats
+ * Supports: watch?v=, embed/, shorts/, youtu.be/, and URLs with &list, &si, etc.
  * @param {string} url - YouTube URL
  * @returns {string|null} - Video ID or null if not found
  */
@@ -38,8 +39,30 @@ function extractVideoId(url) {
     return null;
   }
 
-  const match = url.match(YT_REGEX);
+  const trimmed = url.trim();
+  const match = trimmed.match(YT_REGEX);
   return match ? match[1] : null;
+}
+
+/**
+ * Check if URL is a valid YouTube video URL (any supported format)
+ * @param {string} url - URL to validate
+ * @returns {boolean} - True if valid YouTube URL
+ */
+function isValidYouTubeUrl(url) {
+  return extractVideoId(url) !== null;
+}
+
+/**
+ * Normalize any YouTube URL to canonical embed URL for storage/iframe
+ * Rejects non-YouTube URLs (returns null)
+ * @param {string} url - Any YouTube URL (watch, youtu.be, shorts, embed, with params)
+ * @returns {string|null} - https://www.youtube.com/embed/VIDEO_ID or null
+ */
+function normalizeToEmbedUrl(url) {
+  const videoId = extractVideoId(url);
+  if (!videoId) return null;
+  return toEmbedUrl(videoId, { controls: 1, rel: 0 });
 }
 
 /**
@@ -256,6 +279,8 @@ module.exports = {
   extractVideoId,
   extractVideoIdFromIframe,
   toEmbedUrl,
+  normalizeToEmbedUrl,
+  isValidYouTubeUrl,
   parseIframe,
   isAllowedDomain,
   sanitizeVideoInput,

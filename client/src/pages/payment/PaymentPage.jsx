@@ -23,6 +23,8 @@ import {
 import axiosInstance from '../../api/axiosInstance';
 import LuxuryCard from '../../components/ui/LuxuryCard';
 import LuxuryButton from '../../components/ui/LuxuryButton';
+import PhoneInput from '../../components/ui/PhoneInput';
+import { isValidPhone } from '../../utils/phoneUtils';
 
 const PaymentPage = () => {
   const { courseId } = useParams();
@@ -131,6 +133,10 @@ const PaymentPage = () => {
     }));
   };
 
+  const handlePhoneChange = (value) => {
+    setFormData(prev => ({ ...prev, studentPhone: value || '' }));
+  };
+
   const handleScreenshotChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -193,12 +199,10 @@ const PaymentPage = () => {
       return false;
     }
 
-    // Validate Egyptian phone number
-    const phoneRegex = /^01[0-9]{9}$/;
-    if (!phoneRegex.test(formData.studentPhone)) {
+    if (!isValidPhone(formData.studentPhone)) {
       toast({
         title: 'رقم هاتف غير صحيح',
-        description: 'يرجى إدخال رقم هاتف مصري صحيح (مثال: 01012345678)',
+        description: 'يرجى إدخال رقم هاتف دولي صحيح (مثال: +201234567890)',
         variant: 'destructive',
         duration: 4000
       });
@@ -636,22 +640,21 @@ const PaymentPage = () => {
                   <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
                     رقم الهاتف <span className="text-red-500">*</span>
                   </label>
-                  <div className="relative">
-                    <Phone size={20} className="absolute right-3 top-1/2 transform -translate-y-1/2" style={{ color: colors.textMuted }} />
-                    <input
-                      type="tel"
-                      name="studentPhone"
+                  <div
+                    className="rounded-xl border-2 transition-all duration-200 focus-within:ring-2"
+                    style={{
+                      borderColor: colors.border,
+                      backgroundColor: colors.background,
+                      '--tw-ring-color': colors.accent + '30'
+                    }}
+                  >
+                    <PhoneInput
                       value={formData.studentPhone}
-                      onChange={handleInputChange}
-                      placeholder="01012345678"
-                      className="w-full pr-10 pl-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2"
-                      style={{
-                        borderColor: colors.border,
-                        backgroundColor: colors.background,
-                        color: colors.text,
-                        fontSize: typography.fontSize.sm,
-                        '--tw-ring-color': colors.accent + '30'
-                      }}
+                      onChange={handlePhoneChange}
+                      placeholder="+201234567890"
+                      defaultCountry="EG"
+                      className="!border-0 !bg-transparent"
+                      id="studentPhone"
                     />
                   </div>
                 </div>

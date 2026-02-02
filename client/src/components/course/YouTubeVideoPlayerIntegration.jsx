@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../../contexts/ThemeContext';
 import YouTubeVideoPlayer from './YouTubeVideoPlayer';
+import { extractVideoId } from '../../utils/youtubeUtils';
 import { 
   Play, 
   Clock, 
@@ -17,19 +18,6 @@ const YouTubeVideoPlayerIntegration = ({ video, onClose }) => {
   const theme = useTheme();
   const { colors, spacing, borderRadius, typography, shadows } = theme;
   const [videoProgress, setVideoProgress] = useState({});
-
-  // Extract YouTube video ID from URL
-  const getYouTubeVideoId = (url) => {
-    if (!url) return null;
-    
-    const videoId = url.includes('youtu.be/') 
-      ? url.split('youtu.be/')[1]?.split('?')[0]
-      : url.includes('v=') 
-        ? url.split('v=')[1]?.split('&')[0]
-        : null;
-    
-    return videoId;
-  };
 
   const handleVideoProgress = (progress) => {
     setVideoProgress(prev => ({
@@ -47,7 +35,7 @@ const YouTubeVideoPlayerIntegration = ({ video, onClose }) => {
     console.log('Opening video on platform:', video);
   };
 
-  const youtubeVideoId = getYouTubeVideoId(video?.url);
+  const youtubeVideoId = extractVideoId(video?.url);
 
   if (!video || !youtubeVideoId) {
     return (

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../../contexts/ThemeContext';
 import YouTubeVideoPlayer from './YouTubeVideoPlayer';
+import { extractVideoId } from '../../utils/youtubeUtils';
 import { 
   X
 } from 'lucide-react';
@@ -16,22 +17,9 @@ const VideoPlayer = ({
   const theme = useTheme();
   const { colors, spacing, borderRadius, typography } = theme;
 
-  // Extract YouTube video ID from URL
-  const getYouTubeVideoId = (url) => {
-    if (!url) return null;
-    
-    const videoId = url.includes('youtu.be/') 
-      ? url.split('youtu.be/')[1]?.split('?')[0]
-      : url.includes('v=') 
-        ? url.split('v=')[1]?.split('&')[0]
-        : null;
-    
-    return videoId;
-  };
-
   if (!isOpen || !video) return null;
 
-  const youtubeVideoId = getYouTubeVideoId(video.url);
+  const youtubeVideoId = extractVideoId(video.url);
 
   return (
     <AnimatePresence>

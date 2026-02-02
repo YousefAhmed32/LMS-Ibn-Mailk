@@ -1,4 +1,14 @@
 const { body, validationResult } = require('express-validator');
+const { isValidPhone } = require('../utils/phoneUtils');
+
+const PHONE_MSG = 'Please enter a valid international phone number (e.g. +201234567890)';
+
+// Custom phone validator (E.164 / any country)
+const phoneCustom = (value) => {
+  if (!value || typeof value !== 'string') return true;
+  if (isValidPhone(value.trim())) return true;
+  throw new Error(PHONE_MSG);
+};
 
 // Validation rules for user registration
 const validateRegistration = [
@@ -24,8 +34,8 @@ const validateRegistration = [
     .withMessage('Fourth name must be between 2 and 50 characters'),
   
   body('phoneNumber')
-    .matches(/^(\+20|0)?1[0125][0-9]{8}$/)
-    .withMessage('Please provide a valid Egyptian phone number'),
+    .custom(phoneCustom)
+    .withMessage(PHONE_MSG),
   
   body('password')
     .isLength({ min: 6 })
@@ -39,8 +49,8 @@ const validateRegistration = [
   // Student-specific fields
   body('phoneStudent')
     .optional()
-    .matches(/^(\+20|0)?1[0125][0-9]{8}$/)
-    .withMessage('Please provide a valid Egyptian phone number'),
+    .custom(phoneCustom)
+    .withMessage(PHONE_MSG),
   
   body('governorate')
     .optional()
@@ -61,8 +71,8 @@ const validateRegistration = [
   // Parent-specific fields
   body('phoneNumber')
     .optional()
-    .matches(/^(\+20|0)?1[0125][0-9]{8}$/)
-    .withMessage('Please provide a valid Egyptian phone number'),
+    .custom(phoneCustom)
+    .withMessage(PHONE_MSG),
   
   body('relation')
     .optional()
@@ -72,20 +82,24 @@ const validateRegistration = [
   // Optional fields
   body('phoneFather')
     .optional()
-    .matches(/^(\+20|0)?1[0125][0-9]{8}$/)
-    .withMessage('Please provide a valid Egyptian phone number'),
+    .custom(phoneCustom)
+    .withMessage(PHONE_MSG),
   
   body('phoneMother')
     .optional()
-    .matches(/^(\+20|0)?1[0125][0-9]{8}$/)
-    .withMessage('Please provide a valid Egyptian phone number')
+    .custom(phoneCustom)
+    .withMessage(PHONE_MSG)
 ];
 
 // Validation rules for user login
 const validateLogin = [
   body('phoneNumber')
-    .matches(/^(\+20|0)?1[0125][0-9]{8}$/)
-    .withMessage('Please provide a valid Egyptian phone number'),
+    .custom((value) => {
+      if (!value || typeof value !== 'string') throw new Error(PHONE_MSG);
+      if (isValidPhone(value.trim())) return true;
+      throw new Error(PHONE_MSG);
+    })
+    .withMessage(PHONE_MSG),
   
   body('password')
     .notEmpty()
@@ -120,18 +134,18 @@ const validateUpdate = [
   
   body('phoneStudent')
     .optional()
-    .matches(/^(\+20|0)?1[0125][0-9]{8}$/)
-    .withMessage('Please provide a valid Egyptian phone number'),
+    .custom(phoneCustom)
+    .withMessage(PHONE_MSG),
   
   body('phoneFather')
     .optional()
-    .matches(/^(\+20|0)?1[0125][0-9]{8}$/)
-    .withMessage('Please provide a valid Egyptian phone number'),
+    .custom(phoneCustom)
+    .withMessage(PHONE_MSG),
   
   body('phoneMother')
     .optional()
-    .matches(/^(\+20|0)?1[0125][0-9]{8}$/)
-    .withMessage('Please provide a valid Egyptian phone number'),
+    .custom(phoneCustom)
+    .withMessage(PHONE_MSG),
   
   body('governorate')
     .optional()

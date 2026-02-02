@@ -508,7 +508,7 @@ const LuxuryMyAccountPage = () => {
                 value={formData.phoneStudent}
                 onChange={handleInputChange}
                 disabled={!editing}
-                placeholder="01234567890"
+                placeholder="+201234567890"
                 style={{
                   width: '100%',
                   padding: spacing.md,
@@ -543,7 +543,7 @@ const LuxuryMyAccountPage = () => {
                   value={formData.guardianPhone}
                   onChange={handleInputChange}
                   disabled={!editing}
-                  placeholder="01234567890"
+                  placeholder="+201234567890"
                   style={{
                     width: '100%',
                     padding: spacing.md,

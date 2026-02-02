@@ -1,6 +1,14 @@
 const Joi = require('joi');
+const { isValidPhone } = require('../utils/phoneUtils');
 
-// Common validation rules
+// E.164 / international phone validator
+const phoneValidator = (value, helpers) => {
+  if (!value || typeof value !== 'string') return value;
+  if (isValidPhone(value.trim())) return value.trim();
+  return helpers.error('any.custom');
+};
+
+// Common validation rules (global-ready; no Egypt-only)
 const commonFields = {
   firstName: Joi.string().trim().min(2).max(50).required().messages({
     'string.empty': 'First name is required',
@@ -22,10 +30,10 @@ const commonFields = {
     'string.min': 'Fourth name must be at least 2 characters',
     'string.max': 'Fourth name must not exceed 50 characters'
   }),
-  phoneNumber: Joi.string().pattern(/^(\+20|0)?1[0125][0-9]{8}$/).required().messages({
+  phoneNumber: Joi.string().trim().required().custom(phoneValidator).messages({
     'string.empty': 'Phone number is required',
     'any.required': 'Phone number is required',
-    'string.pattern.base': 'Please provide a valid Egyptian phone number (format: 01234567890 or +201234567890)'
+    'any.custom': 'Please provide a valid international phone number (e.g. +201234567890 or +9665XXXXXXXX)'
   }),
   password: Joi.string().min(6).required().messages({
     'string.empty': 'Password is required',
@@ -36,18 +44,18 @@ const commonFields = {
   })
 };
 
-// Student-specific validation schema
+// Student-specific validation schema (international phone)
 const studentSchema = Joi.object({
   ...commonFields,
-  phoneStudent: Joi.string().pattern(/^(\+20|0)?1[0125][0-9]{8}$/).required().messages({
+  phoneStudent: Joi.string().trim().required().custom(phoneValidator).messages({
     'string.empty': 'Phone number is required for students',
     'any.required': 'Phone number is required for students',
-    'string.pattern.base': 'Please provide a valid Egyptian phone number (format: 01234567890 or +201234567890)'
+    'any.custom': 'Please provide a valid international phone number'
   }),
-  guardianPhone: Joi.string().pattern(/^(\+20|0)?1[0125][0-9]{8}$/).required().messages({
+  guardianPhone: Joi.string().trim().required().custom(phoneValidator).messages({
     'string.empty': 'Guardian phone number is required for students',
     'any.required': 'Guardian phone number is required for students',
-    'string.pattern.base': 'Please provide a valid Egyptian guardian phone number (format: 01234567890 or +201234567890)'
+    'any.custom': 'Please provide a valid international guardian phone number'
   }),
   governorate: Joi.string().valid(
     "Cairo", "Giza", "Qalyubia", "Alexandria", "Port Said", "Ismailia",
@@ -66,21 +74,21 @@ const studentSchema = Joi.object({
     'string.empty': 'Grade is required for students',
     'any.only': 'Please select a valid grade from the Egyptian school system'
   }),
-  // Optional fields for students
-  phoneFather: Joi.string().pattern(/^(\+20|0)?1[0125][0-9]{8}$/).optional().allow('').messages({
-    'string.pattern.base': 'Please provide a valid Egyptian phone number'
+  // Optional fields for students (international phone)
+  phoneFather: Joi.string().trim().optional().allow('').custom((v, helpers) => !v ? v : phoneValidator(v, helpers)).messages({
+    'any.custom': 'Please provide a valid international phone number'
   }),
-  phoneMother: Joi.string().pattern(/^(\+20|0)?1[0125][0-9]{8}$/).optional().allow('').messages({
-    'string.pattern.base': 'Please provide a valid Egyptian phone number'
+  phoneMother: Joi.string().trim().optional().allow('').custom((v, helpers) => !v ? v : phoneValidator(v, helpers)).messages({
+    'any.custom': 'Please provide a valid international phone number'
   })
 });
 
-// Parent-specific validation schema
+// Parent-specific validation schema (international phone)
 const parentSchema = Joi.object({
   ...commonFields,
-  phoneNumber: Joi.string().pattern(/^(\+20|0)?1[0125][0-9]{8}$/).required().messages({
+  phoneNumber: Joi.string().trim().required().custom(phoneValidator).messages({
     'string.empty': 'Phone number is required for parents',
-    'string.pattern.base': 'Please provide a valid Egyptian phone number'
+    'any.custom': 'Please provide a valid international phone number'
   }),
   relation: Joi.string().valid(
     'Father', 'Mother', 'Guardian', 'Other', 'father', 'mother', 'guardian', 
@@ -89,12 +97,12 @@ const parentSchema = Joi.object({
     'string.empty': 'Relation is required for parents',
     'any.only': 'Please select a valid relation'
   }),
-  // Optional fields for parents
-  phoneFather: Joi.string().pattern(/^(\+20|0)?1[0125][0-9]{8}$/).optional().allow('').messages({
-    'string.pattern.base': 'Please provide a valid Egyptian phone number'
+  // Optional fields for parents (international phone)
+  phoneFather: Joi.string().trim().optional().allow('').custom((v, helpers) => !v ? v : phoneValidator(v, helpers)).messages({
+    'any.custom': 'Please provide a valid international phone number'
   }),
-  phoneMother: Joi.string().pattern(/^(\+20|0)?1[0125][0-9]{8}$/).optional().allow('').messages({
-    'string.pattern.base': 'Please provide a valid Egyptian phone number'
+  phoneMother: Joi.string().trim().optional().allow('').custom((v, helpers) => !v ? v : phoneValidator(v, helpers)).messages({
+    'any.custom': 'Please provide a valid international phone number'
   })
 });
 

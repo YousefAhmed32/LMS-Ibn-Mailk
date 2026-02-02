@@ -5,9 +5,11 @@ import Button from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import Input from '../../components/ui/input';
 import Label from '../../components/ui/label';
+import PhoneInput from '../../components/ui/PhoneInput';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from '../../hooks/use-toast';
+import { isValidPhone } from '../../utils/phoneUtils';
 import { 
   Eye, 
   EyeOff, 
@@ -133,9 +135,7 @@ const RegisterPage = () => {
     console.log('Password field value:', formData.password);
     console.log('Phone number field value:', formData.phoneNumber);
     
-    // Client-side validation
-    const phoneRegex = /^(\+20|0)?1[0125][0-9]{8}$/;
-    
+    // Client-side validation (international phone - E.164)
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: "خطأ في كلمة المرور",
@@ -145,52 +145,49 @@ const RegisterPage = () => {
       return;
     }
 
-    // Validate main phone number (used for authentication)
-    if (!phoneRegex.test(formData.phoneNumber)) {
+    if (!formData.phoneNumber || !isValidPhone(formData.phoneNumber)) {
       toast({
         title: "خطأ في رقم الهاتف",
-        description: "يرجى إدخال رقم هاتف مصري صحيح (مثال: 01234567890)",
+        description: "يرجى إدخال رقم هاتف دولي صحيح (مثال: +201234567890 أو اختر الدولة وأدخل الرقم)",
         variant: "destructive",
       });
       return;
     }
 
-    // Validate Egyptian phone numbers for students
     if (formData.role === 'student') {
-      if (!phoneRegex.test(formData.phoneStudent)) {
+      if (!formData.phoneStudent || !isValidPhone(formData.phoneStudent)) {
         toast({
           title: "خطأ في رقم الهاتف",
-          description: "يرجى إدخال رقم هاتف مصري صحيح (مثال: 01234567890)",
+          description: "يرجى إدخال رقم هاتف دولي صحيح للطالب",
           variant: "destructive",
         });
         return;
       }
-      
-      if (!phoneRegex.test(formData.guardianPhone)) {
+      if (!formData.guardianPhone || !isValidPhone(formData.guardianPhone)) {
         toast({
           title: "خطأ في رقم هاتف ولي الأمر",
-          description: "يرجى إدخال رقم هاتف ولي الأمر صحيح (مثال: 01234567890)",
+          description: "يرجى إدخال رقم هاتف دولي صحيح لولي الأمر",
           variant: "destructive",
         });
         return;
       }
     }
 
-    // Map frontend data to backend schema
+    // Map frontend data to backend schema (phone in E.164 from PhoneInput)
     const backendData = {
       firstName: formData.firstName.trim(),
       secondName: formData.secondName.trim(),
       thirdName: formData.thirdName.trim(),
       fourthName: formData.fourthName.trim(),
-      phoneNumber: formData.phoneNumber.trim().replace(/\s+/g, ''), // Normalize phone number
+      phoneNumber: formData.phoneNumber?.trim() || '',
       password: formData.password,
       role: formData.role
     };
 
     // Add role-specific fields
     if (formData.role === 'student') {
-      backendData.phoneStudent = formData.phoneStudent.trim();
-      backendData.guardianPhone = formData.guardianPhone.trim();
+      backendData.phoneStudent = formData.phoneStudent?.trim() || '';
+      backendData.guardianPhone = formData.guardianPhone?.trim() || '';
       backendData.governorate = formData.governorate;
       backendData.grade = formData.grade; // This will be the Arabic grade value
     } else if (formData.role === 'parent') {
@@ -681,21 +678,16 @@ const RegisterPage = () => {
                         <Label htmlFor="phoneStudent" className="text-gray-700 dark:text-gray-300 font-medium">
                           رقم الهاتف
                         </Label>
-                        <div className="relative">
-                          <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                          <Input
-                            id="phoneStudent"
-                            name="phoneStudent"
-                            type="tel"
-                            placeholder="01234567890"
-                            value={formData.phoneStudent}
-                            onChange={handleChange}
-                            required
-                            className="pl-12 h-12 rounded-xl border-2 focus:border-blue-500 transition-all duration-300"
-                          />
-                        </div>
+                        <PhoneInput
+                          id="phoneStudent"
+                          value={formData.phoneStudent}
+                          onChange={(v) => setFormData({ ...formData, phoneStudent: v || '' })}
+                          placeholder="رقم هاتف الطالب"
+                          defaultCountry="EG"
+                          className="h-12 rounded-xl border-2 focus:border-blue-500"
+                        />
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          مثال: 01234567890 أو +201234567890
+                          اختر الدولة ثم أدخل الرقم (يُحفظ بصيغة دولية)
                         </p>
                       </div>
 
@@ -703,21 +695,16 @@ const RegisterPage = () => {
                         <Label htmlFor="guardianPhone" className="text-gray-700 dark:text-gray-300 font-medium">
                           رقم هاتف ولي الأمر
                         </Label>
-                        <div className="relative">
-                          <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                          <Input
-                            id="guardianPhone"
-                            name="guardianPhone"
-                            type="tel"
-                            placeholder="01234567890"
-                            value={formData.guardianPhone}
-                            onChange={handleChange}
-                            required
-                            className="pl-12 h-12 rounded-xl border-2 focus:border-blue-500 transition-all duration-300"
-                          />
-                        </div>
+                        <PhoneInput
+                          id="guardianPhone"
+                          value={formData.guardianPhone}
+                          onChange={(v) => setFormData({ ...formData, guardianPhone: v || '' })}
+                          placeholder="رقم ولي الأمر"
+                          defaultCountry="EG"
+                          className="h-12 rounded-xl border-2 focus:border-blue-500"
+                        />
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          مثال: 01234567890 أو +201234567890
+                          اختر الدولة ثم أدخل الرقم (يُحفظ بصيغة دولية)
                         </p>
                       </div>
                     </div>
@@ -781,21 +768,16 @@ const RegisterPage = () => {
                         <Label htmlFor="phoneNumber" className="text-gray-700 dark:text-gray-300 font-medium">
                           رقم الهاتف الرئيسي
                         </Label>
-                        <div className="relative">
-                          <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                          <Input
-                            id="phoneNumber"
-                            name="phoneNumber"
-                            type="tel"
-                            placeholder="01234567890"
-                            value={formData.phoneNumber}
-                            onChange={handleChange}
-                            required
-                            className="pl-12 h-12 rounded-xl border-2 focus:border-orange-500 transition-all duration-300"
-                          />
-                        </div>
-                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          سيتم استخدام هذا الرقم لتسجيل الدخول
+                        <PhoneInput
+                          id="phoneNumber"
+                          value={formData.phoneNumber}
+                          onChange={(v) => setFormData({ ...formData, phoneNumber: v || '' })}
+                          placeholder="رقم الهاتف الرئيسي"
+                          defaultCountry="EG"
+                          className="h-12 rounded-xl border-2 focus:border-orange-500"
+                        />
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          سيتم استخدام هذا الرقم لتسجيل الدخول (اختر الدولة ثم أدخل الرقم)
                         </p>
                       </div>
 
@@ -824,7 +806,7 @@ const RegisterPage = () => {
                 )}
               </AnimatePresence>
 
-              {/* Phone Number */}
+              {/* Phone Number - International */}
               <motion.div 
                 className="space-y-3"
                 initial={{ opacity: 0, y: 20 }}
@@ -835,24 +817,17 @@ const RegisterPage = () => {
                   رقم الهاتف
                 </Label>
                 <div className="relative group">
-                  <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-6 w-6 group-focus-within:text-purple-400 transition-colors" />
-                  <Input
+                  <PhoneInput
                     id="phoneNumber"
-                    name="phoneNumber"
-                    type="tel"
-                    placeholder="أدخل رقم هاتفك (مثال: 01234567890)"
                     value={formData.phoneNumber}
-                    onChange={handleChange}
-                    required
-                    className="pl-14 h-16 bg-slate-700/50 border-slate-600 text-white placeholder-gray-400 rounded-xl focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all duration-300 text-lg relative z-10"
-                  />
-                  <motion.div
-                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/10 to-cyan-500/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"
-                    initial={false}
+                    onChange={(v) => setFormData({ ...formData, phoneNumber: v || '' })}
+                    placeholder="أدخل رقم هاتفك (اختر الدولة ثم الرقم)"
+                    defaultCountry="EG"
+                    className="h-16 bg-slate-700/50 border-slate-600 text-white rounded-xl focus:border-purple-400 text-lg"
                   />
                 </div>
                 <p className="text-xs text-gray-400">
-                  سيتم استخدام هذا الرقم لتسجيل الدخول
+                  سيتم استخدام هذا الرقم لتسجيل الدخول (يُحفظ بصيغة دولية +كود الدولة)
                 </p>
               </motion.div>
 

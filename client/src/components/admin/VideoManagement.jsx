@@ -209,12 +209,7 @@ const VideoManagement = ({ courseId }) => {
     }
   };
 
-  // Extract YouTube video ID for embed
-  const getYouTubeVideoId = (url) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url?.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
-  };
+  const getYouTubeVideoId = (url) => extractVideoId(url);
 
   return (
     <div className="space-y-6">

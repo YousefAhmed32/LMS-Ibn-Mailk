@@ -2096,7 +2096,24 @@ const addVideoToCourse = async (req, res) => {
     }
 
     // Import video utilities
-    const { getVideoThumbnail, isYouTubeUrl } = require('../../utils/videoUtils');
+    const { getVideoThumbnail, isYouTubeUrl, getYouTubeEmbedUrl } = require('../../utils/videoUtils');
+
+    // Validate YouTube URL and normalize to embed format (reject non-YouTube)
+    if (!isYouTubeUrl(url)) {
+      return res.status(400).json({
+        success: false,
+        message: 'الرابط ليس رابط فيديو YouTube صالح. يرجى استخدام رابط من youtube.com أو youtu.be أو youtube.com/shorts',
+        code: 'INVALID_YOUTUBE_URL'
+      });
+    }
+    const normalizedUrl = getYouTubeEmbedUrl(url);
+    if (!normalizedUrl) {
+      return res.status(400).json({
+        success: false,
+        message: 'تعذر استخراج معرف الفيديو من الرابط. تأكد من استخدام رابط YouTube صحيح',
+        code: 'INVALID_YOUTUBE_URL'
+      });
+    }
 
     // Handle thumbnail - either from file upload or from request body
     let thumbnailUrl = null;
@@ -2107,15 +2124,15 @@ const addVideoToCourse = async (req, res) => {
     } else if (req.body.thumbnail) {
       // Use thumbnail URL from request body
       thumbnailUrl = req.body.thumbnail;
-    } else if (isYouTubeUrl(url)) {
-      // Auto-generate YouTube thumbnail
-      thumbnailUrl = getVideoThumbnail(url);
+    } else {
+      // Auto-generate YouTube thumbnail from normalized URL
+      thumbnailUrl = getVideoThumbnail(normalizedUrl);
     }
 
-    // Create new video object
+    // Create new video object - store only embed URL for reliable iframe playback
     const newVideo = {
       title: title.trim(),
-      url: url.trim(),
+      url: normalizedUrl,
       order: order !== undefined ? parseInt(order) : course.videos.length,
       duration: duration ? parseInt(duration) : 0,
       thumbnail: thumbnailUrl
@@ -2185,9 +2202,20 @@ const updateVideoInCourse = async (req, res) => {
       course.videos[videoIndex].thumbnail = result.url;
     }
 
-    // Update other video fields
+    // Update other video fields - normalize YouTube URL to embed format if provided; reject non-YouTube
     if (title) course.videos[videoIndex].title = title;
-    if (url) course.videos[videoIndex].url = url;
+    if (url) {
+      const { isYouTubeUrl: isYt, getYouTubeEmbedUrl: getEmbed } = require('../../utils/videoUtils');
+      if (!isYt(url)) {
+        return res.status(400).json({
+          success: false,
+          message: 'الرابط ليس رابط فيديو YouTube صالح. يرجى استخدام رابط من youtube.com أو youtu.be أو youtube.com/shorts',
+          code: 'INVALID_YOUTUBE_URL'
+        });
+      }
+      const normalizedUrl = getEmbed(url);
+      course.videos[videoIndex].url = normalizedUrl || url;
+    }
     if (order !== undefined) course.videos[videoIndex].order = order;
     if (duration) course.videos[videoIndex].duration = duration;
 

@@ -5,7 +5,9 @@ import Button from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import Input from '../../components/ui/input';
 import Label from '../../components/ui/label';
+import PhoneInput from '../../components/ui/PhoneInput';
 import { useAuth } from '../../contexts/AuthContext';
+import { isValidPhone } from '../../utils/phoneUtils';
 import { toast } from '../../hooks/use-toast';
 import { Eye, EyeOff, Lock, Phone, Users, Star, Sparkles, Rocket } from 'lucide-react';
 
@@ -59,12 +61,10 @@ const LoginPage = () => {
       return;
     }
 
-    // Validate phone number format
-    const phoneRegex = /^(\+20|0)?1[0125][0-9]{8}$/;
-    if (!phoneRegex.test(formData.phoneNumber)) {
+    if (!formData.phoneNumber || !isValidPhone(formData.phoneNumber)) {
       toast({
         title: "خطأ في رقم الهاتف",
-        description: "يرجى إدخال رقم هاتف مصري صحيح (مثال: 01234567890)",
+        description: "يرجى إدخال رقم هاتف دولي صحيح (اختر الدولة ثم أدخل الرقم)",
         variant: "destructive",
       });
       return;
@@ -313,7 +313,7 @@ const LoginPage = () => {
             
             <CardContent className="relative space-y-6">
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Phone Number Field */}
+                {/* Phone Number - International */}
                 <motion.div 
                   className="space-y-3"
                   initial={{ opacity: 0, x: -20 }}
@@ -323,23 +323,14 @@ const LoginPage = () => {
                   <Label htmlFor="phoneNumber" className="text-gray-200 font-semibold text-lg">
                     رقم الهاتف
                   </Label>
-                  <div className="relative group">
-                    <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 group-focus-within:text-blue-400 transition-colors" />
-                    <Input
-                      id="phoneNumber"
-                      name="phoneNumber"
-                      type="tel"
-                      placeholder="أدخل رقم هاتفك (مثال: 01234567890)"
-                      value={formData.phoneNumber}
-                      onChange={handleChange}
-                      required
-                      className="pl-12 h-14 bg-slate-700/50 border-slate-600 text-white placeholder-gray-400 rounded-xl focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all duration-300 relative z-10"
-                    />
-                    <motion.div
-                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none"
-                      initial={false}
-                    />
-                  </div>
+                  <PhoneInput
+                    id="phoneNumber"
+                    value={formData.phoneNumber}
+                    onChange={(v) => setFormData({ ...formData, phoneNumber: v || '' })}
+                    placeholder="أدخل رقم هاتفك (اختر الدولة ثم الرقم)"
+                    defaultCountry="EG"
+                    className="h-14 bg-slate-700/50 border-slate-600 text-white rounded-xl focus:border-blue-400"
+                  />
                 </motion.div>
 
                 {/* Password Field */}

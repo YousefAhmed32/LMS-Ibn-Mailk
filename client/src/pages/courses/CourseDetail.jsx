@@ -844,7 +844,7 @@ const CourseDetail = () => {
                   type="tel"
                   value={paymentForm.senderPhone}
                   onChange={handleInputChange}
-                  placeholder="01012345678"
+                  placeholder="+201234567890"
                   className="mt-1"
                   required
                 />
@@ -857,7 +857,7 @@ const CourseDetail = () => {
                   type="tel"
                   value={paymentForm.studentPhone}
                   onChange={handleInputChange}
-                  placeholder="01012345678"
+                  placeholder="+201234567890"
                   className="mt-1"
                   required
                 />
@@ -872,7 +872,7 @@ const CourseDetail = () => {
                 type="tel"
                 value={paymentForm.guardianPhone}
                 onChange={handleInputChange}
-                placeholder="01012345678"
+                placeholder="+201234567890"
                 className="mt-1"
               />
             </div>

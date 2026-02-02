@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import YouTubeVideoPlayer from './YouTubeVideoPlayer';
+import { extractVideoId } from '../../utils/youtubeUtils';
 import { 
   Youtube,
   ExternalLink,
@@ -17,14 +18,7 @@ const PremiumVideoPlayer = ({
 }) => {
   const [hasError, setHasError] = useState(false);
 
-  // Extract YouTube video ID for thumbnail and external link
-  const getYouTubeVideoId = (url) => {
-    const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-    const match = url?.match(regExp);
-    return (match && match[7].length === 11) ? match[7] : null;
-  };
-
-  const youtubeId = getYouTubeVideoId(videoUrl);
+  const youtubeId = extractVideoId(videoUrl);
   const youtubeThumbnail = youtubeId ? `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg` : thumbnail;
 
   const openOnYouTube = () => {

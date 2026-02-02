@@ -6,6 +6,8 @@ const {
   extractVideoId,
   extractVideoIdFromIframe,
   toEmbedUrl,
+  normalizeToEmbedUrl,
+  isValidYouTubeUrl,
   parseIframe,
   isAllowedDomain,
   sanitizeVideoInput,
@@ -28,6 +30,24 @@ describe('YouTube Utils', () => {
 
     test('should extract video ID from embed URL', () => {
       const url = 'https://www.youtube.com/embed/dQw4w9WgXcQ';
+      const videoId = extractVideoId(url);
+      expect(videoId).toBe('dQw4w9WgXcQ');
+    });
+
+    test('should extract video ID from shorts URL', () => {
+      const url = 'https://youtube.com/shorts/dQw4w9WgXcQ';
+      const videoId = extractVideoId(url);
+      expect(videoId).toBe('dQw4w9WgXcQ');
+    });
+
+    test('should extract video ID from youtu.be URL with params', () => {
+      const url = 'https://youtu.be/dQw4w9WgXcQ?si=XXXX';
+      const videoId = extractVideoId(url);
+      expect(videoId).toBe('dQw4w9WgXcQ');
+    });
+
+    test('should extract video ID from watch URL with list param', () => {
+      const url = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=PLxxx';
       const videoId = extractVideoId(url);
       expect(videoId).toBe('dQw4w9WgXcQ');
     });
@@ -92,6 +112,35 @@ describe('YouTube Utils', () => {
     test('should throw error for invalid video ID', () => {
       expect(() => toEmbedUrl('')).toThrow('Valid video ID is required');
       expect(() => toEmbedUrl(null)).toThrow('Valid video ID is required');
+    });
+  });
+
+  describe('normalizeToEmbedUrl', () => {
+    test('should normalize watch URL to embed', () => {
+      const url = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+      expect(normalizeToEmbedUrl(url)).toContain('youtube.com/embed/dQw4w9WgXcQ');
+    });
+    test('should normalize youtu.be URL to embed', () => {
+      const url = 'https://youtu.be/dQw4w9WgXcQ?si=XXX';
+      expect(normalizeToEmbedUrl(url)).toContain('youtube.com/embed/dQw4w9WgXcQ');
+    });
+    test('should normalize shorts URL to embed', () => {
+      const url = 'https://youtube.com/shorts/dQw4w9WgXcQ';
+      expect(normalizeToEmbedUrl(url)).toContain('youtube.com/embed/dQw4w9WgXcQ');
+    });
+    test('should return null for non-YouTube URL', () => {
+      expect(normalizeToEmbedUrl('https://example.com/video')).toBeNull();
+    });
+  });
+
+  describe('isValidYouTubeUrl', () => {
+    test('should return true for valid YouTube URLs', () => {
+      expect(isValidYouTubeUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe(true);
+      expect(isValidYouTubeUrl('https://youtu.be/dQw4w9WgXcQ')).toBe(true);
+      expect(isValidYouTubeUrl('https://youtube.com/shorts/dQw4w9WgXcQ')).toBe(true);
+    });
+    test('should return false for non-YouTube URL', () => {
+      expect(isValidYouTubeUrl('https://vimeo.com/123')).toBe(false);
     });
   });
 

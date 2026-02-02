@@ -2,6 +2,7 @@
  * Frontend Payment Submission Handler
  * Prevents duplicate submissions and provides better UX
  */
+import { isValidPhone } from './phoneUtils';
 
 class PaymentSubmissionHandler {
   constructor() {
@@ -131,13 +132,11 @@ class PaymentSubmissionHandler {
       }
     }
 
-    // Validate phone number format
     const phoneNumber = formData.get('studentPhone');
-    const phoneRegex = /^01[0-9]{9}$/;
-    if (!phoneRegex.test(phoneNumber)) {
+    if (!phoneNumber || !isValidPhone(phoneNumber)) {
       return {
         isValid: false,
-        message: 'Please enter a valid Egyptian phone number (e.g., 01012345678)'
+        message: 'Please enter a valid international phone number (e.g. +201234567890)'
       };
     }
 

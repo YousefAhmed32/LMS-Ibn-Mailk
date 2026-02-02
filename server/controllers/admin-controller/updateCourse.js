@@ -1,5 +1,6 @@
 const Course = require('../../models/Course');
 const { uploadImageToGridFS } = require('../../utils/simpleGridfsUpload');
+const { getYouTubeEmbedUrl } = require('../../utils/videoUtils');
 
 // Update existing course with comprehensive error handling
 const updateCourse = async (req, res) => {
@@ -55,15 +56,20 @@ const updateCourse = async (req, res) => {
           console.log('✅ Videos already an array:', updateData.videos);
         }
         
-        // Validate and format videos array
+        // Validate and format videos array - normalize YouTube URLs to embed format
         if (Array.isArray(updateData.videos)) {
-          updateData.videos = updateData.videos.map((video, index) => ({
-            title: video.title || `Video ${index + 1}`,
-            url: video.url || '',
-            order: video.order !== undefined ? parseInt(video.order) : index,
-            duration: video.duration ? Math.max(1, parseInt(video.duration)) : 1,
-            thumbnail: video.thumbnail || '',
-          }));
+          updateData.videos = updateData.videos.map((video, index) => {
+            const rawUrl = (video.url || '').trim();
+            const embedUrl = getYouTubeEmbedUrl(rawUrl);
+            const url = embedUrl || rawUrl;
+            return {
+              title: video.title || `Video ${index + 1}`,
+              url,
+              order: video.order !== undefined ? parseInt(video.order) : index,
+              duration: video.duration ? Math.max(1, parseInt(video.duration)) : 1,
+              thumbnail: video.thumbnail || '',
+            };
+          });
         } else {
           updateData.videos = [];
         }

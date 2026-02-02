@@ -139,11 +139,8 @@ const paymentService = {
     return names[method] || method;
   },
 
-  // Validate phone number
-  validatePhoneNumber: (phone) => {
-    const phoneRegex = /^01[0-9]{9}$/;
-    return phoneRegex.test(phone);
-  },
+  // Validate international phone number (E.164 / any country)
+  validatePhoneNumber: (phone) => isValidPhone(phone),
 
   // Validate file for upload
   validateFile: (file) => {

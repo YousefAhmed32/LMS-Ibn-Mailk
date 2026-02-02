@@ -10,22 +10,27 @@ const PaymentProofSchema = new mongoose.Schema({
   studentPhone: {
     type: String,
     required: [true, "Student phone number is required"],
+    trim: true,
     validate: {
       validator: function(v) {
-        return /^01[0-9]{9}$/.test(v);
+        if (!v || typeof v !== 'string') return false;
+        const { isValidPhone } = require('../utils/phoneUtils');
+        return isValidPhone(v.trim());
       },
-      message: 'Please enter a valid Egyptian phone number (e.g., 01012345678)'
+      message: 'Please enter a valid international phone number (e.g. +201234567890)'
     }
   },
   parentPhone: {
     type: String,
     required: false,
+    trim: true,
     validate: {
       validator: function(v) {
-        if (!v) return true;
-        return /^01[0-9]{9}$/.test(v);
+        if (!v || typeof v !== 'string') return true;
+        const { isValidPhone } = require('../utils/phoneUtils');
+        return isValidPhone(v.trim());
       },
-      message: 'Please enter a valid Egyptian phone number (e.g., 01012345678)'
+      message: 'Please enter a valid international phone number (e.g. +201234567890)'
     }
   },
   
@@ -45,11 +50,14 @@ const PaymentProofSchema = new mongoose.Schema({
   senderPhone: {
     type: String,
     required: [true, "Sender phone number is required"],
+    trim: true,
     validate: {
       validator: function(v) {
-        return /^01[0-9]{9}$/.test(v);
+        if (!v || typeof v !== 'string') return false;
+        const { isValidPhone } = require('../utils/phoneUtils');
+        return isValidPhone(v.trim());
       },
-      message: 'Please enter a valid Egyptian phone number (e.g., 01012345678)'
+      message: 'Please enter a valid international phone number (e.g. +201234567890)'
     }
   },
   transferTime: {

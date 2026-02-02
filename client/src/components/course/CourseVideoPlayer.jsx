@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import YouTubeVideoPlayer from './YouTubeVideoPlayer';
 import useVideoProgress from '../../hooks/useVideoProgress';
 import videoProgressService from '../../services/videoProgressService';
+import { extractVideoId } from '../../utils/youtubeUtils';
 import { 
   Play, 
   ExternalLink,
@@ -33,18 +34,8 @@ const CourseVideoPlayer = ({
   const [videoProgress, setVideoProgress] = useState({});
   const [isProgressTracking, setIsProgressTracking] = useState(false);
 
-  // Extract YouTube video ID from URL
-  const getYouTubeVideoId = useCallback((url) => {
-    if (!url) return null;
-    
-    const videoId = url.includes('youtu.be/') 
-      ? url.split('youtu.be/')[1]?.split('?')[0]
-      : url.includes('v=') 
-        ? url.split('v=')[1]?.split('&')[0]
-        : null;
-    
-    return videoId;
-  }, []);
+  // Use shared extractVideoId (supports watch, youtu.be, shorts, embed, params)
+  const getYouTubeVideoId = useCallback((url) => extractVideoId(url), []);
 
   // Check if user is subscribed to the course
   const isSubscribed = useCallback(() => {

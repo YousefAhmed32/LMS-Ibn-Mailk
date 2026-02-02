@@ -54,7 +54,7 @@ export const signUpFormControls = [
   {
     name: "phoneNumber",
     label: "رقم الهاتف",
-    placeholder: "أدخل رقم هاتفك (مثال: 01234567890)",
+    placeholder: "أدخل رقم هاتفك (مثال: +201234567890)",
     type: "tel",
     componentType: "input",
     required: true,
@@ -137,7 +137,7 @@ export const signInFormControls = [
   {
     name: "phoneNumber",
     label: "رقم الهاتف",
-    placeholder: "أدخل رقم هاتفك (مثال: 01234567890)",
+    placeholder: "أدخل رقم هاتفك (مثال: +201234567890)",
     type: "tel",
     componentType: "input",
     required: true,

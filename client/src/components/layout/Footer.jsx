@@ -301,7 +301,7 @@ const Footer = () => {
                   className="inline-block text-red-500 text-2xl cursor-pointer select-none"
                   onClick={handleYansyClick}
                 >
-                  ❤️
+                  
                 </motion.span>
               </div>
             </motion.div>

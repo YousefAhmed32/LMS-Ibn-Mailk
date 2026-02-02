@@ -5,6 +5,7 @@ const { uploadImageToGridFS } = require('../../utils/simpleGridfsUpload');
 const NotificationService = require('../../services/notificationService');
 const MongoDBErrorHandler = require('../../utils/mongoErrorHandler');
 const TransactionIdGenerator = require('../../utils/transactionIdGenerator');
+const { normalizeForStorage } = require('../../utils/phoneUtils');
 
 /**
  * Enhanced Payment Controller with Best Practices
@@ -153,12 +154,13 @@ const submitPayment = async (req, res) => {
       });
     }
 
-    // Step 7: Create payment record
+    // Step 7: Create payment record (normalize phone to E.164)
+    const studentPhoneE164 = normalizeForStorage(studentPhone);
     const paymentData = {
       studentId,
       courseId,
       studentName: studentName.trim(),
-      studentPhone,
+      studentPhone: studentPhoneE164 || studentPhone,
       amount: parseFloat(amount),
       transactionId: finalTransactionId,
       screenshot: screenshotUrl,
@@ -268,12 +270,11 @@ const validatePaymentData = (data) => {
       message: 'Student phone number is required'
     });
   } else {
-    // Phone number format validation
-    const phoneRegex = /^01[0-9]{9}$/;
-    if (!phoneRegex.test(studentPhone)) {
+    const { isValidPhone } = require('../../utils/phoneUtils');
+    if (!isValidPhone(studentPhone)) {
       errors.push({
         field: 'studentPhone',
-        message: 'Please enter a valid Egyptian phone number (e.g., 01012345678)'
+        message: 'Please enter a valid international phone number (e.g. +201234567890)'
       });
     }
   }

@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import Input from '../ui/input';
 import Label from '../ui/label';
 import Button from '../ui/button';
+import PhoneInput from '../ui/PhoneInput';
 import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from '../../hooks/use-toast';
+import { isValidPhone } from '../../utils/phoneUtils';
 import { 
   Upload, 
   Phone, 
@@ -30,10 +32,11 @@ const PaymentProofUpload = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Phone number validation
-  const validatePhoneNumber = (phone) => {
-    const phoneRegex = /^01[0-9]{9}$/;
-    return phoneRegex.test(phone);
+  const validatePhoneNumber = (phone) => isValidPhone(phone);
+
+  const handlePhoneChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value || '' }));
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
   // File validation
@@ -60,21 +63,21 @@ const PaymentProofUpload = () => {
     if (!formData.senderNumber.trim()) {
       newErrors.senderNumber = 'رقم المرسل مطلوب';
     } else if (!validatePhoneNumber(formData.senderNumber)) {
-      newErrors.senderNumber = 'رقم هاتف غير صحيح. يجب أن يبدأ بـ 01 ويحتوي على 11 رقم';
+      newErrors.senderNumber = 'يرجى إدخال رقم هاتف دولي صحيح (مثال: +201234567890)';
     }
 
     // Validate student number
     if (!formData.studentNumber.trim()) {
       newErrors.studentNumber = 'رقم الطالبة مطلوب';
     } else if (!validatePhoneNumber(formData.studentNumber)) {
-      newErrors.studentNumber = 'رقم هاتف غير صحيح. يجب أن يبدأ بـ 01 ويحتوي على 11 رقم';
+      newErrors.studentNumber = 'يرجى إدخال رقم هاتف دولي صحيح (مثال: +201234567890)';
     }
 
     // Validate parent number (required)
     if (!formData.parentNumber.trim()) {
       newErrors.parentNumber = 'رقم ولي الأمر مطلوب';
     } else if (!validatePhoneNumber(formData.parentNumber)) {
-      newErrors.parentNumber = 'رقم هاتف غير صحيح. يجب أن يبدأ بـ 01 ويحتوي على 11 رقم';
+      newErrors.parentNumber = 'يرجى إدخال رقم هاتف دولي صحيح (مثال: +201234567890)';
     }
 
     // Validate payment image
@@ -262,17 +265,14 @@ const PaymentProofUpload = () => {
               <Label htmlFor="senderNumber" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 رقم المرسل <span className="text-red-500">*</span>
               </Label>
-              <div className="relative mt-1">
-                <Phone className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
+              <div className={`mt-1 rounded-md border ${errors.senderNumber ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                <PhoneInput
                   id="senderNumber"
-                  name="senderNumber"
-                  type="tel"
                   value={formData.senderNumber}
-                  onChange={handleInputChange}
-                  placeholder="01012345678"
-                  className={`pr-10 ${errors.senderNumber ? 'border-red-500 focus:border-red-500' : ''}`}
-                  dir="ltr"
+                  onChange={(val) => handlePhoneChange('senderNumber', val)}
+                  placeholder="+201234567890"
+                  defaultCountry="EG"
+                  className={errors.senderNumber ? '!border-0 !border-transparent' : ''}
                 />
               </div>
               {errors.senderNumber && (
@@ -292,17 +292,14 @@ const PaymentProofUpload = () => {
               <Label htmlFor="studentNumber" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 رقم الطالبة <span className="text-red-500">*</span>
               </Label>
-              <div className="relative mt-1">
-                <User className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
+              <div className={`mt-1 rounded-md border ${errors.studentNumber ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                <PhoneInput
                   id="studentNumber"
-                  name="studentNumber"
-                  type="tel"
                   value={formData.studentNumber}
-                  onChange={handleInputChange}
-                  placeholder="01012345678"
-                  className={`pr-10 ${errors.studentNumber ? 'border-red-500 focus:border-red-500' : ''}`}
-                  dir="ltr"
+                  onChange={(val) => handlePhoneChange('studentNumber', val)}
+                  placeholder="+201234567890"
+                  defaultCountry="EG"
+                  className={errors.studentNumber ? '!border-0 !border-transparent' : ''}
                 />
               </div>
               {errors.studentNumber && (
@@ -322,17 +319,14 @@ const PaymentProofUpload = () => {
               <Label htmlFor="parentNumber" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 رقم ولي الأمر <span className="text-red-500">*</span>
               </Label>
-              <div className="relative mt-1">
-                <Phone className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
+              <div className={`mt-1 rounded-md border ${errors.parentNumber ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                <PhoneInput
                   id="parentNumber"
-                  name="parentNumber"
-                  type="tel"
                   value={formData.parentNumber}
-                  onChange={handleInputChange}
-                  placeholder="01012345678"
-                  className={`pr-10 ${errors.parentNumber ? 'border-red-500 focus:border-red-500' : ''}`}
-                  dir="ltr"
+                  onChange={(val) => handlePhoneChange('parentNumber', val)}
+                  placeholder="+201234567890"
+                  defaultCountry="EG"
+                  className={errors.parentNumber ? '!border-0 !border-transparent' : ''}
                 />
               </div>
               {errors.parentNumber && (

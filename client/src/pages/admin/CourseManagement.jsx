@@ -4,6 +4,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '../../hooks/use-toast';
 import { getVideoThumbnail, getCourseCoverImage, formatVideoDurationFromMinutes, getDefaultVideoThumbnail } from '../../utils/videoUtils';
+import { extractVideoId, getEmbedUrlFromAnyYouTubeUrl, isValidYouTubeUrl } from '../../utils/youtubeUtils';
 import {
   Plus,
   Edit,
@@ -729,10 +730,8 @@ const CourseManagement = () => {
     }
   };
 
-  const validateYouTubeUrl = (url) => {
-    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/)|youtu\.be\/)[\w-]+/;
-    return youtubeRegex.test(url);
-  };
+  // Validation uses youtubeUtils (supports watch, youtu.be, shorts, embed, params)
+  const validateYouTubeUrl = (url) => isValidYouTubeUrl(url);
 
   const validateGoogleFormUrl = (url) => {
     const googleFormRegex = /^https:\/\/docs\.google\.com\/forms\/d\/[a-zA-Z0-9_-]+\/edit/;
@@ -760,13 +759,12 @@ const CourseManagement = () => {
       return;
     }
 
-    const videoId = newVideoUrl.includes('youtu.be/') 
-      ? newVideoUrl.split('youtu.be/')[1].split('?')[0]
-      : newVideoUrl.split('v=')[1]?.split('&')[0];
+    const videoId = extractVideoId(newVideoUrl);
+    const embedUrl = getEmbedUrlFromAnyYouTubeUrl(newVideoUrl) || `https://www.youtube.com/embed/${videoId}`;
 
     const newVideo = {
       id: Date.now(),
-      url: newVideoUrl,
+      url: embedUrl,
       videoId: videoId,
       title: `فيديو ${courseVideos.length + 1}`,
       thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`

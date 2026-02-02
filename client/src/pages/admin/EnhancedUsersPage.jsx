@@ -20,6 +20,7 @@ import {
   DialogTrigger,
 } from '../../components/ui/simple-dialog';
 import Button from '../../components/ui/button';
+import PhoneInput from '../../components/ui/PhoneInput';
 import {
   Users,
   UserPlus,
@@ -317,13 +318,14 @@ const EnhancedUsersPage = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          رقم الهاتف
+                          رقم الهاتف (دولي)
                         </label>
-                        <input
-                          type="tel"
+                        <PhoneInput
                           value={userForm.phoneStudent}
-                          onChange={(e) => setUserForm({...userForm, phoneStudent: e.target.value})}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-luxury-gold"
+                          onChange={(v) => setUserForm({...userForm, phoneStudent: v || ''})}
+                          placeholder="رقم الهاتف"
+                          defaultCountry="EG"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                         />
                       </div>
                       <div>

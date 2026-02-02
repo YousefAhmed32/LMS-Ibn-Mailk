@@ -28,14 +28,13 @@ const UserSchema = new mongoose.Schema({
     minlength: [2, 'Fourth name must be at least 2 characters']
   },
 
-  // Authentication - PHONE NUMBER BASED
+  // Authentication - PHONE NUMBER (E.164 international)
   phoneNumber: { 
     type: String, 
     required: [true, 'Phone number is required'],
     unique: false,
-    // ddddddddddddddddddddd
-    trim: true,
-    match: [/^(\+20|0)?1[0125][0-9]{8}$/, 'Please enter a valid Egyptian phone number']
+    trim: true
+    // Stored as E.164 (+countrycode + national). No country-specific regex.
   },
   password: { 
     type: String, 
@@ -214,13 +213,12 @@ UserSchema.methods.comparePassword = async function(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Static method to find user by phone number
+// Static method to find user by phone number (E.164 normalized)
 UserSchema.statics.findByPhoneNumber = function(phoneNumber) {
-  // Normalize phone number (remove spaces, handle +20 prefix)
-  const normalized = phoneNumber.trim().replace(/\s+/g, '');
-  return this.findOne({ 
-    phoneNumber: normalized
-  });
+  const { normalizeForStorage } = require('../utils/phoneUtils');
+  const e164 = normalizeForStorage(phoneNumber);
+  const lookup = e164 || phoneNumber.trim().replace(/\s+/g, '');
+  return this.findOne({ phoneNumber: lookup });
 };
 
 module.exports = mongoose.model('User', UserSchema);

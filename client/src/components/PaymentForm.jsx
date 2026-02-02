@@ -5,6 +5,8 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import axios from 'axios';
+import { isValidPhone } from '../utils/phoneUtils';
+import PhoneInput from './ui/PhoneInput';
 
 // Custom hook for payment submission
 export const usePaymentSubmission = () => {
@@ -201,11 +203,8 @@ export const PaymentForm = ({ onSubmit, onSuccess, onError }) => {
 
     if (!formData.studentPhone) {
       errors.studentPhone = 'Phone number is required';
-    } else {
-      const phoneRegex = /^01[0-9]{9}$/;
-      if (!phoneRegex.test(formData.studentPhone)) {
-        errors.studentPhone = 'Please enter a valid Egyptian phone number';
-      }
+    } else if (!isValidPhone(formData.studentPhone)) {
+      errors.studentPhone = 'Please enter a valid international phone number (e.g. +201234567890)';
     }
 
     if (!formData.amount) {
@@ -328,16 +327,22 @@ export const PaymentForm = ({ onSubmit, onSuccess, onError }) => {
 
       <div className="form-group">
         <label htmlFor="studentPhone">Phone Number *</label>
-        <input
-          type="tel"
-          id="studentPhone"
-          name="studentPhone"
-          value={formData.studentPhone}
-          onChange={handleInputChange}
-          className={validationErrors.studentPhone ? 'error' : ''}
-          disabled={isSubmitting}
-          placeholder="01012345678"
-        />
+        <div className={validationErrors.studentPhone ? 'rounded-md border border-red-500' : ''}>
+          <PhoneInput
+            id="studentPhone"
+            value={formData.studentPhone}
+            onChange={(val) => {
+              setFormData(prev => ({ ...prev, studentPhone: val || '' }));
+              if (validationErrors.studentPhone) {
+                setValidationErrors(prev => ({ ...prev, studentPhone: '' }));
+              }
+            }}
+            placeholder="+201234567890"
+            defaultCountry="EG"
+            disabled={isSubmitting}
+            className={validationErrors.studentPhone ? '!border-0' : ''}
+          />
+        </div>
         {validationErrors.studentPhone && (
           <span className="field-error">{validationErrors.studentPhone}</span>
         )}

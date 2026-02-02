@@ -1,5 +1,6 @@
 const Payment = require('../../models/Payment');
 const User = require('../../models/User');
+const { isValidPhone, normalizeForStorage } = require('../../utils/phoneUtils');
 
 // Upload payment proof
 const uploadPaymentProof = async (req, res) => {
@@ -15,26 +16,22 @@ const uploadPaymentProof = async (req, res) => {
       });
     }
 
-    // Validate phone numbers
-    const phoneRegex = /^01[0-9]{9}$/;
-    if (!phoneRegex.test(senderNumber)) {
+    if (!isValidPhone(senderNumber)) {
       return res.status(400).json({
         success: false,
-        error: "رقم المرسل غير صحيح. يجب أن يبدأ بـ 01 ويحتوي على 11 رقم"
+        error: "يرجى إدخال رقم هاتف دولي صحيح (مثال: +201234567890)"
       });
     }
-
-    if (!phoneRegex.test(studentNumber)) {
+    if (!isValidPhone(studentNumber)) {
       return res.status(400).json({
         success: false,
-        error: "رقم الطالبة غير صحيح. يجب أن يبدأ بـ 01 ويحتوي على 11 رقم"
+        error: "يرجى إدخال رقم هاتف دولي صحيح للطالب (مثال: +201234567890)"
       });
     }
-
-    if (parentNumber && !phoneRegex.test(parentNumber)) {
+    if (parentNumber && !isValidPhone(parentNumber)) {
       return res.status(400).json({
         success: false,
-        error: "رقم ولي الأمر غير صحيح. يجب أن يبدأ بـ 01 ويحتوي على 11 رقم"
+        error: "يرجى إدخال رقم هاتف دولي صحيح لولي الأمر (مثال: +201234567890)"
       });
     }
 
@@ -69,12 +66,12 @@ const uploadPaymentProof = async (req, res) => {
       });
     }
 
-    // Create Payment record
+    // Normalize phones to E.164 before storage
     const paymentData = {
       studentId: userId,
-      studentPhone: studentNumber,
-      parentPhone: parentNumber,
-      senderPhone: senderNumber,
+      studentPhone: normalizeForStorage(studentNumber),
+      parentPhone: parentNumber ? normalizeForStorage(parentNumber) : undefined,
+      senderPhone: normalizeForStorage(senderNumber),
       amount: 0, // Will be updated when course is selected
       transferTime: new Date(),
       submittedAt: new Date(),
