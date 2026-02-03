@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
@@ -12,62 +12,31 @@ import {
   Filter,
   CheckCircle
 } from 'lucide-react';
+import axiosInstance from '../../api/axiosInstance';
 
 const CoursesSection = () => {
   const [activeFilter, setActiveFilter] = useState('all');
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
   const sectionRef = useRef(null);
   const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
 
-  const courses = [
-    {
-      id: 1,
-      title: "النحو والصرف المتقدم",
-      instructor: "د. أحمد محمد",
-      duration: "12 ساعة",
-      rating: 4.9,
-      students: 1250,
-      price: "مجاني",
-      category: "arabic",
-      level: "متقدم",
-      description: "تعلم قواعد النحو والصرف بطريقة مبسطة ومتطورة"
-    },
-    {
-      id: 2,
-      title: "الأدب العربي الكلاسيكي",
-      instructor: "د. فاطمة أحمد",
-      duration: "15 ساعة",
-      rating: 4.8,
-      students: 980,
-      price: "مجاني",
-      category: "literature",
-      level: "متوسط",
-      description: "استكشف روائع الأدب العربي عبر العصور"
-    },
-    {
-      id: 3,
-      title: "التفسير والحديث",
-      instructor: "د. محمد علي",
-      duration: "20 ساعة",
-      rating: 4.9,
-      students: 2100,
-      price: "مجاني",
-      category: "islamic",
-      level: "مبتدئ",
-      description: "فهم القرآن الكريم والسنة النبوية"
-    },
-    {
-      id: 4,
-      title: "البلاغة والعروض",
-      instructor: "د. سارة حسن",
-      duration: "10 ساعة",
-      rating: 4.7,
-      students: 750,
-      price: "مجاني",
-      category: "arabic",
-      level: "متقدم",
-      description: "إتقان فنون البلاغة وعلم العروض"
-    }
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await axiosInstance.get('/api/courses', { params: { limit: 12 } }).catch(() => null);
+        if (cancelled) return;
+        const list = res?.data?.data ?? res?.data?.courses ?? (Array.isArray(res?.data) ? res.data : []);
+        setCourses(Array.isArray(list) ? list : []);
+      } catch {
+        if (!cancelled) setCourses([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const filters = [
     { id: 'all', label: 'جميع الدورات', icon: BookOpen },
@@ -76,9 +45,21 @@ const CoursesSection = () => {
     { id: 'literature', label: 'الأدب', icon: Star }
   ];
 
+  const normalizedCourses = courses.map(c => ({
+    id: c._id || c.id,
+    title: c.title || 'دورة',
+    description: c.description || '',
+    duration: c.duration || '—',
+    rating: c.rating ?? 0,
+    students: c.students ?? c.enrolledCount ?? 0,
+    price: c.price != null ? (c.price === 0 ? 'مجاني' : `${c.price}`) : 'مجاني',
+    category: c.category || c.subject || 'all',
+    level: c.level || '—'
+  }));
+
   const filteredCourses = activeFilter === 'all' 
-    ? courses 
-    : courses.filter(course => course.category === activeFilter);
+    ? normalizedCourses 
+    : normalizedCourses.filter(course => course.category === activeFilter);
 
   return (
     <section 
@@ -130,7 +111,17 @@ const CoursesSection = () => {
 
         {/* Courses Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6">
-          {filteredCourses.map((course, index) => (
+          {loading ? (
+            <div className="col-span-full text-center py-16 text-gray-500 dark:text-gray-400">
+              جاري تحميل الدورات...
+            </div>
+          ) : filteredCourses.length === 0 ? (
+            <div className="col-span-full text-center py-16">
+              <BookOpen className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+              <p className="text-xl text-gray-600 dark:text-gray-400">لا توجد دورات لعرضها حالياً</p>
+              <Link to="/courses" className="mt-4 inline-block text-blue-600 dark:text-blue-400 font-medium">استكشف الصفحة</Link>
+            </div>
+          ) : filteredCourses.map((course, index) => (
             <motion.div
               key={course.id}
               initial={{ opacity: 0, y: 30 }}
@@ -179,7 +170,7 @@ const CoursesSection = () => {
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                         <Users className="w-4 h-4 mr-1" />
-                        <span>{course.students.toLocaleString()}</span>
+                        <span>{(course.students ?? 0).toLocaleString()}</span>
                       </div>
                       <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                         <Clock className="w-4 h-4 mr-1" />

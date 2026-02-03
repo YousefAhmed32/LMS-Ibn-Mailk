@@ -97,9 +97,57 @@ const StudentGroupProfile = () => {
         const foundStudent = groupResponse.data.data.students.find(s => s._id === studentId);
         if (foundStudent) {
           setStudent(foundStudent);
-          
-          // Generate mock stats for demonstration
-          generateMockStats(foundStudent);
+          try {
+            const statsRes = await axiosInstance.get(`/api/parent/student/${foundStudent._id}/comprehensive`).catch(() => null);
+            const d = statsRes?.data?.data || statsRes?.data;
+            if (d?.statistics || d?.enrolledCourses) {
+              const courses = d.enrolledCourses || [];
+              const completed = courses.filter(c => c.completed || (c.progress >= 100));
+              const avg = d.statistics?.averageGrade ?? d.statistics?.averageScore ?? 0;
+              setStudentStats({
+                totalCourses: courses.length,
+                completedCourses: completed.length,
+                inProgressCourses: Math.max(0, courses.length - completed.length),
+                averageScore: avg,
+                totalStudyTime: d.statistics?.totalStudyTime ?? 0,
+                lastActivity: d.statistics?.lastActivity ?? null,
+                recentExams: (d.examResults || []).slice(0, 5).map(e => ({
+                  course: e.courseName || e.examTitle || '—',
+                  score: e.percentage ?? e.studentScore ?? 0,
+                  date: e.examDate || e.submittedAt || '—',
+                  status: 'completed'
+                })),
+                courseProgress: courses.map(c => ({
+                  course: c.courseName || c.course?.title || c.name || '—',
+                  progress: c.progress ?? 0,
+                  totalLessons: c.totalLessons ?? 0,
+                  completedLessons: c.completedLessons ?? 0
+                }))
+              });
+            } else {
+              setStudentStats({
+                totalCourses: 0,
+                completedCourses: 0,
+                inProgressCourses: 0,
+                averageScore: 0,
+                totalStudyTime: 0,
+                lastActivity: null,
+                recentExams: [],
+                courseProgress: []
+              });
+            }
+          } catch {
+            setStudentStats({
+              totalCourses: 0,
+              completedCourses: 0,
+              inProgressCourses: 0,
+              averageScore: 0,
+              totalStudyTime: 0,
+              lastActivity: null,
+              recentExams: [],
+              courseProgress: []
+            });
+          }
         }
       }
     } catch (error) {
@@ -108,33 +156,6 @@ const StudentGroupProfile = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
-
-  const generateMockStats = (studentData) => {
-    // Mock data for demonstration - in real app, this would come from API
-    const mockStats = {
-      totalCourses: Math.floor(Math.random() * 8) + 3,
-      completedCourses: Math.floor(Math.random() * 3) + 1,
-      inProgressCourses: Math.floor(Math.random() * 4) + 1,
-      averageScore: Math.floor(Math.random() * 30) + 70,
-      totalStudyTime: Math.floor(Math.random() * 200) + 50,
-      lastActivity: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),
-      recentExams: [
-        { course: 'الرياضيات', score: 85, date: '2024-01-15', status: 'completed' },
-        { course: 'العلوم', score: 92, date: '2024-01-12', status: 'completed' },
-        { course: 'اللغة العربية', score: 78, date: '2024-01-10', status: 'completed' },
-        { course: 'التاريخ', score: 88, date: '2024-01-08', status: 'completed' }
-      ],
-      courseProgress: [
-        { course: 'الرياضيات', progress: 85, totalLessons: 20, completedLessons: 17 },
-        { course: 'العلوم', progress: 92, totalLessons: 15, completedLessons: 14 },
-        { course: 'اللغة العربية', progress: 78, totalLessons: 25, completedLessons: 20 },
-        { course: 'التاريخ', progress: 88, totalLessons: 18, completedLessons: 16 },
-        { course: 'اللغة الإنجليزية', progress: 65, totalLessons: 22, completedLessons: 14 }
-      ]
-    };
-    
-    setStudentStats(mockStats);
   };
 
   const formatDate = (date) => {

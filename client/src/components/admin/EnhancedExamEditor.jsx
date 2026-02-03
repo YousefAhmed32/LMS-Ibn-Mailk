@@ -93,14 +93,6 @@ const EnhancedExamEditor = ({
     }));
   };
 
-  // Handle questions change from IntegratedExamBuilder
-  const handleQuestionsChange = (questions) => {
-    setExamForm(prev => ({
-      ...prev,
-      questions: questions
-    }));
-  };
-
   // Save exam
   const handleSave = () => {
     if (!examForm.title.trim()) {
@@ -347,7 +339,13 @@ const EnhancedExamEditor = ({
                       }]}
                       onExamsChange={(exams) => {
                         if (exams.length > 0) {
-                          handleQuestionsChange(exams[0].questions);
+                          const exam = exams[0];
+                          setExamForm(prev => ({
+                            ...prev,
+                            title: exam.title ?? prev.title,
+                            totalMarks: exam.totalMarks ?? prev.totalMarks,
+                            questions: exam.questions ?? []
+                          }));
                         }
                       }}
                       isDarkMode={isDarkMode}

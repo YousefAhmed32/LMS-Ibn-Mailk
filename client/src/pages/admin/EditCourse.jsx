@@ -27,7 +27,7 @@ import {
 import axiosInstance from '../../api/axiosInstance';
 import LuxuryCard from '../../components/ui/LuxuryCard';
 import LuxuryButton from '../../components/ui/LuxuryButton';
-import EnhancedExamEditor from '../../components/admin/EnhancedExamEditor';
+import IntegratedExamBuilder from '../../components/admin/IntegratedExamBuilder';
 
 const EditCourse = () => {
   const { id } = useParams();
@@ -56,47 +56,15 @@ const EditCourse = () => {
   
   // Modal states
   const [showVideoModal, setShowVideoModal] = useState(false);
-  const [showExamModal, setShowExamModal] = useState(false);
-
-  // Prevent scroll jump when modal opens
-  useEffect(() => {
-    if (showExamModal) {
-      document.body.classList.add('modal-open');
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.classList.remove('modal-open');
-      document.body.style.overflow = 'auto';
-    }
-    
-    return () => {
-      document.body.classList.remove('modal-open');
-      document.body.style.overflow = 'auto';
-    };
-  }, [showExamModal]);
   const [editingVideo, setEditingVideo] = useState(null);
-  const [editingExam, setEditingExam] = useState(null);
   
-  // New item forms
+  // New video form
   const [newVideo, setNewVideo] = useState({
     title: '',
     url: '',
     duration: 0,
     thumbnail: ''
   });
-  const [newExam, setNewExam] = useState({
-    title: '',
-    url: '',
-    type: 'internal_exam',
-    totalMarks: 0, // سيتم حسابه تلقائياً
-    duration: 30,
-    passingScore: 60,
-    questions: []
-  });
-
-  // Calculate total marks from questions
-  const calculateTotalMarks = () => {
-    return newExam.questions.reduce((total, question) => total + (question.points || question.marks || 1), 0);
-  };
 
   /**
    * Normalize and clean exam data before sending to server
@@ -116,70 +84,76 @@ const EditCourse = () => {
         ? String(question.questionText).trim() 
         : '';
 
-      // Normalize options - ensure they are strings
+      // Options: prefer builder format (choices with id, text) for MCQ so option ids are stable
       let normalizedOptions = [];
-      if (question.options && Array.isArray(question.options)) {
+      let correctAnswersArray = null;
+
+      if (question.type === 'multiple_choice' || question.type === 'mcq') {
+        if (question.choices && Array.isArray(question.choices)) {
+          normalizedOptions = question.choices
+            .map(c => ({ id: c.id, text: String(c.text || '').trim() }))
+            .filter(opt => opt.text.length > 0);
+          const correctIds = question.choices.filter(c => c.isCorrect).map(c => c.id);
+          if (correctIds.length > 0) correctAnswersArray = correctIds;
+        }
+        if (normalizedOptions.length === 0 && question.options && Array.isArray(question.options)) {
+          normalizedOptions = question.options.map((opt, optIndex) => {
+            if (typeof opt === 'object' && opt !== null) {
+              return { id: opt.id ?? optIndex, text: String(opt.text || opt.optionText || opt.value || '').trim() };
+            }
+            return { id: optIndex, text: String(opt).trim() };
+          }).filter(opt => opt.text.length > 0);
+        }
+      } else if (question.options && Array.isArray(question.options)) {
         normalizedOptions = question.options.map((opt, optIndex) => {
-          // If option is an object, extract text
           if (typeof opt === 'object' && opt !== null) {
             return String(opt.text || opt.optionText || opt.value || '').trim();
           }
-          // If option is a string, use it directly
           return String(opt).trim();
-        }).filter(opt => opt.length > 0); // Remove empty options
+        }).filter(opt => opt.length > 0);
       }
 
       // Normalize correctAnswer based on question type
       let normalizedCorrectAnswer = question.correctAnswer;
 
       if (question.type === 'true_false') {
-        // For true/false questions, correctAnswer must be boolean
-        // If it's a number (0 or 1), convert to boolean
         if (typeof normalizedCorrectAnswer === 'number') {
-          // 0 = false (خطأ), 1 = true (صحيح)
-          // But we need to check: optIndex 0 = صحيح (true), optIndex 1 = خطأ (false)
-          // So if correctAnswer is 0, it means صحيح (true)
-          // If correctAnswer is 1, it means خطأ (false)
           normalizedCorrectAnswer = normalizedCorrectAnswer === 0;
         } else if (typeof normalizedCorrectAnswer === 'string') {
-          // Handle string values
           normalizedCorrectAnswer = normalizedCorrectAnswer === 'true' || 
                                      normalizedCorrectAnswer === 'صحيح' ||
                                      normalizedCorrectAnswer === '0';
         } else if (normalizedCorrectAnswer === null || normalizedCorrectAnswer === undefined) {
-          // Default to false if not set
           normalizedCorrectAnswer = false;
         }
-        // Ensure it's a boolean
         normalizedCorrectAnswer = Boolean(normalizedCorrectAnswer);
       } else if (question.type === 'multiple_choice' || question.type === 'mcq') {
-        // For multiple choice, correctAnswer should be the index (number) or option text (string)
-        if (normalizedCorrectAnswer === null || normalizedCorrectAnswer === undefined) {
+        if (correctAnswersArray && correctAnswersArray.length === 1) {
+          normalizedCorrectAnswer = correctAnswersArray[0];
+        } else if (correctAnswersArray == null && (normalizedCorrectAnswer === null || normalizedCorrectAnswer === undefined)) {
           normalizedCorrectAnswer = null;
-        } else if (typeof normalizedCorrectAnswer === 'number') {
-          // Keep as number (index)
-          normalizedCorrectAnswer = normalizedCorrectAnswer;
-        } else if (typeof normalizedCorrectAnswer === 'string') {
-          // Keep as string (option text)
+        } else if (correctAnswersArray == null && typeof normalizedCorrectAnswer === 'number') {
+          // keep as index
+        } else if (correctAnswersArray == null && typeof normalizedCorrectAnswer === 'string') {
           normalizedCorrectAnswer = normalizedCorrectAnswer.trim();
         }
       }
 
-      // Ensure points is a valid number
       const points = Math.max(1, parseInt(question.points || question.marks || 1) || 1);
 
-      return {
+      const out = {
         id: question.id || `q_${Date.now()}_${qIndex}`,
         questionText,
         type: question.type || 'multiple_choice',
         options: normalizedOptions,
         correctAnswer: normalizedCorrectAnswer,
         points,
-        // Preserve other fields if they exist
         ...(question.sampleAnswer && { sampleAnswer: question.sampleAnswer }),
         ...(question.explanation && { explanation: question.explanation }),
         ...(question.order !== undefined && { order: question.order })
       };
+      if (correctAnswersArray != null) out.correctAnswers = correctAnswersArray;
+      return out;
     });
 
     return {
@@ -272,36 +246,30 @@ const EditCourse = () => {
         // AND converts correctAnswer to display format (index) for UI
         examsData = examsData.map(exam => {
           if (exam.type === 'internal_exam' && exam.questions) {
-            const normalizedQuestions = exam.questions.map(q => {
-              // Normalize options - convert objects to strings
+            const normalizedQuestions = exam.questions.map((q, qIdx) => {
+              // Keep options as { id, text } for MCQ so builder and grading can use stable ids
               let normalizedOptions = [];
               if (q.options && Array.isArray(q.options)) {
-                normalizedOptions = q.options.map(opt => {
+                normalizedOptions = q.options.map((opt, optIdx) => {
                   if (typeof opt === 'object' && opt !== null) {
-                    return String(opt.text || opt.optionText || opt.value || '').trim();
+                    const text = String(opt.text || opt.optionText || opt.value || '').trim();
+                    return { id: opt.id ?? optIdx, text };
                   }
-                  return String(opt).trim();
-                }).filter(opt => opt.length > 0);
+                  return { id: optIdx, text: String(opt).trim() };
+                }).filter(opt => opt.text.length > 0);
               }
-              
-              // Convert correctAnswer to display format (index) for UI
-              // This ensures the correct answer is displayed when editing
               const displayCorrectAnswer = convertCorrectAnswerForDisplay({
                 ...q,
                 options: normalizedOptions.length > 0 ? normalizedOptions : (q.options || [])
               });
-              
               return {
                 ...q,
                 options: normalizedOptions.length > 0 ? normalizedOptions : (q.options || []),
-                correctAnswer: displayCorrectAnswer // Store as index for UI display
+                correctAnswer: displayCorrectAnswer,
+                ...(Array.isArray(q.correctAnswers) && q.correctAnswers.length > 0 && { correctAnswers: q.correctAnswers })
               };
             });
-            
-            return {
-              ...exam,
-              questions: normalizedQuestions
-            };
+            return { ...exam, questions: normalizedQuestions };
           }
           return exam;
         });
@@ -434,18 +402,26 @@ const EditCourse = () => {
         return { valid: false, message: `يرجى إدخال نص السؤال ${i + 1}` };
       }
 
-      if (question.type === 'multiple_choice') {
-        if (!question.options || question.options.length < 2) {
+      if (question.type === 'multiple_choice' || question.type === 'mcq') {
+        const opts = question.options ?? question.choices?.map(c => c?.text ?? c) ?? [];
+        if (opts.length < 2) {
           return { valid: false, message: `السؤال ${i + 1} يجب أن يحتوي على خيارين على الأقل` };
         }
         
-        // Validate all options are filled
-        const emptyOptions = question.options.filter(opt => !opt || !String(opt).trim());
+        // Validate all options are filled (support both options and choices)
+        const optTexts = opts.map(opt => (typeof opt === 'object' && opt?.text !== undefined ? opt.text : opt));
+        const emptyOptions = optTexts.filter(opt => !opt || !String(opt).trim());
         if (emptyOptions.length > 0) {
           return { valid: false, message: `السؤال ${i + 1}: يرجى ملء جميع الخيارات` };
         }
 
-        if (question.correctAnswer === undefined || question.correctAnswer === null) {
+        // Check for correct answer: correctAnswer (single), correctAnswers (array), or choices with isCorrect
+        const hasCorrectAnswer = (question.correctAnswer !== undefined && question.correctAnswer !== null);
+        const hasCorrectAnswersArray = Array.isArray(question.correctAnswers) && question.correctAnswers.length > 0;
+        const hasCorrectInChoices = question.choices && Array.isArray(question.choices) && question.choices.some(c => c?.isCorrect);
+        const hasCorrect = hasCorrectAnswer || hasCorrectAnswersArray || hasCorrectInChoices;
+        
+        if (!hasCorrect) {
           return { valid: false, message: `يرجى اختيار الإجابة الصحيحة للسؤال ${i + 1}` };
         }
       }
@@ -456,231 +432,14 @@ const EditCourse = () => {
         }
       }
 
-      if (!question.points || question.points < 1) {
+      const points = question.points ?? question.marks ?? 1;
+      const pointsNum = typeof points === 'number' ? points : parseInt(points, 10);
+      if (isNaN(pointsNum) || pointsNum < 1) {
         return { valid: false, message: `السؤال ${i + 1}: عدد النقاط يجب أن يكون على الأقل 1` };
       }
     }
 
     return { valid: true };
-  };
-
-  // Exam management functions
-  const handleAddExam = (examData = null) => {
-    const exam = examData || newExam;
-    
-    if (!exam.title || !exam.title.trim()) {
-      toast({
-        title: 'خطأ في البيانات',
-        description: 'يرجى إدخال عنوان الامتحان',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    // For internal exams, validate questions
-    if (exam.type === 'internal_exam') {
-      const validation = validateExamQuestions(exam.questions);
-      if (!validation.valid) {
-        toast({
-          title: 'خطأ في البيانات',
-          description: validation.message,
-          variant: 'destructive'
-        });
-        return;
-      }
-    }
-
-    // For external exams, validate URL
-    if (exam.type !== 'internal_exam' && (!exam.url || !exam.url.trim())) {
-      toast({
-        title: 'خطأ في البيانات',
-        description: 'يرجى إدخال رابط الامتحان الخارجي',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    // Calculate total marks and ensure proper structure
-    const totalMarks = exam.type === 'internal_exam' 
-      ? (exam.questions?.reduce((total, question) => total + (question.points || 1), 0) || 0)
-      : 0;
-
-    const examToAdd = {
-      ...exam,
-      id: exam.id || `exam_${Date.now()}`,
-      title: exam.title.trim(),
-      url: exam.url?.trim() || '',
-      totalMarks,
-      duration: exam.duration || 30,
-      passingScore: exam.passingScore || 60,
-      questions: exam.questions ? exam.questions.map(q => ({
-        ...q,
-        questionText: (q.questionText ? String(q.questionText).trim() : '') || '',
-        options: q.options?.map(opt => (opt ? String(opt).trim() : '')) || [],
-        points: q.points || 1
-      })) : []
-    };
-
-    setExams(prev => [...prev, examToAdd]);
-    setNewExam({ 
-      title: '', 
-      url: '', 
-      type: 'internal_exam',
-      totalMarks: 0,
-      duration: 30,
-      passingScore: 60,
-      questions: []
-    });
-    setShowExamModal(false);
-    
-    toast({
-      title: 'تم إضافة الامتحان',
-      description: `تم إضافة امتحان "${exam.title}" بنجاح`,
-      variant: 'success'
-    });
-  };
-
-  const handleEditExam = (exam) => {
-    // Deep clone exam to avoid reference issues
-    // Normalize options and convert correctAnswer for display
-    const clonedExam = {
-      ...exam,
-      questions: exam.questions ? exam.questions.map(q => {
-        // Normalize options - ensure they are strings
-        let normalizedOptions = [];
-        if (q.options && Array.isArray(q.options)) {
-          normalizedOptions = q.options.map(opt => {
-            if (typeof opt === 'object' && opt !== null) {
-              return String(opt.text || opt.optionText || opt.value || '').trim();
-            }
-            return String(opt).trim();
-          }).filter(opt => opt.length > 0);
-        }
-        
-        // Convert correctAnswer to display format (index)
-        const displayCorrectAnswer = convertCorrectAnswerForDisplay({
-          ...q,
-          options: normalizedOptions.length > 0 ? normalizedOptions : (q.options || [])
-        });
-        
-        return {
-          ...q,
-          options: normalizedOptions.length > 0 ? normalizedOptions : (q.options || []),
-          correctAnswer: displayCorrectAnswer // Store as index for UI display
-        };
-      }) : []
-    };
-    
-    setEditingExam(clonedExam);
-    setNewExam({
-      title: clonedExam.title || '',
-      url: clonedExam.url || '',
-      type: clonedExam.type || 'internal_exam',
-      totalMarks: clonedExam.totalMarks || 0,
-      duration: clonedExam.duration || 30,
-      passingScore: clonedExam.passingScore || 60,
-      questions: clonedExam.questions || []
-    });
-    setShowExamModal(true);
-  };
-
-  const handleUpdateExam = (examData = null) => {
-    const exam = examData || newExam;
-    
-    if (!exam.title || !exam.title.trim()) {
-      toast({
-        title: 'خطأ في البيانات',
-        description: 'يرجى إدخال عنوان الامتحان',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    // For internal exams, validate questions
-    if (exam.type === 'internal_exam') {
-      const validation = validateExamQuestions(exam.questions);
-      if (!validation.valid) {
-        toast({
-          title: 'خطأ في البيانات',
-          description: validation.message,
-          variant: 'destructive'
-        });
-        return;
-      }
-    }
-
-    // For external exams, validate URL
-    if (exam.type !== 'internal_exam' && (!exam.url || !exam.url.trim())) {
-      toast({
-        title: 'خطأ في البيانات',
-        description: 'يرجى إدخال رابط الامتحان الخارجي',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    if (!editingExam || !editingExam.id) {
-      toast({
-        title: 'خطأ',
-        description: 'لم يتم العثور على الامتحان للتحديث',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    // Calculate total marks and ensure proper structure
-    const totalMarks = exam.type === 'internal_exam' 
-      ? (exam.questions?.reduce((total, question) => total + (question.points || 1), 0) || 0)
-      : 0;
-
-    const updatedExam = {
-      ...editingExam,
-      ...exam,
-      title: exam.title.trim(),
-      url: exam.url?.trim() || '',
-      totalMarks,
-      duration: exam.duration || 30,
-      passingScore: exam.passingScore || 60,
-      questions: exam.questions ? exam.questions.map(q => ({
-        ...q,
-        questionText: (q.questionText ? String(q.questionText).trim() : '') || '',
-        options: q.options?.map(opt => (opt ? String(opt).trim() : '')) || [],
-        points: q.points || 1
-      })) : []
-    };
-
-    setExams(prev => prev.map(examItem => 
-      examItem.id === editingExam.id ? updatedExam : examItem
-    ));
-
-    setNewExam({ 
-      title: '', 
-      url: '', 
-      type: 'internal_exam',
-      totalMarks: 0,
-      duration: 30,
-      passingScore: 60,
-      questions: []
-    });
-    setEditingExam(null);
-    setShowExamModal(false);
-    
-    toast({
-      title: 'تم تحديث الامتحان',
-      description: `تم تحديث امتحان "${exam.title}" بنجاح`,
-      variant: 'success'
-    });
-  };
-
-  const handleDeleteExam = (examId) => {
-    if (window.confirm('هل أنت متأكد من حذف هذا الامتحان؟')) {
-      setExams(prev => prev.filter(exam => exam.id !== examId));
-      toast({
-        title: 'تم حذف الامتحان',
-        description: 'تم حذف الامتحان بنجاح',
-        variant: 'success'
-      });
-    }
   };
 
   // Save changes
@@ -839,20 +598,6 @@ const EditCourse = () => {
     setShowVideoModal(false);
     setEditingVideo(null);
     setNewVideo({ title: '', url: '', duration: 0, thumbnail: '' });
-  };
-
-  const closeExamModal = () => {
-    setShowExamModal(false);
-    setEditingExam(null);
-    setNewExam({ 
-      title: '', 
-      url: '', 
-      type: 'internal_exam',
-      totalMarks: 0,
-      duration: 30,
-      passingScore: 60,
-      questions: []
-    });
   };
 
   if (loading) {
@@ -1120,7 +865,7 @@ const EditCourse = () => {
                     <p>لا توجد فيديوهات في هذه الدورة</p>
                   </div>
                 ) : (
-                  videos.map((video, index) => (
+                  videos.map((video) => (
                     <motion.div
                       key={video.id}
                       initial={{ opacity: 0, y: 20 }}
@@ -1188,143 +933,13 @@ const EditCourse = () => {
               </div>
             </LuxuryCard>
 
-            {/* Exams Section */}
+            {/* Exams Section - Modern dynamic builder (add/remove options, add question anywhere) */}
             <LuxuryCard className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg" style={{ backgroundColor: colors.accent + '20' }}>
-                    <FileCheck size={20} color={colors.accent} />
-                  </div>
-                  <h2 className="text-xl font-semibold" style={{ color: colors.text }}>
-                    امتحانات الدورة
-                  </h2>
-                  <span className="px-2 py-1 rounded-full text-sm" style={{ backgroundColor: colors.accent + '20', color: colors.accent }}>
-                    {exams.length}
-                  </span>
-                </div>
-                
-                <LuxuryButton
-                  onClick={() => setShowExamModal(true)}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold shadow-lg hover:shadow-xl transform  transition-all duration-300 border-0"
-                >
-                  <Plus size={18} className="animate-pulse" />
-                  إضافة امتحان
-                </LuxuryButton>
-              </div>
-
-              <div className="space-y-3">
-                {exams.length === 0 ? (
-                  <div className="text-center py-8" style={{ color: colors.textMuted }}>
-                    <FileCheck size={48} className="mx-auto mb-4 opacity-50" />
-                    <p>لا توجد امتحانات في هذه الدورة</p>
-                  </div>
-                ) : (
-                  exams.map((exam, index) => (
-                    <motion.div
-                      key={exam.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-4 rounded-lg border-2 transition-colors duration-150
- hover:shadow-md"
-                      style={{
-                        borderColor: colors.border,
-                        backgroundColor: colors.background
-                      }}
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0 p-3 rounded-lg" style={{ backgroundColor: colors.accent + '20' }}>
-                          {exam.type === 'internal_exam' ? (
-                            <BookOpen size={20} color={colors.accent} />
-                          ) : (
-                            <ExternalLink size={20} color={colors.accent} />
-                          )}
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-medium truncate" style={{ color: colors.text }}>
-                              {exam.title}
-                            </h3>
-                            <span className="inline-block px-2 py-1 rounded text-xs" style={{ 
-                              backgroundColor: exam.type === 'internal_exam' ? colors.success + '20' : colors.accent + '20', 
-                              color: exam.type === 'internal_exam' ? colors.success : colors.accent 
-                            }}>
-                              {exam.type === 'internal_exam' ? 'داخلي' : 
-                               exam.type === 'google_form' ? 'Google Form' : 
-                               exam.type === 'external' ? 'خارجي' : 'رابط'}
-                            </span>
-                            {exam.migratedFromGoogleForm && (
-                              <span className="inline-block px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800">
-                                مهاجر
-                              </span>
-                            )}
-                          </div>
-                          
-                          {exam.type === 'internal_exam' ? (
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-4 text-sm" style={{ color: colors.textMuted }}>
-                                <span>أسئلة: {exam.questions?.length || 0}</span>
-                                <span>نقاط: {exam.totalPoints || 0}</span>
-                                <span>علامات: {exam.totalMarks || 0}</span>
-                                <span>مدة: {exam.duration || 0} دقيقة</span>
-                                <span>نجاح: {exam.passingScore || 0}%</span>
-                              </div>
-                              {exam.questions && exam.questions.length > 0 && (
-                                <div className="text-xs" style={{ color: colors.textMuted }}>
-                                  آخر سؤال: {exam.questions[exam.questions.length - 1]?.questionText?.substring(0, 50)}...
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="space-y-1">
-                              <p className="text-sm truncate" style={{ color: colors.textMuted }}>
-                                {exam.url}
-                              </p>
-                              {exam.migrationNote && (
-                                <p className="text-xs text-yellow-600">
-                                  {exam.migrationNote}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          {exam.type !== 'internal_exam' && exam.url && (
-                            <LuxuryButton
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => window.open(exam.url, '_blank')}
-                              className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-colors duration-150
- "
-                            >
-                              <ExternalLink size={16} />
-                            </LuxuryButton>
-                          )}
-                          <LuxuryButton
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditExam(exam)}
-                            className="p-2 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-yellow-600 hover:text-yellow-700 transition-colors duration-150
- "
-                          >
-                            <Edit size={16} />
-                          </LuxuryButton>
-                          <LuxuryButton
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteExam(exam.id)}
-                            className="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 transition-colors duration-150
- "
-                          >
-                            <Trash2 size={16} />
-                          </LuxuryButton>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))
-                )}
-              </div>
+              <IntegratedExamBuilder
+                exams={exams}
+                onExamsChange={setExams}
+                isDarkMode={theme.isDarkMode}
+              />
             </LuxuryCard>
           </div>
 
@@ -1387,7 +1002,8 @@ const EditCourse = () => {
                       }}
                     />
                     <div 
-                      className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-lg border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center hidden"
+                      className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-lg border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center"
+                      style={{ display: 'none' }}
                     >
                       <div className="text-center text-gray-500 dark:text-gray-400">
                         <Image size={48} className="mx-auto mb-2 opacity-50" />
@@ -1566,765 +1182,6 @@ const EditCourse = () => {
         )}
       </AnimatePresence>
 
-      {/* Enhanced Exam Modal - Redesigned */}
-      <AnimatePresence>
-        {showExamModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setShowExamModal(false);
-                setEditingExam(null);
-                setNewExam({
-                  title: '',
-                  url: '',
-                  type: 'internal_exam',
-                  totalMarks: 0,
-                  duration: 30,
-                  passingScore: 60,
-                  questions: []
-                });
-              }
-            }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 md:p-6"
-            style={{ direction: 'rtl' }}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col"
-              style={{ backgroundColor: colors.background, borderRadius: borderRadius.lg }}
-            >
-              {/* Sticky Header */}
-              <div 
-                className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b-2 flex-shrink-0"
-                style={{ 
-                  borderColor: colors.border,
-                  backgroundColor: colors.background,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                }}
-              >
-                <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                  <div 
-                    className="p-2.5 sm:p-3 rounded-xl flex-shrink-0"
-                    style={{ 
-                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
-                    }}
-                  >
-                    <FileCheck size={22} className="text-white sm:w-6 sm:h-6" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 
-                      className="text-lg sm:text-xl md:text-2xl font-bold truncate"
-                      style={{ color: colors.text }}
-                    >
-                      {editingExam ? 'تعديل الامتحان' : 'إضافة امتحان جديد'}
-                    </h3>
-                    <p 
-                      className="text-xs sm:text-sm mt-0.5 truncate"
-                      style={{ color: colors.textMuted }}
-                    >
-                      {editingExam ? 'قم بتعديل بيانات الامتحان' : 'أضف امتحان جديد للدورة'}
-                    </p>
-                  </div>
-                </div>
-                <LuxuryButton
-                  variant="ghost"
-                  onClick={() => {
-                    setShowExamModal(false);
-                    setEditingExam(null);
-                    setNewExam({
-                      title: '',
-                      url: '',
-                      type: 'internal_exam',
-                      totalMarks: 0,
-                      duration: 30,
-                      passingScore: 60,
-                      questions: []
-                    });
-                  }}
-                  className="p-2 sm:p-2.5 rounded-xl hover:bg-opacity-80 flex-shrink-0 transition-all duration-200"
-                  style={{ 
-                    backgroundColor: colors.error + '15',
-                    color: colors.error
-                  }}
-                >
-                  <X size={18} className="sm:w-5 sm:h-5" />
-                </LuxuryButton>
-              </div>
-
-              {/* Scrollable Content */}
-              <div 
-                className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6"
-                style={{ backgroundColor: colors.background }}
-              >
-                {/* Exam Type Selection */}
-                <div className="mb-6 sm:mb-8">
-                  <label 
-                    className="block text-sm sm:text-base font-bold mb-3 sm:mb-4"
-                    style={{ color: colors.text }}
-                  >
-                    نوع الامتحان *
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className={`p-4 sm:p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                        newExam.type === 'internal_exam'
-                          ? 'shadow-lg'
-                          : 'hover:shadow-md'
-                      }`}
-                      style={{
-                        borderColor: newExam.type === 'internal_exam' ? '#10b981' : colors.border,
-                        backgroundColor: newExam.type === 'internal_exam' 
-                          ? 'rgba(16, 185, 129, 0.1)' 
-                          : colors.background
-                      }}
-                      onClick={() => setNewExam(prev => ({ ...prev, type: 'internal_exam' }))}
-                    >
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                        <div 
-                          className={`p-2.5 sm:p-3 rounded-lg transition-all duration-200 flex-shrink-0 ${
-                            newExam.type === 'internal_exam' 
-                              ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md' 
-                              : 'bg-gray-200 dark:bg-gray-700'
-                          }`}
-                        >
-                          <BookOpen 
-                            size={20} 
-                            className={newExam.type === 'internal_exam' ? 'text-white' : 'text-gray-600 dark:text-gray-400'} 
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 
-                            className="font-bold text-sm sm:text-base mb-1"
-                            style={{ color: colors.text }}
-                          >
-                            امتحان داخلي
-                          </h4>
-                          <p 
-                            className="text-xs sm:text-sm leading-relaxed"
-                            style={{ color: colors.textMuted }}
-                          >
-                            امتحان مع أسئلة مخصصة
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
-
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className={`p-4 sm:p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                        newExam.type === 'google_form'
-                          ? 'shadow-lg'
-                          : 'hover:shadow-md'
-                      }`}
-                      style={{
-                        borderColor: newExam.type === 'google_form' ? '#10b981' : colors.border,
-                        backgroundColor: newExam.type === 'google_form' 
-                          ? 'rgba(16, 185, 129, 0.1)' 
-                          : colors.background
-                      }}
-                      onClick={() => setNewExam(prev => ({ ...prev, type: 'google_form' }))}
-                    >
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                        <div 
-                          className={`p-2.5 sm:p-3 rounded-lg transition-all duration-200 flex-shrink-0 ${
-                            newExam.type === 'google_form' 
-                              ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md' 
-                              : 'bg-gray-200 dark:bg-gray-700'
-                          }`}
-                        >
-                          <ExternalLink 
-                            size={20} 
-                            className={newExam.type === 'google_form' ? 'text-white' : 'text-gray-600 dark:text-gray-400'} 
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 
-                            className="font-bold text-sm sm:text-base mb-1"
-                            style={{ color: colors.text }}
-                          >
-                            Google Form
-                          </h4>
-                          <p 
-                            className="text-xs sm:text-sm leading-relaxed"
-                            style={{ color: colors.textMuted }}
-                          >
-                            رابط Google Form
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
-
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className={`p-4 sm:p-5 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                        newExam.type === 'external'
-                          ? 'shadow-lg'
-                          : 'hover:shadow-md'
-                      }`}
-                      style={{
-                        borderColor: newExam.type === 'external' ? '#10b981' : colors.border,
-                        backgroundColor: newExam.type === 'external' 
-                          ? 'rgba(16, 185, 129, 0.1)' 
-                          : colors.background
-                      }}
-                      onClick={() => setNewExam(prev => ({ ...prev, type: 'external' }))}
-                    >
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                        <div 
-                          className={`p-2.5 sm:p-3 rounded-lg transition-all duration-200 flex-shrink-0 ${
-                            newExam.type === 'external' 
-                              ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md' 
-                              : 'bg-gray-200 dark:bg-gray-700'
-                          }`}
-                        >
-                          <ExternalLink 
-                            size={20} 
-                            className={newExam.type === 'external' ? 'text-white' : 'text-gray-600 dark:text-gray-400'} 
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 
-                            className="font-bold text-sm sm:text-base mb-1"
-                            style={{ color: colors.text }}
-                          >
-                            رابط خارجي
-                          </h4>
-                          <p 
-                            className="text-xs sm:text-sm leading-relaxed"
-                            style={{ color: colors.textMuted }}
-                          >
-                            رابط امتحان خارجي
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  </div>
-                </div>
-
-                {/* Basic Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                  <div>
-                    <label 
-                      className="block text-sm sm:text-base font-bold mb-2"
-                      style={{ color: colors.text }}
-                    >
-                      عنوان الامتحان *
-                    </label>
-                    <input
-                      type="text"
-                      value={newExam.title}
-                      onChange={(e) => setNewExam(prev => ({ ...prev, title: e.target.value }))}
-                      className="stable-field w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2"
-                      style={{
-                        borderColor: colors.border,
-                        backgroundColor: colors.background,
-                        color: colors.text,
-                        '--tw-ring-color': '#10b981'
-                      }}
-                      placeholder="أدخل عنوان الامتحان"
-                    />
-                  </div>
-
-                  {newExam.type !== 'internal_exam' && (
-                    <div>
-                      <label 
-                        className="block text-sm sm:text-base font-bold mb-2"
-                        style={{ color: colors.text }}
-                      >
-                        رابط الامتحان *
-                      </label>
-                      <input
-                        type="url"
-                        value={newExam.url}
-                        onChange={(e) => setNewExam(prev => ({ ...prev, url: e.target.value }))}
-                        className="w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2"
-                        style={{
-                          borderColor: colors.border,
-                          backgroundColor: colors.background,
-                          color: colors.text,
-                          '--tw-ring-color': '#10b981'
-                        }}
-                        placeholder="https://forms.google.com/..."
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Exam Settings */}
-                {newExam.type === 'internal_exam' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                    <div>
-                      <label 
-                        className="block text-sm sm:text-base font-bold mb-2"
-                        style={{ color: colors.text }}
-                      >
-                        مدة الامتحان (دقيقة)
-                      </label>
-                      <div className="relative">
-                        <Clock 
-                          size={18} 
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2"
-                          style={{ color: colors.textMuted }}
-                        />
-                        <input
-                          type="number"
-                          value={newExam.duration}
-                          onChange={(e) => setNewExam(prev => ({ ...prev, duration: parseInt(e.target.value) || 30 }))}
-                          min="1"
-                          className="w-full pr-10 pl-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2"
-                          style={{
-                            borderColor: colors.border,
-                            backgroundColor: colors.background,
-                            color: colors.text,
-                            '--tw-ring-color': '#10b981'
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label 
-                        className="block text-sm sm:text-base font-bold mb-2"
-                        style={{ color: colors.text }}
-                      >
-                        درجة النجاح (%)
-                      </label>
-                      <div className="relative">
-                        <div 
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm font-semibold"
-                          style={{ color: colors.textMuted }}
-                        >
-                          %
-                        </div>
-                        <input
-                          type="number"
-                          value={newExam.passingScore}
-                          onChange={(e) => setNewExam(prev => ({ ...prev, passingScore: parseInt(e.target.value) || 60 }))}
-                          min="0"
-                          max="100"
-                          className="w-full pr-10 pl-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2"
-                          style={{
-                            borderColor: colors.border,
-                            backgroundColor: colors.background,
-                            color: colors.text,
-                            '--tw-ring-color': '#10b981'
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label 
-                        className="block text-sm sm:text-base font-bold mb-2"
-                        style={{ color: colors.text }}
-                      >
-                        إجمالي الدرجات
-                      </label>
-                      <div 
-                        className="w-full px-4 py-3 rounded-xl border-2 font-bold text-center"
-                        style={{
-                          borderColor: colors.border,
-                          backgroundColor: colors.accent + '15',
-                          color: colors.accent
-                        }}
-                      >
-                        {newExam.questions?.reduce((total, question) => total + (question.points || 1), 0) || 0} نقطة
-                      </div>
-                      <p 
-                        className="text-xs mt-1.5 text-center"
-                        style={{ color: colors.textMuted }}
-                      >
-                        يتم حسابها تلقائياً
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Questions Section */}
-                {newExam.type === 'internal_exam' && (
-                  <div className="mb-6">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-5">
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <div 
-                          className="p-2 rounded-lg"
-                          style={{ backgroundColor: colors.accent + '20' }}
-                        >
-                          <FileText size={20} color={colors.accent} />
-                        </div>
-                        <h4 
-                          className="text-base sm:text-lg font-bold"
-                          style={{ color: colors.text }}
-                        >
-                          أسئلة الامتحان
-                          <span 
-                            className="mr-2 px-2 py-0.5 rounded-full text-xs font-semibold"
-                            style={{ 
-                              backgroundColor: colors.accent + '20',
-                              color: colors.accent
-                            }}
-                          >
-                            {newExam.questions?.length || 0}
-                          </span>
-                        </h4>
-                      </div>
-                      <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                        <LuxuryButton
-                          onClick={() => {
-                            const newQuestion = {
-                              id: `q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                              questionText: '',
-                              type: 'multiple_choice',
-                              options: ['', '', '', ''],
-                              correctAnswer: null,
-                              points: 1
-                            };
-                            setNewExam(prev => ({
-                              ...prev,
-                              questions: [...(prev.questions || []), newQuestion]
-                            }));
-                          }}
-                          className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200 text-sm"
-                        >
-                          <Plus size={16} className="ml-1.5 inline" />
-                          اختيار من متعدد
-                        </LuxuryButton>
-                        <LuxuryButton
-                          onClick={() => {
-                            const newQuestion = {
-                              id: `q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                              questionText: '',
-                              type: 'true_false',
-                              options: ['صحيح', 'خطأ'],
-                              correctAnswer: null,
-                              points: 1
-                            };
-                            setNewExam(prev => ({
-                              ...prev,
-                              questions: [...(prev.questions || []), newQuestion]
-                            }));
-                          }}
-                          className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold shadow-md hover:shadow-lg transition-all duration-200 text-sm"
-                        >
-                          <Plus size={16} className="ml-1.5 inline" />
-                          صح وخطأ
-                        </LuxuryButton>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4 sm:space-y-5">
-                      {newExam.questions?.map((question, index) => (
-                        <motion.div
-                          key={question.id || `q_${index}`}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="p-4 sm:p-5 rounded-xl border-2 transition-all duration-200 hover:shadow-md"
-                          style={{
-                            borderColor: colors.border,
-                            backgroundColor: colors.background
-                          }}
-                        >
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 pb-3 border-b"
-                            style={{ borderColor: colors.border }}
-                          >
-                            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                              <div 
-                                className="px-3 py-1 rounded-lg font-bold text-sm"
-                                style={{ 
-                                  backgroundColor: colors.accent + '20',
-                                  color: colors.accent
-                                }}
-                              >
-                                سؤال {index + 1}
-                              </div>
-                              <span 
-                                className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                                  question.type === 'multiple_choice' 
-                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-                                    : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                                }`}
-                              >
-                                {question.type === 'multiple_choice' ? 'اختيار من متعدد' : 'صح وخطأ'}
-                              </span>
-                            </div>
-                            <LuxuryButton
-                              onClick={() => {
-                                setNewExam(prev => ({
-                                  ...prev,
-                                  questions: prev.questions?.filter(q => q.id !== question.id) || []
-                                }));
-                              }}
-                              className="p-2 rounded-lg hover:scale-110 transition-transform duration-200"
-                              style={{ 
-                                backgroundColor: colors.error + '15',
-                                color: colors.error
-                              }}
-                            >
-                              <Trash2 size={16} />
-                            </LuxuryButton>
-                          </div>
-
-                          <div className="space-y-4">
-                            <div>
-                              <label 
-                                className="block text-sm font-semibold mb-2"
-                                style={{ color: colors.text }}
-                              >
-                                نص السؤال *
-                              </label>
-                              <textarea
-                                value={question.questionText || ''}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  setNewExam(prev => {
-                                    const updatedQuestions = (prev.questions || []).map((q, i) => 
-                                      i === index ? { ...q, questionText: value } : q
-                                    );
-                                    return { ...prev, questions: updatedQuestions };
-                                  });
-                                }}
-                                rows={2}
-                                className="stable-field w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2 resize-none"
-                                style={{
-                                  borderColor: colors.border,
-                                  backgroundColor: colors.background,
-                                  color: colors.text,
-                                  '--tw-ring-color': '#10b981'
-                                }}
-                                placeholder="أدخل نص السؤال هنا..."
-                              />
-                            </div>
-
-                            {/* Options */}
-                            <div>
-                              <label 
-                                className="block text-sm font-semibold mb-3"
-                                style={{ color: colors.text }}
-                              >
-                                الخيارات:
-                              </label>
-                              <div className="space-y-2.5">
-                                {question.options?.map((option, optIndex) => (
-                                  <motion.div
-                                    key={optIndex}
-                                    whileHover={{ x: -4 }}
-                                    className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all duration-200 ${
-                                      question.correctAnswer === optIndex
-                                        ? 'shadow-md'
-                                        : ''
-                                    }`}
-                                    style={{
-                                      borderColor: question.correctAnswer === optIndex 
-                                        ? '#10b981' 
-                                        : colors.border,
-                                      backgroundColor: question.correctAnswer === optIndex 
-                                        ? 'rgba(16, 185, 129, 0.1)' 
-                                        : colors.background
-                                    }}
-                                  >
-                                    <button
-                                      type="button"
-                                      className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-200 flex-shrink-0 hover:scale-110 ${
-                                        question.correctAnswer === optIndex
-                                          ? 'border-emerald-500 bg-emerald-500 shadow-md'
-                                          : 'border-gray-300 dark:border-gray-600 hover:border-emerald-400 bg-white dark:bg-gray-800'
-                                      }`}
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setNewExam(prev => {
-                                          const updatedQuestions = (prev.questions || []).map((q, i) => 
-                                            i === index ? { ...q, correctAnswer: optIndex } : q
-                                          );
-                                          return { ...prev, questions: updatedQuestions };
-                                        });
-                                      }}
-                                      aria-label={`اختر الخيار ${optIndex + 1} كإجابة صحيحة`}
-                                    >
-                                      {question.correctAnswer === optIndex && (
-                                        <div className="w-2.5 h-2.5 rounded-full bg-white"></div>
-                                      )}
-                                    </button>
-                                    <input
-                                      type="text"
-                                      value={option || ''}
-                                      onChange={(e) => {
-                                        const value = e.target.value;
-                                        setNewExam(prev => {
-                                          const updatedQuestions = (prev.questions || []).map((q, i) => {
-                                            if (i === index) {
-                                              const updatedOptions = [...(q.options || [])];
-                                              updatedOptions[optIndex] = value;
-                                              return { ...q, options: updatedOptions };
-                                            }
-                                            return q;
-                                          });
-                                          return { ...prev, questions: updatedQuestions };
-                                        });
-                                      }}
-                                      className={`stable-field flex-1 px-2 py-2.5 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2 ${
-                                        question.correctAnswer === optIndex
-                                          ? 'border-emerald-500'
-                                          : ''
-                                      }`}
-                                      style={{
-                                        borderColor: question.correctAnswer === optIndex 
-                                          ? '#10b981' 
-                                          : colors.border,
-                                        backgroundColor: colors.background,
-                                        color: colors.text,
-                                        '--tw-ring-color': '#10b981'
-                                      }}
-                                      placeholder={question.type === 'true_false' 
-                                        ? (optIndex === 0 ? 'صحيح' : 'خطأ') 
-                                        : `الخيار ${optIndex + 1}`}
-                                      readOnly={question.type === 'true_false'}
-                                    />
-                                    {question.correctAnswer === optIndex && (
-                                      <div 
-                                        className="flex items-center gap-1.5 flex-shrink-0 px-2 py-1 rounded-lg"
-                                        style={{ 
-                                          backgroundColor: '#10b981',
-                                          color: 'white'
-                                        }}
-                                      >
-                                        <div className="w-2 h-2 rounded-full bg-white"></div>
-                                        <span className="text-xs font-bold">صحيح</span>
-                                      </div>
-                                    )}
-                                  </motion.div>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Points */}
-                            <div className="flex items-center gap-3 pt-2 border-t"
-                              style={{ borderColor: colors.border }}
-                            >
-                              <label 
-                                className="text-sm font-semibold whitespace-nowrap"
-                                style={{ color: colors.text }}
-                              >
-                                عدد النقاط:
-                              </label>
-                              <input
-                                type="number"
-                                value={question.points || 1}
-                                onChange={(e) => {
-                                  const value = parseInt(e.target.value) || 1;
-                                  setNewExam(prev => {
-                                    const updatedQuestions = (prev.questions || []).map((q, i) => 
-                                      i === index ? { ...q, points: Math.max(1, value) } : q
-                                    );
-                                    return { ...prev, questions: updatedQuestions };
-                                  });
-                                }}
-                                min="1"
-                                className="w-24 px-3 py-2 rounded-lg border-2 transition-all duration-200 focus:outline-none focus:ring-2"
-                                style={{
-                                  borderColor: colors.border,
-                                  backgroundColor: colors.background,
-                                  color: colors.text,
-                                  '--tw-ring-color': '#10b981'
-                                }}
-                                placeholder="نقاط"
-                              />
-                            </div>
-                          </div>
-                        </motion.div>
-                      ))}
-
-                      {(!newExam.questions || newExam.questions.length === 0) && (
-                        <div 
-                          className="text-center py-12 sm:py-16 rounded-xl border-2 border-dashed"
-                          style={{ 
-                            borderColor: colors.border,
-                            backgroundColor: colors.background + '80'
-                          }}
-                        >
-                          <FileCheck 
-                            size={56} 
-                            className="mx-auto mb-4 opacity-40"
-                            style={{ color: colors.textMuted }}
-                          />
-                          <p 
-                            className="text-base font-medium mb-1"
-                            style={{ color: colors.text }}
-                          >
-                            لا توجد أسئلة بعد
-                          </p>
-                          <p 
-                            className="text-sm"
-                            style={{ color: colors.textMuted }}
-                          >
-                            اضغط على أحد الأزرار أعلاه لإضافة سؤال جديد
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Sticky Footer */}
-              <div 
-                className="flex flex-col sm:flex-row gap-3 sm:gap-4 px-4 sm:px-6 py-4 sm:py-5 border-t-2 flex-shrink-0"
-                style={{ 
-                  borderColor: colors.border,
-                  backgroundColor: colors.background,
-                  boxShadow: '0 -2px 8px rgba(0,0,0,0.05)'
-                }}
-              >
-                <LuxuryButton
-                  variant="ghost"
-                  onClick={() => {
-                    setShowExamModal(false);
-                    setEditingExam(null);
-                    setNewExam({
-                      title: '',
-                      url: '',
-                      type: 'internal_exam',
-                      totalMarks: 0,
-                      duration: 30,
-                      passingScore: 60,
-                      questions: []
-                    });
-                  }}
-                  className="flex-1 sm:flex-none sm:min-w-[120px] px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105"
-                  style={{ 
-                    backgroundColor: colors.border + '30',
-                    color: colors.text
-                  }}
-                >
-                  إلغاء
-                </LuxuryButton>
-                <LuxuryButton
-                  onClick={() => {
-                    if (editingExam) {
-                      handleUpdateExam(newExam);
-                    } else {
-                      handleAddExam(newExam);
-                    }
-                  }}
-                  className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border-0"
-                >
-                  {editingExam ? 'تحديث الامتحان' : 'إضافة الامتحان'}
-                </LuxuryButton>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };

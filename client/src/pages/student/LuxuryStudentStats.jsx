@@ -271,131 +271,33 @@ const LuxuryStudentStats = () => {
         // Try multiple API endpoints to get comprehensive data
         console.log('🔍 Trying to fetch data from multiple endpoints...');
         
-        // Add timestamp to prevent caching
-        const timestamp = Date.now();
-        const cacheBuster = `?t=${timestamp}&refresh=${forceRefresh}`;
-        
-        const [
-          statsResponse,
-          comprehensiveResponse,
-          studentResponse,
-          gradesResponse,
-          attendanceResponse,
-          testsResponse,
-          examsResponse
-        ] = await Promise.allSettled([
-          axiosInstance.get(`/api/parent/student/${user._id}/stats${cacheBuster}`),
-          axiosInstance.get(`/api/parent/student/${user._id}/comprehensive${cacheBuster}`),
-          axiosInstance.get(`/api/student/${user._id}${cacheBuster}`),
-          axiosInstance.get(`/api/student/${user._id}/grades${cacheBuster}`),
-          axiosInstance.get(`/api/student/${user._id}/attendance${cacheBuster}`),
-          axiosInstance.get(`/api/student/${user._id}/tests${cacheBuster}`),
-          axiosInstance.get(`/api/student/${user._id}/exams${cacheBuster}`)
-        ]);
-        
-        console.log('📊 API Responses:', {
-          stats: statsResponse.status,
-          comprehensive: comprehensiveResponse.status,
-          student: studentResponse.status,
-          grades: gradesResponse.status,
-          attendance: attendanceResponse.status,
-          tests: testsResponse.status,
-          exams: examsResponse.status
-        });
+        const cacheBuster = forceRefresh ? `?t=${Date.now()}` : '';
+        const res = await axiosInstance.get(`/api/parent/student/${user._id}/comprehensive${cacheBuster}`, { timeout: 15000 });
+        const data = res?.data?.success ? res.data : null;
+        if (!data) throw new Error('No data received from API');
       
-      let data = null;
-      
-      // Use comprehensive data if available, otherwise use basic stats
-      if (comprehensiveResponse.status === 'fulfilled' && comprehensiveResponse.value.data.success) {
-        data = comprehensiveResponse.value.data;
-        console.log('✅ Comprehensive data received:', data);
-      } else if (statsResponse.status === 'fulfilled' && statsResponse.value.data.success) {
-        data = statsResponse.value.data;
-        console.log('✅ Basic stats data received:', data);
-      } else if (studentResponse.status === 'fulfilled' && studentResponse.value.data.success) {
-        data = studentResponse.value.data;
-        console.log('✅ Student data received:', data);
-      } else if (gradesResponse.status === 'fulfilled' && gradesResponse.value.data.success) {
-        data = gradesResponse.value.data;
-        console.log('✅ Grades data received:', data);
-      } else if (attendanceResponse.status === 'fulfilled' && attendanceResponse.value.data.success) {
-        data = attendanceResponse.value.data;
-        console.log('✅ Attendance data received:', data);
-      } else {
-        console.log('❌ All API calls failed:', {
-          stats: statsResponse.status === 'rejected' ? statsResponse.reason : 'fulfilled',
-          comprehensive: comprehensiveResponse.status === 'rejected' ? comprehensiveResponse.reason : 'fulfilled',
-          student: studentResponse.status === 'rejected' ? studentResponse.reason : 'fulfilled',
-          grades: gradesResponse.status === 'rejected' ? gradesResponse.reason : 'fulfilled',
-          attendance: attendanceResponse.status === 'rejected' ? attendanceResponse.reason : 'fulfilled'
-        });
-        throw new Error('No data received from any API endpoint');
-      }
-      
-            // Process the data
+            // Process the data - real data only, no fake fallbacks
             if (data) {
-              // Update student data
-              setStudentData(data.student || data.data?.student || {
-                name: user.name || 'الطالب',
-                email: user.email || 'student@example.com',
-                studentId: user.studentId || 'ST001',
-                grade: user.grade || 'الصف العاشر',
-                section: user.section || 'أ'
+              const rawStudent = data.student || data.data?.student;
+              setStudentData(rawStudent ? { ...rawStudent } : {
+                firstName: user?.firstName || 'الطالب',
+                secondName: user?.secondName || '',
+                name: user?.name || 'الطالب',
+                email: user?.email || '',
+                studentId: user?.studentId || '',
+                grade: user?.grade || '',
+                section: user?.section || ''
               });
-              
-              // Set statistics with fallback data
-              const statsData = data.statistics || data.data?.statistics || {
-                totalCourses: 6,
-                completedCourses: 4,
-                averageGrade: 85,
-                attendanceRate: 92
-              };
-              setStatistics(statsData);
-              
-              // Set enrolled courses with fallback data
-              const coursesData = data.enrolledCourses || data.data?.enrolledCourses || [
-                {
-                  _id: '1',
-                  name: 'الرياضيات',
-                  courseName: 'الرياضيات',
-                  teacher: 'أ. أحمد محمد',
-                  progress: 85,
-                  status: 'active',
-                  imageUrl: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=300&fit=crop',
-                  subject: 'الرياضيات'
-                },
-                {
-                  _id: '2',
-                  name: 'العلوم',
-                  courseName: 'العلوم',
-                  teacher: 'أ. فاطمة علي',
-                  progress: 92,
-                  status: 'active',
-                  imageUrl: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400&h=300&fit=crop',
-                  subject: 'العلوم'
-                },
-                {
-                  _id: '3',
-                  name: 'اللغة العربية',
-                  courseName: 'اللغة العربية',
-                  teacher: 'أ. خالد حسن',
-                  progress: 78,
-                  status: 'active',
-                  imageUrl: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop',
-                  subject: 'اللغة العربية'
-                },
-                {
-                  _id: '4',
-                  name: 'التاريخ',
-                  courseName: 'التاريخ',
-                  teacher: 'أ. نور الدين',
-                  progress: 88,
-                  status: 'completed',
-                  imageUrl: '',
-                  subject: 'التاريخ'
-                }
-              ];
-              
+
+              const rawStats = data.statistics || data.data?.statistics;
+              setStatistics(rawStats ? { ...rawStats } : {
+                totalCourses: 0,
+                completedCourses: 0,
+                averageGrade: 0,
+                attendanceRate: 0
+              });
+
+              const coursesData = data.enrolledCourses || data.data?.enrolledCourses || [];
               console.log('📚 Enrolled courses data:', coursesData);
               setEnrolledCourses(coursesData);
               
@@ -458,7 +360,7 @@ const LuxuryStudentStats = () => {
         // Process charts data
         const charts = data.progressCharts || data.charts || data.data?.charts || {};
         
-        // Grade progression - use real data or create sample data
+        // Grade progression - real data only; empty when none
         if (charts.gradeProgression && charts.gradeProgression.length > 0) {
           setGradeProgression(charts.gradeProgression.map(item => ({
             month: item.month,
@@ -466,18 +368,10 @@ const LuxuryStudentStats = () => {
             target: item.target || 90
           })));
         } else {
-          // Create sample grade progression data
-          setGradeProgression([
-            { month: 'يناير', grade: 75, target: 90 },
-            { month: 'فبراير', grade: 80, target: 90 },
-            { month: 'مارس', grade: 85, target: 90 },
-            { month: 'أبريل', grade: 88, target: 90 },
-            { month: 'مايو', grade: 92, target: 90 },
-            { month: 'يونيو', grade: 95, target: 90 }
-          ]);
+          setGradeProgression([]);
         }
-        
-        // Subject performance - use real data or create sample data
+
+        // Subject performance - real data only; empty when none
         if (charts.subjectDistribution && charts.subjectDistribution.length > 0) {
           const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
           setSubjectPerformance(charts.subjectDistribution.map((item, index) => ({
@@ -486,48 +380,23 @@ const LuxuryStudentStats = () => {
             color: item.color || colors[index % colors.length]
           })));
         } else {
-          // Create sample subject performance data
-          setSubjectPerformance([
-            { subject: 'الرياضيات', score: 85, color: '#3B82F6' },
-            { subject: 'العلوم', score: 92, color: '#10B981' },
-            { subject: 'اللغة العربية', score: 78, color: '#F59E0B' },
-            { subject: 'التاريخ', score: 88, color: '#EF4444' },
-            { subject: 'الجغرافيا', score: 82, color: '#8B5CF6' },
-            { subject: 'اللغة الإنجليزية', score: 90, color: '#06B6D4' }
-          ]);
+          setSubjectPerformance([]);
         }
-        
-        // Completion data - use real data or create sample data
+
+        // Completion data - real data only; zeros when none
         if (charts.completionRates && charts.completionRates.length > 0) {
           setCompletionData(charts.completionRates);
         } else {
-          // Create sample completion data
           setCompletionData([
-            { name: 'مكتمل', value: 75, color: '#10B981' },
-            { name: 'قيد التقدم', value: 25, color: '#F59E0B' }
+            { name: 'مكتمل', value: 0, color: '#10B981' },
+            { name: 'قيد التقدم', value: 0, color: '#F59E0B' }
           ]);
         }
         
-        // Attendance data - only use real data, no sample data
-        let attendanceData = [];
-        
-        // Try to get attendance data from multiple sources
-        if (charts.attendanceChart && charts.attendanceChart.length > 0) {
-          attendanceData = charts.attendanceChart;
-          console.log('✅ Real attendance data loaded from charts:', attendanceData);
-        } else if (attendanceResponse.status === 'fulfilled' && attendanceResponse.value.data.success) {
-          attendanceData = attendanceResponse.value.data.attendance || attendanceResponse.value.data.data || [];
-          console.log('✅ Real attendance data loaded from attendance endpoint:', attendanceData);
-        } else if (data.attendance && data.attendance.length > 0) {
-          attendanceData = data.attendance;
-          console.log('✅ Real attendance data loaded from main data:', attendanceData);
-        } else {
-          console.log('⚠️ No attendance data found in any API response');
-        }
-        
+        const attendanceData = charts.attendanceChart?.length > 0
+          ? charts.attendanceChart
+          : (data.attendance && data.attendance.length > 0 ? data.attendance : []);
         setAttendanceData(attendanceData);
-        
-        console.log('Data processed successfully');
         setLastRefreshTime(new Date());
       }
       
@@ -536,62 +405,34 @@ const LuxuryStudentStats = () => {
       setError(error.message);
       toast({
         title: "خطأ في تحميل البيانات",
-        description: "فشل في تحميل إحصائياتك من قاعدة البيانات. سيتم عرض بيانات تجريبية للاختبار.",
+        description: "فشل في تحميل إحصائياتك. سيتم عرض القيم الفارغة أو صفر.",
         variant: "destructive",
       });
-      
-      // Set fallback data for testing
       setStatistics({
-        totalCourses: 6,
-        completedCourses: 4,
-        averageGrade: 85,
-        attendanceRate: 92
+        totalCourses: 0,
+        completedCourses: 0,
+        averageGrade: 0,
+        attendanceRate: 0
       });
       setStudentData({
-        name: user.name || 'الطالب',
-        email: user.email || 'student@example.com',
-        studentId: user.studentId || 'ST001',
-        grade: user.grade || 'الصف العاشر',
-        section: user.section || 'أ'
+        firstName: user?.firstName || 'الطالب',
+        secondName: user?.secondName || '',
+        name: user?.name || 'الطالب',
+        email: user?.email || '',
+        studentId: user?.studentId || '',
+        grade: user?.grade || '',
+        section: user?.section || ''
       });
-           setEnrolledCourses([
-             {
-               _id: '1',
-               name: 'الرياضيات',
-               courseName: 'الرياضيات',
-               teacher: 'أ. أحمد محمد',
-               progress: 85,
-               status: 'active',
-               imageUrl: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=400&h=300&fit=crop',
-               subject: 'الرياضيات'
-             },
-             {
-               _id: '2',
-               name: 'العلوم',
-               courseName: 'العلوم',
-               teacher: 'أ. فاطمة علي',
-               progress: 92,
-               status: 'active',
-               imageUrl: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400&h=300&fit=crop',
-               subject: 'العلوم'
-             }
-           ]);
-      setGradesData([]); // No mock grades data
+      setEnrolledCourses([]);
+      setGradesData([]);
       setRecentActivity([]);
-      setGradeProgression([
-        { month: 'يناير', grade: 75, target: 90 },
-        { month: 'فبراير', grade: 80, target: 90 },
-        { month: 'مارس', grade: 85, target: 90 }
-      ]);
-      setSubjectPerformance([
-        { subject: 'الرياضيات', score: 85, color: '#3B82F6' },
-        { subject: 'العلوم', score: 92, color: '#10B981' }
-      ]);
+      setGradeProgression([]);
+      setSubjectPerformance([]);
       setCompletionData([
-        { name: 'مكتمل', value: 75, color: '#10B981' },
-        { name: 'قيد التقدم', value: 25, color: '#F59E0B' }
+        { name: 'مكتمل', value: 0, color: '#10B981' },
+        { name: 'قيد التقدم', value: 0, color: '#F59E0B' }
       ]);
-      setAttendanceData([]); // No mock attendance data
+      setAttendanceData([]);
     } finally {
       setLoading(false);
       isFetchingRef.current = false;

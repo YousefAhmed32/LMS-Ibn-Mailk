@@ -2,63 +2,79 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../hooks/useNotification';
-import LuxuryCard from '../../components/ui/LuxuryCard';
-import LuxuryButton from '../../components/ui/LuxuryButton';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import { motion as Motion, AnimatePresence } from 'framer-motion';
+import {
   User,
   Settings,
   ShoppingBag,
   MapPin,
   Bell,
   Shield,
-  CreditCard,
   BookOpen,
   Clock,
   CheckCircle,
-  XCircle,
   Edit,
   Save,
   X,
   Camera,
   Mail,
   Phone,
-  Calendar,
-  Award,
-  TrendingUp,
-  Star,
-  Download,
-  Eye,
-  EyeOff,
   ChevronRight,
-  Copy,
   Clipboard
 } from 'lucide-react';
 import axiosInstance from '../../api/axiosInstance';
 
+// لوحة ألوان فاخرة لمنصة تعليمية راقية — تعمل في الوضع الفاتح والداكن
+const getPremiumPalette = (isDark) => (isDark ? {
+  bg: 'linear-gradient(160deg, #0c0c14 0%, #12121f 50%, #0a0a12 100%)',
+  card: 'rgba(18, 18, 28, 0.85)',
+  cardBorder: 'rgba(180, 150, 80, 0.2)',
+  cardAccent: 'linear-gradient(180deg, rgba(200, 165, 90, 0.35) 0%, transparent 100%)',
+  gold: '#c9a227',
+  goldLight: '#e0c45c',
+  goldMuted: 'rgba(201, 162, 39, 0.25)',
+  text: '#f5f5f7',
+  textSoft: '#b8b8c0',
+  textMuted: '#7a7a88',
+  inputBg: 'rgba(26, 26, 38, 0.8)',
+  inputBorder: 'rgba(60, 60, 75, 0.9)',
+  success: '#34d399',
+  successSoft: 'rgba(52, 211, 153, 0.2)',
+  warning: '#fbbf24',
+  warningSoft: 'rgba(251, 191, 36, 0.2)',
+  shadow: '0 24px 48px -12px rgba(0,0,0,0.45)',
+  glow: '0 0 32px rgba(201, 162, 39, 0.12)'
+} : {
+  bg: 'linear-gradient(160deg, #fafaf9 0%, #f5f3ef 50%, #f0ede8 100%)',
+  card: 'rgba(255, 255, 255, 0.92)',
+  cardBorder: 'rgba(180, 150, 80, 0.25)',
+  cardAccent: 'linear-gradient(180deg, rgba(200, 165, 90, 0.2) 0%, transparent 100%)',
+  gold: '#a67c00',
+  goldLight: '#c9a227',
+  goldMuted: 'rgba(166, 124, 0, 0.12)',
+  text: '#1a1a1f',
+  textSoft: '#4a4a52',
+  textMuted: '#6b6b75',
+  inputBg: 'rgba(255, 255, 255, 0.95)',
+  inputBorder: 'rgba(0, 0, 0, 0.08)',
+  success: '#059669',
+  successSoft: 'rgba(5, 150, 105, 0.12)',
+  warning: '#d97706',
+  warningSoft: 'rgba(217, 119, 6, 0.12)',
+  shadow: '0 24px 48px -12px rgba(0,0,0,0.08)',
+  glow: '0 0 32px rgba(166, 124, 0, 0.08)'
+});
+
 const LuxuryMyAccountPage = () => {
   const theme = useTheme();
-  const { colors, spacing, borderRadius, typography, shadows, isDarkMode } = theme;
-  const { user, updateUser, refreshUser } = useAuth();
-  const { showSuccess, showError, showInfo } = useNotification();
-  
-  // Add CSS for spinner animation
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-    `;
-    document.head.appendChild(style);
-    return () => document.head.removeChild(style);
-  }, []);
+  const { typography } = theme;
+  const palette = getPremiumPalette(theme.isDarkMode);
+  const { user, updateUser } = useAuth();
+  const { showSuccess, showError } = useNotification();
   
   const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     secondName: '',
@@ -112,6 +128,7 @@ const LuxuryMyAccountPage = () => {
     if (activeTab === 'orders') {
       fetchEnrollments();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchEnrollments is stable, avoid refetch loop
   }, [activeTab]);
 
   const handleInputChange = (e) => {
@@ -160,8 +177,6 @@ const LuxuryMyAccountPage = () => {
   // Copy Student ID function
   const copyStudentId = async (studentId) => {
     try {
-      console.log('Copying Student ID:', studentId);
-      
       // Try modern clipboard API first
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(studentId);
@@ -194,408 +209,196 @@ const LuxuryMyAccountPage = () => {
     { id: 'settings', label: 'الإعدادات', icon: Settings }
   ];
 
-  const ProfileTab = () => (
-    <LuxuryCard>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg }}>
-        <h3 style={{
-          color: colors.text,
-          fontSize: typography.fontSize.xl,
-          fontWeight: typography.fontWeight.bold,
-          margin: 0
-        }}>
-          الملف الشخصي
-        </h3>
-        
-        {!editing ? (
-          <LuxuryButton
-            variant="secondary"
-            size="sm"
-            onClick={() => setEditing(true)}
-          >
-            <Edit size={16} />
-            تعديل
-          </LuxuryButton>
-        ) : (
-          <div style={{ display: 'flex', gap: spacing.sm }}>
-            <LuxuryButton
-              variant="ghost"
-              size="sm"
-              onClick={handleCancelEdit}
-            >
-              <X size={16} />
-              إلغاء
-            </LuxuryButton>
-            <LuxuryButton
-              variant="primary"
-              size="sm"
-              onClick={handleSaveProfile}
-              loading={loading}
-            >
-              <Save size={16} />
-              حفظ
-            </LuxuryButton>
-          </div>
-        )}
-      </div>
+  const inputBase = {
+    width: '100%',
+    minHeight: '48px',
+    padding: '0.75rem 1rem',
+    borderRadius: '12px',
+    border: `1px solid ${palette.inputBorder}`,
+    background: palette.inputBg,
+    color: palette.text,
+    fontSize: typography.fontSize.base,
+    outline: 'none',
+    transition: 'border-color 0.2s, box-shadow 0.2s'
+  };
+  const inputFocus = () => ({ borderColor: palette.gold, boxShadow: `0 0 0 3px ${palette.goldMuted}` });
 
-      <div style={{ display: 'flex', gap: spacing.lg, alignItems: 'flex-start' }}>
-        {/* Profile Picture */}
-        <div style={{ flexShrink: 0 }}>
-          <div style={{
-            width: '120px',
-            height: '120px',
-            background: colors.accent,
-            borderRadius: borderRadius.full,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: colors.background,
-            fontSize: typography.fontSize['3xl'],
-            fontWeight: typography.fontWeight.bold,
-            position: 'relative',
-            marginBottom: spacing.md
-          }}>
-            {user?.firstName?.charAt(0) || 'U'}
-            {editing && (
+  const ProfileTab = () => (
+    <Motion.div
+      className="rounded-2xl overflow-hidden border"
+      style={{
+        background: palette.card,
+        borderColor: palette.cardBorder,
+        boxShadow: palette.shadow,
+        borderRight: `3px solid ${palette.gold}`
+      }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="p-5 sm:p-6 md:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <h3 className="text-xl sm:text-2xl font-bold m-0" style={{ color: palette.text }}>
+            الملف الشخصي
+          </h3>
+          <div className="flex gap-3 flex-shrink-0">
+            {!editing ? (
               <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="flex items-center gap-2 min-h-[48px] px-5 rounded-xl font-medium transition-all duration-200 hover:opacity-90"
                 style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  right: 0,
-                  width: '32px',
-                  height: '32px',
-                  background: colors.surface,
-                  border: `2px solid ${colors.border}`,
-                  borderRadius: borderRadius.full,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  color: colors.text
+                  background: `linear-gradient(135deg, ${palette.gold} 0%, ${palette.goldLight} 100%)`,
+                  color: theme.isDarkMode ? '#0c0c14' : '#fff',
+                  border: 'none',
+                  boxShadow: palette.glow
                 }}
               >
-                <Camera size={16} />
+                <Edit size={18} />
+                تعديل
               </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="flex items-center gap-2 min-h-[48px] px-5 rounded-xl font-medium border transition-all duration-200"
+                  style={{ borderColor: palette.inputBorder, color: palette.textSoft, background: 'transparent' }}
+                >
+                  <X size={18} />
+                  إلغاء
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveProfile}
+                  disabled={loading}
+                  className="flex items-center gap-2 min-h-[48px] px-5 rounded-xl font-medium transition-all duration-200 hover:opacity-90 disabled:opacity-60"
+                  style={{
+                    background: `linear-gradient(135deg, ${palette.gold} 0%, ${palette.goldLight} 100%)`,
+                    color: theme.isDarkMode ? '#0c0c14' : '#fff',
+                    border: 'none',
+                    boxShadow: palette.glow
+                  }}
+                >
+                  {loading ? <span className="inline-block w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <Save size={18} />}
+                  حفظ
+                </button>
+              </>
             )}
           </div>
         </div>
 
-        {/* Profile Form */}
-        <div style={{ flex: 1 }}>
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-            gap: spacing.lg 
-          }}>
-            <div>
-              <label style={{
-                display: 'block',
-                color: colors.text,
-                fontSize: typography.fontSize.sm,
-                fontWeight: typography.fontWeight.medium,
-                marginBottom: spacing.xs
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xs }}>
-                  <User size={16} color={colors.accent} />
-                  الاسم الأول
-                </div>
-              </label>
-              <input
-                type="text"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleInputChange}
-                disabled={!editing}
-                style={{
-                  width: '100%',
-                  padding: spacing.md,
-                  border: `2px solid ${colors.border}`,
-                  borderRadius: borderRadius.lg,
-                  background: editing ? colors.surface : colors.background,
-                  color: colors.text,
-                  fontSize: typography.fontSize.base,
-                  outline: 'none',
-                  transition: `border-color ${theme.animations.duration.fast} ${theme.animations.easing.easeInOut}`
-                }}
-                onFocus={(e) => editing && (e.target.style.borderColor = colors.accent)}
-                onBlur={(e) => e.target.style.borderColor = colors.border}
-              />
+        <div className="flex flex-col md:flex-row gap-8 md:gap-10 items-start">
+          {/* صورة الملف */}
+          <div className="flex-shrink-0 mx-auto md:mx-0">
+            <div
+              className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl flex items-center justify-center text-3xl font-bold relative"
+              style={{
+                background: `linear-gradient(145deg, ${palette.gold} 0%, ${palette.goldLight} 100%)`,
+                color: theme.isDarkMode ? '#0c0c14' : '#fff',
+                boxShadow: palette.glow
+              }}
+            >
+              {user?.firstName?.charAt(0) || 'U'}
+              {editing && (
+                <button
+                  type="button"
+                  className="absolute bottom-0 right-0 w-10 h-10 rounded-xl flex items-center justify-center border-2 transition-all hover:scale-105"
+                  style={{
+                    background: palette.card,
+                    borderColor: palette.gold,
+                    color: palette.gold
+                  }}
+                >
+                  <Camera size={18} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* نموذج البيانات */}
+          <div className="flex-1 w-full min-w-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6">
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: palette.text }}>
+                  <span className="flex items-center gap-2">
+                    <User size={16} style={{ color: palette.gold }} />
+                    الاسم الأول
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleInputChange}
+                  disabled={!editing}
+                  style={inputBase}
+                  onFocus={(e) => editing && Object.assign(e.target.style, inputFocus())}
+                  onBlur={(e) => { e.target.style.borderColor = palette.inputBorder; e.target.style.boxShadow = 'none'; }}
+                />
             </div>
 
             <div>
-              <label style={{
-                display: 'block',
-                color: colors.text,
-                fontSize: typography.fontSize.sm,
-                fontWeight: typography.fontWeight.medium,
-                marginBottom: spacing.xs
-              }}>
-                الاسم الثاني
-              </label>
-              <input
-                type="text"
-                name="secondName"
-                value={formData.secondName}
-                onChange={handleInputChange}
-                disabled={!editing}
-                style={{
-                  width: '100%',
-                  padding: spacing.md,
-                  border: `2px solid ${colors.border}`,
-                  borderRadius: borderRadius.lg,
-                  background: editing ? colors.surface : colors.background,
-                  color: colors.text,
-                  fontSize: typography.fontSize.base,
-                  outline: 'none'
-                }}
-              />
+              <label className="block text-sm font-medium mb-2" style={{ color: palette.text }}>الاسم الثاني</label>
+              <input type="text" name="secondName" value={formData.secondName} onChange={handleInputChange} disabled={!editing} style={inputBase} />
             </div>
-
             <div>
-              <label style={{
-                display: 'block',
-                color: colors.text,
-                fontSize: typography.fontSize.sm,
-                fontWeight: typography.fontWeight.medium,
-                marginBottom: spacing.xs
-              }}>
-                الاسم الثالث
-              </label>
-              <input
-                type="text"
-                name="thirdName"
-                value={formData.thirdName}
-                onChange={handleInputChange}
-                disabled={!editing}
-                style={{
-                  width: '100%',
-                  padding: spacing.md,
-                  border: `2px solid ${colors.border}`,
-                  borderRadius: borderRadius.lg,
-                  background: editing ? colors.surface : colors.background,
-                  color: colors.text,
-                  fontSize: typography.fontSize.base,
-                  outline: 'none'
-                }}
-              />
+              <label className="block text-sm font-medium mb-2" style={{ color: palette.text }}>الاسم الثالث</label>
+              <input type="text" name="thirdName" value={formData.thirdName} onChange={handleInputChange} disabled={!editing} style={inputBase} />
             </div>
-
             <div>
-              <label style={{
-                display: 'block',
-                color: colors.text,
-                fontSize: typography.fontSize.sm,
-                fontWeight: typography.fontWeight.medium,
-                marginBottom: spacing.xs
-              }}>
-                الاسم الرابع
-              </label>
-              <input
-                type="text"
-                name="fourthName"
-                value={formData.fourthName}
-                onChange={handleInputChange}
-                disabled={!editing}
-                style={{
-                  width: '100%',
-                  padding: spacing.md,
-                  border: `2px solid ${colors.border}`,
-                  borderRadius: borderRadius.lg,
-                  background: editing ? colors.surface : colors.background,
-                  color: colors.text,
-                  fontSize: typography.fontSize.base,
-                  outline: 'none'
-                }}
-              />
+              <label className="block text-sm font-medium mb-2" style={{ color: palette.text }}>الاسم الرابع</label>
+              <input type="text" name="fourthName" value={formData.fourthName} onChange={handleInputChange} disabled={!editing} style={inputBase} />
             </div>
-
             <div>
-              <label style={{
-                display: 'block',
-                color: colors.text,
-                fontSize: typography.fontSize.sm,
-                fontWeight: typography.fontWeight.medium,
-                marginBottom: spacing.xs
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xs }}>
-                  <Mail size={16} color={colors.warning} />
-                  البريد الإلكتروني
-                </div>
+              <label className="block text-sm font-medium mb-2" style={{ color: palette.text }}>
+                <span className="flex items-center gap-2"><Mail size={16} style={{ color: palette.gold }} /> البريد الإلكتروني</span>
               </label>
-              <input
-                type="email"
-                name="userEmail"
-                value={formData.userEmail}
-                onChange={handleInputChange}
-                disabled={!editing}
-                style={{
-                  width: '100%',
-                  padding: spacing.md,
-                  border: `2px solid ${colors.border}`,
-                  borderRadius: borderRadius.lg,
-                  background: editing ? colors.surface : colors.background,
-                  color: colors.text,
-                  fontSize: typography.fontSize.base,
-                  outline: 'none'
-                }}
-              />
+              <input type="email" name="userEmail" value={formData.userEmail} onChange={handleInputChange} disabled={!editing} style={inputBase} />
             </div>
-
-            {/* Student ID Field - Only for students */}
             {user?.role === 'student' && user?._id && (
               <div>
-                <label style={{
-                  display: 'block',
-                  color: colors.text,
-                  fontSize: typography.fontSize.sm,
-                  fontWeight: typography.fontWeight.medium,
-                  marginBottom: spacing.xs
-                }}>
-                  معرف الطالب
-                </label>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: spacing.sm
-                }}>
-                  <input
-                    type="text"
-                    value={user._id}
-                    disabled
-                    style={{
-                      flex: 1,
-                      padding: spacing.md,
-                      border: `2px solid ${colors.border}`,
-                      borderRadius: borderRadius.lg,
-                      background: colors.background,
-                      color: colors.text,
-                      fontSize: typography.fontSize.base,
-                      outline: 'none',
-                      fontFamily: 'monospace'
-                    }}
-                  />
-                  <LuxuryButton
-                    variant="secondary"
-                    size="sm"
+                <label className="block text-sm font-medium mb-2" style={{ color: palette.text }}>معرف الطالب</label>
+                <div className="flex items-center gap-2">
+                  <input type="text" value={user._id} disabled readOnly style={{ ...inputBase, flex: 1, fontFamily: 'monospace' }} />
+                  <button
+                    type="button"
                     onClick={() => copyStudentId(user._id)}
-                    style={{
-                      minWidth: 'auto',
-                      padding: spacing.md
-                    }}
+                    className="min-h-[48px] px-4 rounded-xl flex items-center justify-center transition-all hover:opacity-90"
+                    style={{ background: palette.goldMuted, color: palette.gold, border: 'none' }}
                   >
-                    <Clipboard size={16} />
-                  </LuxuryButton>
+                    <Clipboard size={18} />
+                  </button>
                 </div>
               </div>
             )}
-
             <div>
-              <label style={{
-                display: 'block',
-                color: colors.text,
-                fontSize: typography.fontSize.sm,
-                fontWeight: typography.fontWeight.medium,
-                marginBottom: spacing.xs
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xs }}>
-                  <Phone size={16} color={colors.accent} />
-                  رقم هاتف الطالب
-                </div>
+              <label className="block text-sm font-medium mb-2" style={{ color: palette.text }}>
+                <span className="flex items-center gap-2"><Phone size={16} style={{ color: palette.gold }} /> رقم هاتف الطالب</span>
               </label>
-              <input
-                type="tel"
-                name="phoneStudent"
-                value={formData.phoneStudent}
-                onChange={handleInputChange}
-                disabled={!editing}
-                placeholder="+201234567890"
-                style={{
-                  width: '100%',
-                  padding: spacing.md,
-                  border: `2px solid ${colors.border}`,
-                  borderRadius: borderRadius.lg,
-                  background: editing ? colors.surface : colors.background,
-                  color: colors.text,
-                  fontSize: typography.fontSize.base,
-                  outline: 'none'
-                }}
-              />
+              <input type="tel" name="phoneStudent" value={formData.phoneStudent} onChange={handleInputChange} disabled={!editing} placeholder="+201234567890" style={inputBase} />
             </div>
-
-            {/* Guardian Phone Field - Only for students */}
             {user?.role === 'student' && (
               <div>
-                <label style={{
-                  display: 'block',
-                  color: colors.text,
-                  fontSize: typography.fontSize.sm,
-                  fontWeight: typography.fontWeight.medium,
-                  marginBottom: spacing.xs
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xs }}>
-                    <Phone size={16} color={colors.success} />
-                    رقم هاتف ولي الأمر
-                  </div>
+                <label className="block text-sm font-medium mb-2" style={{ color: palette.text }}>
+                  <span className="flex items-center gap-2"><Phone size={16} style={{ color: palette.success }} /> رقم هاتف ولي الأمر</span>
                 </label>
-                <input
-                  type="tel"
-                  name="guardianPhone"
-                  value={formData.guardianPhone}
-                  onChange={handleInputChange}
-                  disabled={!editing}
-                  placeholder="+201234567890"
-                  style={{
-                    width: '100%',
-                    padding: spacing.md,
-                    border: `2px solid ${colors.border}`,
-                    borderRadius: borderRadius.lg,
-                    background: editing ? colors.surface : colors.background,
-                    color: colors.text,
-                    fontSize: typography.fontSize.base,
-                    outline: 'none'
-                  }}
-                />
+                <input type="tel" name="guardianPhone" value={formData.guardianPhone} onChange={handleInputChange} disabled={!editing} placeholder="+201234567890" style={inputBase} />
                 {!formData.guardianPhone && !editing && (
-                  <p style={{
-                    color: colors.textMuted,
-                    fontSize: typography.fontSize.xs,
-                    margin: `${spacing.xs} 0 0 0`,
-                    fontStyle: 'italic'
-                  }}>
-                    غير محدد
-                  </p>
+                  <p className="text-xs mt-1 italic" style={{ color: palette.textMuted }}>غير محدد</p>
                 )}
               </div>
             )}
-
             <div>
-              <label style={{
-                display: 'block',
-                color: colors.text,
-                fontSize: typography.fontSize.sm,
-                fontWeight: typography.fontWeight.medium,
-                marginBottom: spacing.xs
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xs }}>
-                  <MapPin size={16} color={colors.error} />
-                  المحافظة
-                </div>
+              <label className="block text-sm font-medium mb-2" style={{ color: palette.text }}>
+                <span className="flex items-center gap-2"><MapPin size={16} style={{ color: palette.gold }} /> المحافظة</span>
               </label>
               <select
                 name="governorate"
                 value={formData.governorate}
                 onChange={handleInputChange}
                 disabled={!editing}
-                style={{
-                  width: '100%',
-                  padding: spacing.md,
-                  border: `2px solid ${colors.border}`,
-                  borderRadius: borderRadius.lg,
-                  background: editing ? colors.surface : colors.background,
-                  color: colors.text,
-                  fontSize: typography.fontSize.base,
-                  outline: 'none'
-                }}
+                style={inputBase}
               >
                 <option value="">اختر المحافظة</option>
                 <option value="Cairo">القاهرة</option>
@@ -613,47 +416,13 @@ const LuxuryMyAccountPage = () => {
                 <option value="Ismailia">الإسماعيلية</option>
                 <option value="Suez">السويس</option>
               </select>
-              {!formData.governorate && !editing && (
-                <p style={{
-                  color: colors.textMuted,
-                  fontSize: typography.fontSize.xs,
-                  margin: `${spacing.xs} 0 0 0`,
-                  fontStyle: 'italic'
-                }}>
-                  غير محدد
-                </p>
-              )}
+              {!formData.governorate && !editing && <p className="text-xs mt-1 italic" style={{ color: palette.textMuted }}>غير محدد</p>}
             </div>
-
             <div>
-              <label style={{
-                display: 'block',
-                color: colors.text,
-                fontSize: typography.fontSize.sm,
-                fontWeight: typography.fontWeight.medium,
-                marginBottom: spacing.xs
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xs }}>
-                  <BookOpen size={16} color={colors.info} />
-                  الصف الدراسي
-                </div>
+              <label className="block text-sm font-medium mb-2" style={{ color: palette.text }}>
+                <span className="flex items-center gap-2"><BookOpen size={16} style={{ color: palette.gold }} /> الصف الدراسي</span>
               </label>
-              <select
-                name="grade"
-                value={formData.grade}
-                onChange={handleInputChange}
-                disabled={!editing}
-                style={{
-                  width: '100%',
-                  padding: spacing.md,
-                  border: `2px solid ${colors.border}`,
-                  borderRadius: borderRadius.lg,
-                  background: editing ? colors.surface : colors.background,
-                  color: colors.text,
-                  fontSize: typography.fontSize.base,
-                  outline: 'none'
-                }}
-              >
+              <select name="grade" value={formData.grade} onChange={handleInputChange} disabled={!editing} style={inputBase}>
                 <option value="">اختر الصف الدراسي</option>
                 <option value="أولى إعدادي">أولى إعدادي</option>
                 <option value="تانية إعدادي">تانية إعدادي</option>
@@ -662,358 +431,315 @@ const LuxuryMyAccountPage = () => {
                 <option value="تانية ثانوي">تانية ثانوي</option>
                 <option value="تالتة ثانوي">تالتة ثانوي</option>
               </select>
-              {!formData.grade && !editing && (
-                <p style={{
-                  color: colors.textMuted,
-                  fontSize: typography.fontSize.xs,
-                  margin: `${spacing.xs} 0 0 0`,
-                  fontStyle: 'italic'
-                }}>
-                  غير محدد
-                </p>
-              )}
+              {!formData.grade && !editing && <p className="text-xs mt-1 italic" style={{ color: palette.textMuted }}>غير محدد</p>}
             </div>
           </div>
         </div>
       </div>
-    </LuxuryCard>
+      </div>
+    </Motion.div>
   );
 
-  const OrdersTab = () => (
-    <LuxuryCard>
-      <h3 style={{
-        color: colors.text,
-        fontSize: typography.fontSize.xl,
-        fontWeight: typography.fontWeight.bold,
-        margin: 0,
-        marginBottom: spacing.lg
-      }}>
+  function OrdersTab() {
+    return (
+    <Motion.div
+      className="rounded-2xl overflow-hidden border p-5 sm:p-6 md:p-8"
+      style={{
+        background: palette.card,
+        borderColor: palette.cardBorder,
+        boxShadow: palette.shadow,
+        borderRightWidth: 3,
+        borderRightStyle: 'solid',
+        borderRightColor: palette.gold
+      }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <h3 className="text-xl sm:text-2xl font-bold mb-6" style={{ color: palette.text, margin: 0 }}>
         طلباتي
       </h3>
       
       {loadingEnrollments ? (
-        <div style={{ textAlign: 'center', padding: spacing['2xl'] }}>
-          <div style={{ 
-            width: '40px', 
-            height: '40px', 
-            border: `3px solid ${colors.border}`,
-            borderTop: `3px solid ${colors.accent}`,
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto',
-            marginBottom: spacing.md
-          }}></div>
-          <p style={{ color: colors.textMuted, margin: 0 }}>جاري تحميل طلباتك...</p>
+        <div className="text-center py-14">
+          <div
+            className="w-12 h-12 border-2 rounded-full animate-spin mx-auto mb-4"
+            style={{ borderColor: palette.inputBorder, borderTopColor: palette.gold }}
+          />
+          <p className="text-base" style={{ color: palette.textSoft, margin: 0 }}>
+            جاري تحميل طلباتك...
+          </p>
         </div>
       ) : (enrollments.length > 0 || (user?.enrolledCourses && user.enrolledCourses.length > 0)) ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
-          {(enrollments.length > 0 ? enrollments : user.enrolledCourses || []).map((enrollment, index) => (
-            <div
-              key={index}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: spacing.md,
-                padding: spacing.lg,
-                background: colors.surface,
-                borderRadius: borderRadius.lg,
-                border: `1px solid ${colors.border}`
-              }}
-            >
-              <div style={{
-                width: '60px',
-                height: '60px',
-                background: colors.accent,
-                borderRadius: borderRadius.lg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: colors.background,
-                flexShrink: 0
-              }}>
-                <BookOpen size={24} />
+        <div className="flex flex-col gap-4">
+          {(enrollments.length > 0 ? enrollments : user.enrolledCourses || []).map((enrollment, index) => {
+            const courseTitle = enrollment.courseId?.title ||
+              enrollment.courseId?.name ||
+              enrollment.courseTitle ||
+              enrollment.course?.title ||
+              enrollment.course?.name ||
+              enrollment.title ||
+              enrollment.name ||
+              'دورة غير محددة';
+            return (
+              <div
+                key={enrollment._id || enrollment.id || `enrollment-${index}`}
+                className="flex flex-col sm:flex-row sm:items-center gap-4 p-5 rounded-xl border min-w-0 transition-all hover:shadow-lg"
+                style={{
+                  background: palette.inputBg,
+                  borderColor: palette.inputBorder
+                }}
+              >
+                <div
+                  className="flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center"
+                  style={{
+                    background: `linear-gradient(145deg, ${palette.gold} 0%, ${palette.goldLight} 100%)`,
+                    color: theme.isDarkMode ? '#0c0c14' : '#fff',
+                    boxShadow: palette.glow
+                  }}
+                >
+                  <BookOpen size={26} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-base mb-1 truncate" style={{ color: palette.text }}>
+                    {courseTitle}
+                  </h4>
+                  <p className="text-sm" style={{ color: palette.textMuted, margin: 0 }}>
+                    {new Date(enrollment.enrolledAt).toLocaleDateString('ar-EG')}
+                  </p>
+                </div>
+                <div className="flex items-center">
+                  {enrollment.paymentStatus === 'approved' ? (
+                    <span
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+                      style={{ background: palette.successSoft, color: palette.success }}
+                    >
+                      <CheckCircle size={14} />
+                      موافق عليه
+                    </span>
+                  ) : (
+                    <span
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+                      style={{ background: palette.warningSoft, color: palette.warning }}
+                    >
+                      <Clock size={14} />
+                      في الانتظار
+                    </span>
+                  )}
+                </div>
               </div>
-              
-              <div style={{ flex: 1 }}>
-                <h4 style={{
-                  color: colors.text,
-                  fontSize: typography.fontSize.base,
-                  fontWeight: typography.fontWeight.medium,
-                  margin: 0,
-                  marginBottom: spacing.xs
-                }}>
-                  {(() => {
-                    // Debug: Log the enrollment data to see what's available
-                    console.log('Enrollment data:', enrollment);
-                    console.log('CourseId data:', enrollment.courseId);
-                    
-                    // Try different possible field names for course title
-                    const courseTitle = enrollment.courseId?.title || 
-                                      enrollment.courseId?.name || 
-                                      enrollment.courseTitle || 
-                                      enrollment.course?.title || 
-                                      enrollment.course?.name ||
-                                      enrollment.title ||
-                                      enrollment.name;
-                    
-                    console.log('Course title found:', courseTitle);
-                    
-                    return courseTitle || 'دورة غير محددة';
-                  })()}
-                </h4>
-                <p style={{
-                  color: colors.textMuted,
-                  fontSize: typography.fontSize.sm,
-                  margin: 0
-                }}>
-                  {new Date(enrollment.enrolledAt).toLocaleDateString('ar-EG')}
-                </p>
-              </div>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
-                {enrollment.paymentStatus === 'approved' ? (
-                  <div style={{
-                    background: colors.success,
-                    color: colors.background,
-                    padding: `${spacing.xs} ${spacing.sm}`,
-                    borderRadius: borderRadius.full,
-                    fontSize: typography.fontSize.xs,
-                    fontWeight: typography.fontWeight.semibold,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: spacing.xs
-                  }}>
-                    <CheckCircle size={12} />
-                    موافق عليه
-                  </div>
-                ) : (
-                  <div style={{
-                    background: colors.warning,
-                    color: colors.background,
-                    padding: `${spacing.xs} ${spacing.sm}`,
-                    borderRadius: borderRadius.full,
-                    fontSize: typography.fontSize.xs,
-                    fontWeight: typography.fontWeight.semibold,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: spacing.xs
-                  }}>
-                    <Clock size={12} />
-                    في الانتظار
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
-        <div style={{ textAlign: 'center', padding: spacing['2xl'] }}>
-          <ShoppingBag size={48} color={colors.textMuted} style={{ marginBottom: spacing.lg }} />
-          <h4 style={{ color: colors.textMuted, margin: 0, marginBottom: spacing.sm }}>
+        <div className="text-center py-14 px-4">
+          <div className="w-20 h-20 rounded-2xl mx-auto mb-5 flex items-center justify-center" style={{ background: palette.goldMuted }}>
+            <ShoppingBag size={40} style={{ color: palette.gold }} />
+          </div>
+          <h4 className="text-lg font-semibold mb-2" style={{ color: palette.text, margin: 0 }}>
             لا توجد طلبات
           </h4>
-          <p style={{ color: colors.textMuted, margin: 0 }}>
+          <p className="text-base" style={{ color: palette.textSoft, margin: 0 }}>
             لم تقم بطلب أي دورات حتى الآن
           </p>
         </div>
       )}
-    </LuxuryCard>
-  );
+    </Motion.div>
+    );
+  }
 
   const AddressTab = () => (
-    <LuxuryCard>
-      <h3 style={{
-        color: colors.text,
-        fontSize: typography.fontSize.xl,
-        fontWeight: typography.fontWeight.bold,
-        margin: 0,
-        marginBottom: spacing.lg
-      }}>
+    <Motion.div
+      className="rounded-2xl overflow-hidden border p-5 sm:p-6 md:p-8"
+      style={{
+        background: palette.card,
+        borderColor: palette.cardBorder,
+        boxShadow: palette.shadow,
+        borderRight: `3px solid ${palette.gold}`
+      }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <h3 className="text-xl sm:text-2xl font-bold mb-6" style={{ color: palette.text, margin: 0 }}>
         العنوان
       </h3>
-      
-      <div style={{ textAlign: 'center', padding: spacing['2xl'] }}>
-        <MapPin size={48} color={colors.textMuted} style={{ marginBottom: spacing.lg }} />
-        <h4 style={{ color: colors.textMuted, margin: 0, marginBottom: spacing.sm }}>
+      <div className="text-center py-14 px-4">
+        <div className="w-20 h-20 rounded-2xl mx-auto mb-5 flex items-center justify-center" style={{ background: palette.goldMuted }}>
+          <MapPin size={40} style={{ color: palette.gold }} />
+        </div>
+        <h4 className="text-lg font-semibold mb-2" style={{ color: palette.text, margin: 0 }}>
           لا يوجد عنوان محفوظ
         </h4>
-        <p style={{ color: colors.textMuted, margin: 0, marginBottom: spacing.lg }}>
+        <p className="text-base mb-8" style={{ color: palette.textSoft, margin: 0 }}>
           يمكنك إضافة عنوانك للمساعدة في التسليم
         </p>
-        <LuxuryButton variant="primary">
+        <button
+          type="button"
+          className="min-h-[50px] px-8 rounded-xl font-semibold transition-all hover:opacity-90"
+          style={{
+            background: `linear-gradient(135deg, ${palette.gold} 0%, ${palette.goldLight} 100%)`,
+            color: theme.isDarkMode ? '#0c0c14' : '#fff',
+            border: 'none',
+            boxShadow: palette.glow
+          }}
+        >
           إضافة عنوان
-        </LuxuryButton>
+        </button>
       </div>
-    </LuxuryCard>
+    </Motion.div>
   );
 
   const SettingsTab = () => (
-    <LuxuryCard>
-      <h3 style={{
-        color: colors.text,
-        fontSize: typography.fontSize.xl,
-        fontWeight: typography.fontWeight.bold,
-        margin: 0,
-        marginBottom: spacing.lg
-      }}>
+    <Motion.div
+      className="rounded-2xl overflow-hidden border p-5 sm:p-6 md:p-8"
+      style={{
+        background: palette.card,
+        borderColor: palette.cardBorder,
+        boxShadow: palette.shadow,
+        borderRight: `3px solid ${palette.gold}`
+      }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <h3 className="text-xl sm:text-2xl font-bold mb-6" style={{ color: palette.text, margin: 0 }}>
         الإعدادات
       </h3>
-      
-      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.lg }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: spacing.lg,
-          background: colors.surface,
-          borderRadius: borderRadius.lg,
-          border: `1px solid ${colors.border}`
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
-            <Bell size={20} color={colors.textMuted} />
-            <div>
-              <h4 style={{
-                color: colors.text,
-                fontSize: typography.fontSize.base,
-                fontWeight: typography.fontWeight.medium,
-                margin: 0
-              }}>
-                الإشعارات
-              </h4>
-              <p style={{
-                color: colors.textMuted,
-                fontSize: typography.fontSize.sm,
-                margin: 0
-              }}>
-                تلقي إشعارات حول الدورات والتحديثات
-              </p>
+      <div className="flex flex-col gap-4">
+        <div
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5 rounded-xl border transition-all hover:shadow-md"
+          style={{ background: palette.inputBg, borderColor: palette.inputBorder }}
+        >
+          <div className="flex items-start sm:items-center gap-4 min-w-0">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: palette.goldMuted }}>
+              <Bell size={22} style={{ color: palette.gold }} />
+            </div>
+            <div className="min-w-0">
+              <h4 className="font-semibold text-base m-0" style={{ color: palette.text }}>الإشعارات</h4>
+              <p className="text-sm m-0 mt-1" style={{ color: palette.textSoft }}>تلقي إشعارات حول الدورات والتحديثات</p>
             </div>
           </div>
-          <input type="checkbox" defaultChecked style={{ transform: 'scale(1.2)' }} />
+          <label className="flex items-center gap-2 cursor-pointer self-start sm:self-center min-h-[48px]">
+            <input type="checkbox" defaultChecked className="w-5 h-5 rounded accent-amber-600" />
+          </label>
         </div>
-        
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: spacing.lg,
-          background: colors.surface,
-          borderRadius: borderRadius.lg,
-          border: `1px solid ${colors.border}`
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
-            <Shield size={20} color={colors.textMuted} />
-            <div>
-              <h4 style={{
-                color: colors.text,
-                fontSize: typography.fontSize.base,
-                fontWeight: typography.fontWeight.medium,
-                margin: 0
-              }}>
-                الخصوصية
-              </h4>
-              <p style={{
-                color: colors.textMuted,
-                fontSize: typography.fontSize.sm,
-                margin: 0
-              }}>
-                إعدادات الخصوصية والأمان
-              </p>
+        <div
+          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5 rounded-xl border transition-all hover:shadow-md"
+          style={{ background: palette.inputBg, borderColor: palette.inputBorder }}
+        >
+          <div className="flex items-start sm:items-center gap-4 min-w-0">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: palette.goldMuted }}>
+              <Shield size={22} style={{ color: palette.gold }} />
+            </div>
+            <div className="min-w-0">
+              <h4 className="font-semibold text-base m-0" style={{ color: palette.text }}>الخصوصية</h4>
+              <p className="text-sm m-0 mt-1" style={{ color: palette.textSoft }}>إعدادات الخصوصية والأمان</p>
             </div>
           </div>
-          <LuxuryButton variant="ghost" size="sm">
-            <ChevronRight size={16} />
-          </LuxuryButton>
+          <button
+            type="button"
+            className="min-h-[48px] px-4 rounded-xl flex items-center justify-center transition-all hover:opacity-80"
+            style={{ background: palette.goldMuted, color: palette.gold, border: 'none' }}
+          >
+            <ChevronRight size={20} />
+          </button>
         </div>
       </div>
-    </LuxuryCard>
+    </Motion.div>
   );
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      background: colors.gradient,
-      padding: spacing.xl 
-    }}>
-      {/* Header */}
-      <div style={{ marginBottom: spacing['2xl'] }}>
-        <h1 style={{
-          color: colors.text,
-          fontSize: typography.fontSize['4xl'],
-          fontWeight: typography.fontWeight.bold,
-          fontFamily: typography.fontFamily.heading,
-          margin: 0,
-          marginBottom: spacing.sm,
-          background: `linear-gradient(135deg, ${colors.text} 0%, ${colors.accent} 100%)`,
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text'
-        }}>
-          حسابي
-        </h1>
-        <p style={{
-          color: colors.textSecondary,
-          fontSize: typography.fontSize.lg,
-          margin: 0
-        }}>
-          إدارة ملفك الشخصي وإعداداتك
-        </p>
-      </div>
+    <div
+      className="min-h-screen w-full"
+      style={{
+        background: palette.bg,
+        padding: 'clamp(1.25rem, 5vw, 2rem)',
+        paddingBottom: 'clamp(2.5rem, 10vw, 4rem)'
+      }}
+    >
+      <div className="mx-auto max-w-4xl">
+        {/* Header فاخر */}
+        <header className="mb-8 sm:mb-10">
+          <h1
+            className="text-3xl sm:text-4xl md:text-[2.75rem] font-bold mb-2 tracking-tight"
+            style={{
+              margin: 0,
+              fontFamily: typography.fontFamily.heading,
+              background: `linear-gradient(135deg, ${palette.text} 0%, ${palette.goldLight} 100%)`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              letterSpacing: '-0.02em'
+            }}
+          >
+            حسابي
+          </h1>
+          <p
+            className="text-base sm:text-lg"
+            style={{ color: palette.textSoft, margin: 0, fontWeight: 400 }}
+          >
+            إدارة ملفك الشخصي وإعداداتك
+          </p>
+        </header>
 
-      {/* Tabs */}
-      <div style={{ marginBottom: spacing.lg }}>
-        <div style={{ 
-          display: 'flex', 
-          gap: spacing.sm,
-          borderBottom: `2px solid ${colors.border}`,
-          marginBottom: spacing.lg,
-          overflowX: 'auto'
-        }}>
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: activeTab === tab.id ? colors.accent : colors.textSecondary,
-                  padding: `${spacing.md} ${spacing.lg}`,
-                  fontSize: typography.fontSize.base,
-                  fontWeight: typography.fontWeight.medium,
-                  cursor: 'pointer',
-                  borderBottom: activeTab === tab.id ? `2px solid ${colors.accent}` : '2px solid transparent',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: spacing.xs,
-                  transition: `all ${theme.animations.duration.fast} ${theme.animations.easing.easeInOut}`,
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                <Icon size={16} />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Tab Content */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.3 }}
+        {/* Tabs أنيقة — أزرار حبوبية */}
+        <nav
+          role="tablist"
+          aria-label="أقسام الحساب"
+          className="mb-6 sm:mb-8 overflow-x-auto -mx-1 px-1"
+          style={{ WebkitOverflowScrolling: 'touch' }}
         >
-          {activeTab === 'profile' && <ProfileTab />}
-          {activeTab === 'orders' && <OrdersTab />}
-          {activeTab === 'address' && <AddressTab />}
-          {activeTab === 'settings' && <SettingsTab />}
-        </motion.div>
-      </AnimatePresence>
+          <div className="flex gap-2 min-w-0 p-1 rounded-2xl w-fit mx-auto sm:mx-0" style={{ background: palette.goldMuted }}>
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-controls={`panel-${tab.id}`}
+                  id={`tab-${tab.id}`}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className="flex items-center gap-2 py-3 px-5 sm:px-6 min-h-[48px] whitespace-nowrap flex-shrink-0 rounded-xl font-medium transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                  style={{
+                    background: isActive ? palette.gold : 'transparent',
+                    color: isActive ? (theme.isDarkMode ? '#0c0c14' : '#fff') : palette.textSoft,
+                    border: 'none',
+                    boxShadow: isActive ? palette.glow : 'none',
+                    '--tw-ring-color': palette.gold
+                  }}
+                >
+                  <Icon size={20} className="flex-shrink-0" aria-hidden />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+
+        {/* المحتوى */}
+        <AnimatePresence mode="wait">
+          <Motion.div
+            key={activeTab}
+            role="tabpanel"
+            id={`panel-${activeTab}`}
+            aria-labelledby={`tab-${activeTab}`}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="focus:outline-none"
+          >
+            {activeTab === 'profile' && <ProfileTab />}
+            {activeTab === 'orders' && <OrdersTab />}
+            {activeTab === 'address' && <AddressTab />}
+            {activeTab === 'settings' && <SettingsTab />}
+          </Motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 };

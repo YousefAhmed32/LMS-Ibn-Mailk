@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
 import Toaster from "./components/ui/toaster";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -9,7 +9,7 @@ import { useToast } from "./hooks/use-toast";
 // Import header layout styles
 import "./styles/header-layout.css";
 
-// Pages
+// Pages (critical path — keep static)
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
@@ -28,48 +28,47 @@ import AboutPage from "./pages/AboutPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsConditionsPage from "./pages/TermsConditionsPage";
 
-// Luxury Pages
-import LuxuryCoursesPage from "./pages/courses/LuxuryCoursesPage";
-import LuxuryCourseDetailsPage from "./pages/courses/LuxuryCourseDetailsPage";
-import CourseContentPage from "./pages/courses/CourseContentPage";
-import ExamPage from "./pages/courses/ExamPage";
+// Luxury Pages — lazy loaded
+const LuxuryCoursesPage = lazy(() => import("./pages/courses/LuxuryCoursesPage"));
+const LuxuryCourseDetailsPage = lazy(() => import("./pages/courses/LuxuryCourseDetailsPage"));
+const CourseContentPage = lazy(() => import("./pages/courses/CourseContentPage"));
+const ExamPage = lazy(() => import("./pages/courses/ExamPage"));
 import LuxuryMyAccountPage from "./pages/account/LuxuryMyAccountPage";
 
 // Payment Pages
 import PaymentPage from "./pages/payment/PaymentPage";
 
-// Modern Admin Pages
-import ModernAdminDashboard from "./components/admin/ModernAdminDashboard";
-import CourseManagement from "./pages/admin/CourseManagement";
+// Modern Admin Pages — lazy loaded
+const ModernAdminDashboard = lazy(() => import("./components/admin/ModernAdminDashboard"));
+const CourseManagement = lazy(() => import("./pages/admin/CourseManagement"));
 import EditCourse from "./pages/admin/EditCourse";
-import EnhancedUsersPage from "./pages/admin/EnhancedUsersPage";
+const EnhancedUsersPage = lazy(() => import("./pages/admin/EnhancedUsersPage"));
 
 // Exam Pages
 import ExamPageStandalone from "./pages/exam/ExamPage";
-import ExamTakingPage from "./pages/exam/ExamTakingPage";
+const ExamTakingPage = lazy(() => import("./pages/exam/ExamTakingPage"));
 import StudentProfile from "./pages/admin/StudentProfile";
 import PaymentManagement from "./pages/admin/PaymentManagement";
-import AdminPaymentsPage from "./pages/admin/AdminPaymentsPage";
-import Notifications from "./pages/Notifications";
+const AdminPaymentsPage = lazy(() => import("./pages/admin/AdminPaymentsPage"));
 import AdminNotificationsPage from "./pages/admin/AdminNotificationsPage";
 
-// Groups Pages
-import GroupsManagement from "./pages/admin/GroupsManagement";
-import EnhancedGroupDetails from "./pages/admin/EnhancedGroupDetails";
-import StudentGroupProfile from "./pages/admin/StudentGroupProfile";
+// Groups Pages — lazy loaded
+const GroupsManagement = lazy(() => import("./pages/admin/GroupsManagement"));
+const EnhancedGroupDetails = lazy(() => import("./pages/admin/EnhancedGroupDetails"));
+const StudentGroupProfile = lazy(() => import("./pages/admin/StudentGroupProfile"));
 import MyGroups from "./pages/student/MyGroups";
-import EnhancedMyGroups from "./pages/student/EnhancedMyGroups";
+const EnhancedMyGroups = lazy(() => import("./pages/student/EnhancedMyGroups"));
 
-// Parent Pages
+// Parent Pages — lazy loaded
 import ParentLoginPage from "./pages/parent/ParentLoginPage";
 import LinkStudentPage from "./pages/parent/LinkStudentPage";
-import ParentDashboard from "./pages/parent/ParentDashboard";
+const ParentDashboard = lazy(() => import("./pages/parent/ParentDashboard"));
 import ParentDemo from "./pages/parent/ParentDemo";
 
-// Student Pages
-import StudentStatisticsPage from "./pages/student/StudentStatisticsPage";
-import StudentStats from "./pages/student/StudentStats";
-import LuxuryStudentStats from "./pages/student/LuxuryStudentStats";
+// Student Pages — lazy loaded
+const StudentStatisticsPage = lazy(() => import("./pages/student/StudentStatisticsPage"));
+const StudentStats = lazy(() => import("./pages/student/StudentStats"));
+const LuxuryStudentStats = lazy(() => import("./pages/student/LuxuryStudentStats"));
 
 // Components
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -81,6 +80,15 @@ import NotificationsPage from './pages/NotificationsPage';
 import SmartDashboardRouter from './components/smart/SmartDashboardRouter';
 import LuxuryErrorPage from './components/error/LuxuryErrorPage';
 
+// Fallback for lazy-loaded routes
+function PageLoaderFallback() {
+  return (
+    <div className="flex min-h-[50vh] items-center justify-center" role="status" aria-label="جاري التحميل">
+      <div className="text-muted-foreground animate-pulse">جاري التحميل...</div>
+    </div>
+  );
+}
+
 function App() {
   const { toasts, dismiss } = useToast();
   
@@ -89,6 +97,7 @@ function App() {
       <NotificationProvider>
         <AuthProvider>
           <div className="App overflow-x-hidden w-full max-w-full">
+          <Suspense fallback={<PageLoaderFallback />}>
           <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<LandingPage />} />
@@ -195,15 +204,6 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <MySubscriptions />
-                    </ProtectedRoute>
-                  }
-                />
-
-                <Route
-                  path="/notifications"
-                  element={
-                    <ProtectedRoute>
-                      <Notifications />
                     </ProtectedRoute>
                   }
                 />
@@ -498,6 +498,7 @@ function App() {
                   }
                 />
               </Routes>
+          </Suspense>
 
               {/* Toast Notifications */}
               <Toaster toasts={toasts} dismiss={dismiss} />

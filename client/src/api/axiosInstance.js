@@ -179,115 +179,110 @@ axiosInstance.interceptors.request.use(
   }
 );
 
+// Retry config: only for network/timeout, limited retries
+const RETRY_MAX = 2;
+const RETRY_DELAY_MS = 1000;
+
+const isRetryableNetworkError = (err) =>
+  err.code === 'ECONNABORTED' ||
+  err.code === 'ERR_NETWORK' ||
+  err.message === 'Network Error' ||
+  (err.response?.status === 0 && !err.config?.url?.includes('/auth/refresh'));
+
 // Response interceptor with advanced error handling
 axiosInstance.interceptors.response.use(
   (response) => {
-    // Log successful responses for debugging (only in development)
     if (import.meta.env.DEV) {
       console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
     }
     return response;
   },
   async (error) => {
-    const originalRequest = error.config;
-    
-    // Log error details
-    console.error('❌ Axios Error:', {
-      url: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message,
-      code: error.code
-    });
-    
-    // Handle 401 Unauthorized errors
+    const originalRequest = error.config || {};
+
+    // Retry on network/timeout (GET and safe idempotent only, avoid auth refresh loop)
+    if (originalRequest && isRetryableNetworkError(error)) {
+      const method = (originalRequest.method || 'get').toLowerCase();
+      const isIdempotent = ['get', 'head', 'options'].includes(method);
+      const isAuthRefresh = originalRequest.url?.includes('/auth/refresh');
+      const retryCount = (originalRequest._retryCount ?? 0) + 1;
+      if (isIdempotent && !isAuthRefresh && retryCount <= RETRY_MAX) {
+        originalRequest._retryCount = retryCount;
+        const delay = RETRY_DELAY_MS * retryCount;
+        await new Promise((r) => setTimeout(r, delay));
+        return axiosInstance(originalRequest);
+      }
+    }
+
+    if (import.meta.env.DEV) {
+      console.error('❌ Axios Error:', {
+        url: originalRequest?.url,
+        method: originalRequest?.method,
+        status: error.response?.status,
+        message: error.message,
+        code: error.code
+      });
+    }
+
+    // Handle 401 Unauthorized
     if (error.response?.status === 401 && !originalRequest._retry) {
       const token = TokenManager.getToken();
-      
-      // If no token exists, redirect to login
+
       if (!token) {
-        console.warn('🔐 No token found - redirecting to login');
         TokenManager.removeToken();
         redirectToLogin();
         return Promise.reject(error);
       }
-      
-      // If token is expired, try to refresh or logout
+
       if (TokenManager.isTokenExpired(token)) {
-        console.warn('🔐 Token expired - attempting refresh');
-        
         if (isRefreshing) {
-          // If already refreshing, queue this request
           return new Promise((resolve, reject) => {
             failedQueue.push({ resolve, reject });
-          }).then(token => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
+          }).then((newToken) => {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
             return axiosInstance(originalRequest);
-          }).catch(err => {
-            return Promise.reject(err);
-          });
+          }).catch((err) => Promise.reject(err));
         }
-        
+
         originalRequest._retry = true;
         isRefreshing = true;
-        
+
         try {
-          // Attempt to refresh token by calling /api/auth/refresh
           const refreshResponse = await axiosInstance.post('/api/auth/refresh', {}, {
             headers: { Authorization: `Bearer ${token}` }
           });
-          
           const newToken = refreshResponse.data.token;
           TokenManager.setToken(newToken);
-          
-          // Process queued requests
           processQueue(null, newToken);
-          
-          // Retry original request with new token
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
           return axiosInstance(originalRequest);
-          
         } catch (refreshError) {
-          console.error('🔐 Token refresh failed:', refreshError);
           processQueue(refreshError, null);
-          
-          // Refresh failed, logout user
-          TokenManager.removeToken();
-          redirectToLogin();
+          // Only clear session when server explicitly says token is invalid (401). Network/5xx = keep token.
+          const status = refreshError.response?.status;
+          if (status === 401 || status === undefined) {
+            TokenManager.removeToken();
+            redirectToLogin();
+          }
           return Promise.reject(refreshError);
         } finally {
           isRefreshing = false;
         }
       } else {
-        // Token exists but server rejected it - user might be deactivated
-        console.warn('🔐 Token rejected by server - user might be deactivated');
+        // Token not expired but server returned 401 (e.g. deactivated)
         TokenManager.removeToken();
         redirectToLogin();
         return Promise.reject(error);
       }
     }
-    
-    // Handle other error types
-    if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error' || error.code === 'ECONNABORTED') {
-      console.error('🌐 Network error - server might be down');
-      // Don't retry to prevent infinite loops
-      console.log('🌐 Network error - not retrying to prevent infinite loops');
-    } else if (error.response?.status >= 500) {
-      console.error('🔥 Server error:', error.response.status, error.response.data);
-    } else if (error.response?.status >= 400) {
-      console.warn('⚠️ Client error:', error.response.status, error.response.data);
-    }
-    
-    // Normalize error response for consistent handling
+
     const normalizedError = {
       ...error,
       message: error.response?.data?.message || error.response?.data?.error || error.message || 'An error occurred',
-      status: error.response?.status || 0,
-      data: error.response?.data || null
+      status: error.response?.status ?? 0,
+      data: error.response?.data || null,
+      code: error.code
     };
-    
     return Promise.reject(normalizedError);
   }
 );

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
+import axiosInstance from '../../api/axiosInstance';
 import {
   BookOpen,
   Trophy,
@@ -564,47 +565,112 @@ const ActivitySection = ({ activity }) => {
   );
 };
 
+// قيم افتراضية عند عدم وجود بيانات (صفر / لا يوجد)
+const emptyDashboardData = {
+  overallProgress: 0,
+  courseProgress: [],
+  courseStats: {
+    enrolled: 0,
+    completed: 0,
+    ongoing: 0,
+    lastAccessed: null
+  },
+  performance: {
+    averageScore: 0,
+    bestCourse: "—",
+    worstCourse: "—",
+    recentExams: []
+  },
+  activity: {
+    watchTime: 0,
+    streak: 0,
+    lastLogin: "—"
+  }
+};
+
 // Main Student Dashboard Component
 const StudentDashboard = () => {
   const { isDarkMode } = useTheme();
   const { user } = useAuth();
+  const [dashboardData, setDashboardData] = useState(emptyDashboardData);
+  const [loading, setLoading] = useState(true);
 
-  // Mock realistic data
-  const dashboardData = {
-    overallProgress: 78,
-    courseProgress: [
-      { id: 1, name: "اللغة العربية المتقدمة", progress: 85 },
-      { id: 2, name: "الرياضيات الأساسية", progress: 72 },
-      { id: 3, name: "العلوم الطبيعية", progress: 90 },
-      { id: 4, name: "التاريخ الإسلامي", progress: 65 },
-      { id: 5, name: "اللغة الإنجليزية", progress: 80 }
-    ],
-    courseStats: {
-      enrolled: 8,
-      completed: 3,
-      ongoing: 5,
-      lastAccessed: {
-        name: "اللغة العربية المتقدمة",
-        lastAccess: "منذ ساعتين"
-      }
-    },
-    performance: {
-      averageScore: 87,
-      bestCourse: "العلوم الطبيعية",
-      worstCourse: "التاريخ الإسلامي",
-      recentExams: [
-        { id: 1, course: "اللغة العربية المتقدمة", score: 92, date: "2024-01-15" },
-        { id: 2, course: "الرياضيات الأساسية", score: 78, date: "2024-01-12" },
-        { id: 3, course: "العلوم الطبيعية", score: 95, date: "2024-01-10" },
-        { id: 4, course: "التاريخ الإسلامي", score: 65, date: "2024-01-08" }
-      ]
-    },
-    activity: {
-      watchTime: 156,
-      streak: 12,
-      lastLogin: "اليوم في 2:30 مساءً"
+  useEffect(() => {
+    if (!user?._id) {
+      setDashboardData(emptyDashboardData);
+      setLoading(false);
+      return;
     }
-  };
+    const load = async () => {
+      try {
+        const res = await axiosInstance.get(`/api/parent/student/${user._id}/comprehensive`).catch(() => null);
+        if (res?.data?.success) {
+          const d = res.data.data || res.data;
+          const enrolled = d.enrolledCourses || user?.enrolledCourses || [];
+          const courses = Array.isArray(enrolled) ? enrolled : [];
+          const completed = courses.filter(c => c.completed || (c.progress >= 100));
+          const overall = courses.length ? Math.round(courses.reduce((s, c) => s + (c.progress || 0), 0) / courses.length) : 0;
+          const courseProgress = courses.map((c, i) => ({
+            id: c.course?._id || c._id || i,
+            name: c.course?.title || c.courseName || c.name || 'دورة',
+            progress: c.progress ?? 0
+          }));
+          const stats = d.statistics || {};
+          setDashboardData({
+            overallProgress: overall,
+            courseProgress,
+            courseStats: {
+              enrolled: courses.length,
+              completed: completed.length,
+              ongoing: courses.length - completed.length,
+              lastAccessed: d.lastAccessed || null
+            },
+            performance: {
+              averageScore: stats.averageGrade ?? stats.averageScore ?? 0,
+              bestCourse: stats.bestCourse || "—",
+              worstCourse: stats.worstCourse || "—",
+              recentExams: (d.examResults || []).slice(0, 5).map((e, i) => ({
+                id: i,
+                course: e.courseName || e.examTitle || "—",
+                score: e.percentage ?? e.studentScore ?? 0,
+                date: e.examDate || e.submittedAt || "—"
+              }))
+            },
+            activity: {
+              watchTime: stats.totalStudyTime ?? 0,
+              streak: stats.streakDays ?? 0,
+              lastLogin: stats.lastLogin || "—"
+            }
+          });
+        } else {
+          const enrolled = user?.enrolledCourses || [];
+          const courses = Array.isArray(enrolled) ? enrolled : [];
+          const completed = courses.filter(c => c.completed || (c.progress >= 100));
+          const overall = courses.length ? Math.round(courses.reduce((s, c) => s + (c.progress || 0), 0) / courses.length) : 0;
+          setDashboardData({
+            ...emptyDashboardData,
+            overallProgress: overall,
+            courseProgress: courses.map((c, i) => ({
+              id: c.course?._id || c._id || i,
+              name: c.course?.title || c.courseName || c.name || 'دورة',
+              progress: c.progress ?? 0
+            })),
+            courseStats: {
+              enrolled: courses.length,
+              completed: completed.length,
+              ongoing: courses.length - completed.length,
+              lastAccessed: null
+            }
+          });
+        }
+      } catch {
+        setDashboardData(emptyDashboardData);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [user?._id, user?.enrolledCourses]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-luxury-navy-900 dark:via-luxury-navy-800 dark:to-luxury-navy-900 p-4 md:p-6 lg:p-8 relative overflow-hidden">

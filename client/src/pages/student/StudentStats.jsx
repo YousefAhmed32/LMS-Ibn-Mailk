@@ -67,33 +67,11 @@ const StudentStats = () => {
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [statistics, setStatistics] = useState(null);
   
-  // Charts data
-  const [gradeProgression, setGradeProgression] = useState([
-    { month: 'يناير', grade: 75 },
-    { month: 'فبراير', grade: 82 },
-    { month: 'مارس', grade: 78 },
-    { month: 'أبريل', grade: 85 },
-    { month: 'مايو', grade: 88 },
-    { month: 'يونيو', grade: 92 },
-    { month: 'يوليو', grade: 89 },
-    { month: 'أغسطس', grade: 91 },
-    { month: 'سبتمبر', grade: 87 },
-    { month: 'أكتوبر', grade: 94 }
-  ]);
-  const [subjectDistribution, setSubjectDistribution] = useState([
-    { subject: 'الرياضيات', score: 92 },
-    { subject: 'العلوم', score: 88 },
-    { subject: 'اللغة العربية', score: 85 },
-    { subject: 'اللغة الإنجليزية', score: 90 },
-    { subject: 'التاريخ', score: 87 },
-    { subject: 'الجغرافيا', score: 83 }
-  ]);
+  // Charts data - empty until API returns real data
+  const [gradeProgression, setGradeProgression] = useState([]);
+  const [subjectDistribution, setSubjectDistribution] = useState([]);
   const [attendanceChart, setAttendanceChart] = useState([]);
-  const [completionRates, setCompletionRates] = useState([
-    { name: 'مكتمل', value: 75, color: '#10B981' },
-    { name: 'قيد التقدم', value: 20, color: '#F59E0B' },
-    { name: 'لم يبدأ', value: 5, color: '#EF4444' }
-  ]);
+  const [completionRates, setCompletionRates] = useState([]);
   
   // Ref to prevent multiple API calls
   const isFetchingRef = useRef(false);
@@ -118,22 +96,15 @@ const StudentStats = () => {
       
       if (response.data.success) {
         const data = response.data;
-        
-        // Update student data
-        setStudentData(data.student);
-        setStatistics(data.statistics);
+        setStudentData(data.student || null);
+        setStatistics(data.statistics || { totalCourses: 0, completedCourses: 0, averageGrade: 0, attendanceRate: 0 });
         setEnrolledCourses(data.enrolledCourses || []);
         setGradesData(data.examResults || []);
-        
-        // Update charts data
-        if (data.progressCharts) {
-          const charts = data.progressCharts;
-          setGradeProgression(charts.gradeProgression || []);
-          setSubjectDistribution(charts.subjectDistribution || []);
-          setAttendanceChart(charts.attendanceChart || []);
-          setCompletionRates(charts.completionRates || []);
-        }
-        
+        const charts = data.progressCharts || {};
+        setGradeProgression(charts.gradeProgression || []);
+        setSubjectDistribution(charts.subjectDistribution || []);
+        setAttendanceChart(charts.attendanceChart || []);
+        setCompletionRates(charts.completionRates || []);
       } else {
         console.error('API returned error:', response.data.message);
         toast({
@@ -141,6 +112,14 @@ const StudentStats = () => {
           description: response.data.message || "فشل في تحميل الإحصائيات",
           variant: "destructive",
         });
+        setStudentData(user ? { firstName: user.firstName || 'الطالب', secondName: user.secondName || '', grade: user.grade || '' } : null);
+        setStatistics({ totalCourses: 0, completedCourses: 0, averageGrade: 0, attendanceRate: 0 });
+        setEnrolledCourses([]);
+        setGradesData([]);
+        setGradeProgression([]);
+        setSubjectDistribution([]);
+        setAttendanceChart([]);
+        setCompletionRates([]);
       }
     } catch (error) {
       console.error('Error fetching student stats:', error);
@@ -149,6 +128,14 @@ const StudentStats = () => {
         description: "فشل في تحميل إحصائياتك من قاعدة البيانات",
         variant: "destructive",
       });
+      setStudentData(user ? { firstName: user.firstName || 'الطالب', secondName: user.secondName || '', grade: user.grade || '' } : null);
+      setStatistics({ totalCourses: 0, completedCourses: 0, averageGrade: 0, attendanceRate: 0 });
+      setEnrolledCourses([]);
+      setGradesData([]);
+      setGradeProgression([]);
+      setSubjectDistribution([]);
+      setAttendanceChart([]);
+      setCompletionRates([]);
     } finally {
       setLoading(false);
       isFetchingRef.current = false;

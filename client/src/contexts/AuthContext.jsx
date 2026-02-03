@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { loginService, registerService } from '../services/authService';
 import { getCurrentUserService } from '../services/index';
-import { TokenManager } from '../api/axiosInstance';
+import axiosInstance, { TokenManager } from '../api/axiosInstance';
 import socketService from '../services/socketService';
 
 const AuthContext = createContext();
@@ -159,40 +159,34 @@ export const AuthProvider = ({ children }) => {
           }
         } catch (error) {
           console.error('❌ AuthContext: Server validation failed:', error);
-          
-          // Handle different error types appropriately
-          if (error.status === 401) {
-            // Token is invalid or expired, clear everything
-            console.log('🔐 AuthContext: Token invalid (401) - clearing auth data');
+          const status = error.status ?? error.response?.status ?? 0;
+          // Only clear auth when server explicitly says token is invalid (401). Network/5xx = keep user.
+          if (status === 401) {
             TokenManager.removeToken();
             setUser(null);
-            setError(null); // Don't show error for invalid tokens
-          } else if (error.status === 500) {
-            // Server error - don't clear auth data, just show error
-            console.log('🔥 AuthContext: Server error (500) - keeping auth data');
-            setError('Server error. Please try again later.');
-          } else if (error.status === 0 || error.code === 'NETWORK_ERROR') {
-            // Network error - don't clear auth data, but don't retry to prevent infinite loop
-            console.log('🌐 AuthContext: Network error - keeping auth data, not retrying to prevent loop');
             setError(null);
-            return; // Exit early to prevent clearing auth data
+          } else if (status >= 500 || status === 0 || error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
+            setError('Server temporarily unavailable. Using last known session.');
+            // Keep user from localStorage; do not clear token so UI still works when server recovers
+            return;
           } else {
-            // Other errors - clear auth data
-            console.log('❌ AuthContext: Other error - clearing auth data');
+            setError('Session expired. Please login again.');
             TokenManager.removeToken();
             setUser(null);
-            setError('Session expired. Please login again.');
           }
         }
       }
       
     } catch (error) {
       console.error('💥 AuthContext: Critical error during initialization:', error);
-      
-      // Don't show error for network issues, just set user to null
-      if (error.status === 0 || error.code === 'NETWORK_ERROR') {
-        console.log('🌐 Network error during initialization - keeping user data if available');
+      const status = error.status ?? error.response?.status ?? 0;
+      if (status === 401) {
+        TokenManager.removeToken();
+        setUser(null);
         setError(null);
+      } else if (status === 0 || status >= 500 || error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
+        setError('Connection issue. Using last known session.');
+        // Keep user from localStorage; do not clear token
       } else {
         setError('Failed to initialize authentication');
         TokenManager.removeToken();

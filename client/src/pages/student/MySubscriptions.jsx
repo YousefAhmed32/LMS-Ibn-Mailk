@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+// eslint-disable-next-line no-unused-vars -- motion used as motion.div
 import { motion } from 'framer-motion';
 import PageWrapper from '../../components/layout/PageWrapper';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -8,7 +9,6 @@ import Badge from '../../components/ui/badge';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from '../../hooks/use-toast';
 import axiosInstance from '../../api/axiosInstance';
-import courseAccessService from '../../services/courseAccessService';
 import { 
   BookOpen, 
   Play, 
@@ -29,181 +29,58 @@ import {
 } from 'lucide-react';
 
 const MySubscriptions = () => {
-  const { user } = useAuth();
+  useAuth(); // required for ProtectedRoute
   const navigate = useNavigate();
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingSubscription, setDeletingSubscription] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
 
-  // Fetch student's enrolled courses only
-  const fetchSubscriptions = async () => {
+  const fetchSubscriptions = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('Fetching student subscriptions...');
-      
-      // First, try to get student's enrolled courses
-      const response = await axiosInstance.get('/api/student/enrolled-courses');
-      console.log('Enrolled courses API response:', response.data);
-      
-      if (response.data.success) {
-        const enrolledCourses = response.data.data || [];
-        console.log('Enrolled courses data:', enrolledCourses);
-        
-        // Transform enrolled courses to subscription format
-        const transformedSubscriptions = enrolledCourses.map(enrollment => {
-          console.log('Processing enrollment:', enrollment);
-          console.log('Course data:', enrollment.course);
-          console.log('Image URL:', enrollment.course?.imageUrl || enrollment.course?.image);
-          
+      const response = await axiosInstance.get('/api/courses/my/enrolled');
+      const payload = response?.data?.data;
+      if (response.data.success && payload) {
+        const list = Array.isArray(payload.enrolledCourses) ? payload.enrolledCourses : (payload.data || []);
+        const transformedSubscriptions = list.map((enrollment) => {
+          const course = enrollment.course || {};
           return {
-            _id: enrollment._id || enrollment.courseId,
-            courseId: enrollment.courseId,
-            course: enrollment.course,
-            paymentStatus: enrollment.paymentStatus || 'pending', // Default to pending if not specified
+            _id: enrollment._id || course._id,
+            courseId: course._id || enrollment.course,
+            course: course,
+            paymentStatus: enrollment.paymentStatus || 'pending',
             enrolledAt: enrollment.enrolledAt || enrollment.createdAt || new Date().toISOString(),
             isActive: enrollment.isActive !== false,
             rejectionReason: enrollment.rejectionReason
           };
         });
-        
         setSubscriptions(transformedSubscriptions);
       } else {
-        console.error('Failed to fetch enrolled courses:', response.data);
-        
-        // Fallback: try to get user's enrolled courses from user context
-        if (user?.enrolledCourses && user.enrolledCourses.length > 0) {
-          console.log('Using fallback data from user context:', user.enrolledCourses);
-          const fallbackSubscriptions = user.enrolledCourses.map(enrollment => ({
-            _id: enrollment._id || enrollment.courseId,
-            courseId: enrollment.courseId,
-            course: enrollment.course,
-            paymentStatus: enrollment.paymentStatus || 'pending',
-            enrolledAt: enrollment.enrolledAt || enrollment.createdAt || new Date().toISOString(),
-            isActive: enrollment.isActive !== false,
-            rejectionReason: enrollment.rejectionReason
-          }));
-          setSubscriptions(fallbackSubscriptions);
-        } else {
-          // Demo data for testing
-          console.log('No enrolled courses found, using demo data for testing');
-          const demoSubscriptions = [
-            {
-              _id: 'demo1',
-              courseId: 'demo1',
-              course: {
-                _id: 'demo1',
-                title: 'النحو والصرف',
-                description: 'دورة شاملة في النحو والصرف العربي',
-                imageUrl: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop',
-                grade: 'الثالث الثانوي',
-                price: '500',
-                duration: '30',
-                videos: [{}, {}, {}]
-              },
-              paymentStatus: 'approved',
-              enrolledAt: new Date().toISOString(),
-              isActive: true
-            },
-            {
-              _id: 'demo2',
-              courseId: 'demo2',
-              course: {
-                _id: 'demo2',
-                title: 'الأدب العربي',
-                description: 'دراسة الأدب العربي الكلاسيكي والحديث',
-                imageUrl: '',
-                grade: 'الثالث الثانوي',
-                price: '450',
-                duration: '25',
-                videos: [{}, {}]
-              },
-              paymentStatus: 'pending',
-              enrolledAt: new Date().toISOString(),
-              isActive: true
-            }
-          ];
-          setSubscriptions(demoSubscriptions);
-          
-          toast({
-            title: "بيانات تجريبية",
-            description: "يتم عرض بيانات تجريبية للاختبار",
-            variant: "default"
-          });
+        setSubscriptions([]);
+        if (response.data?.message) {
+          toast({ title: "تحميل الاشتراكات", description: response.data.message, variant: "default" });
         }
       }
     } catch (error) {
       console.error('Error fetching enrolled courses:', error);
-      console.error('Error response:', error.response?.data);
-      
-      // Fallback: use user's enrolled courses from context
-      if (user?.enrolledCourses && user.enrolledCourses.length > 0) {
-        console.log('Using fallback data from user context after error:', user.enrolledCourses);
-        const fallbackSubscriptions = user.enrolledCourses.map(enrollment => ({
-          _id: enrollment._id || enrollment.courseId,
-          courseId: enrollment.courseId,
-          course: enrollment.course,
-          paymentStatus: enrollment.paymentStatus || 'pending',
-          enrolledAt: enrollment.enrolledAt || enrollment.createdAt || new Date().toISOString(),
-          isActive: enrollment.isActive !== false,
-          rejectionReason: enrollment.rejectionReason
-        }));
-        setSubscriptions(fallbackSubscriptions);
-      } else {
-        // Demo data for testing when API fails
-        console.log('API failed, using demo data for testing');
-        const demoSubscriptions = [
-          {
-            _id: 'demo1',
-            courseId: 'demo1',
-            course: {
-              _id: 'demo1',
-              title: 'النحو والصرف',
-              description: 'دورة شاملة في النحو والصرف العربي',
-              imageUrl: '',
-              grade: 'الثالث الثانوي',
-              price: '500',
-              duration: '30',
-              videos: [{}, {}, {}]
-            },
-            paymentStatus: 'approved',
-            enrolledAt: new Date().toISOString(),
-            isActive: true
-          },
-          {
-            _id: 'demo2',
-            courseId: 'demo2',
-            course: {
-              _id: 'demo2',
-              title: 'الأدب العربي',
-              description: 'دراسة الأدب العربي الكلاسيكي والحديث',
-              imageUrl: '',
-              grade: 'الثالث الثانوي',
-              price: '450',
-              duration: '25',
-              videos: [{}, {}]
-            },
-            paymentStatus: 'pending',
-            enrolledAt: new Date().toISOString(),
-            isActive: true
-          }
-        ];
-        setSubscriptions(demoSubscriptions);
-        
-        toast({
-          title: "بيانات تجريبية",
-          description: "يتم عرض بيانات تجريبية للاختبار",
-          variant: "default"
-        });
-      }
+      setSubscriptions([]);
+      toast({
+        title: "خطأ في التحميل",
+        description: "فشل تحميل اشتراكاتك. جرّب التحديث لاحقاً.",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchSubscriptions();
-  }, []);
+  }, [fetchSubscriptions]);
+
+  const approvedCount = useMemo(() => subscriptions.filter(s => s.paymentStatus === 'approved').length, [subscriptions]);
+  const pendingCount = useMemo(() => subscriptions.filter(s => s.paymentStatus === 'pending').length, [subscriptions]);
 
 
   const getStatusBadge = (status) => {
@@ -421,9 +298,7 @@ const MySubscriptions = () => {
               <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0">
                 <CardContent className="p-6 text-center">
                   <CheckCircle className="h-8 w-8 mx-auto mb-2" />
-                  <div className="text-2xl font-bold">
-                    {subscriptions.filter(sub => sub.paymentStatus === 'approved').length}
-                  </div>
+                  <div className="text-2xl font-bold">{approvedCount}</div>
                   <div className="text-green-100">دورات مفعلة</div>
                 </CardContent>
               </Card>
@@ -437,9 +312,7 @@ const MySubscriptions = () => {
               <Card className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white border-0">
                 <CardContent className="p-6 text-center">
                   <AlertCircle className="h-8 w-8 mx-auto mb-2" />
-                  <div className="text-2xl font-bold">
-                    {subscriptions.filter(sub => sub.paymentStatus === 'pending').length}
-                  </div>
+                  <div className="text-2xl font-bold">{pendingCount}</div>
                   <div className="text-yellow-100">قيد المراجعة</div>
                 </CardContent>
               </Card>
@@ -532,7 +405,7 @@ const MySubscriptions = () => {
                           {subscription.course?.price} ج.م
                         </div>
                         <div className="text-sm text-gray-500">
-                          {subscription.createdAt ? new Date(subscription.createdAt).toLocaleDateString('ar-EG') : 'غير محدد'}
+                          {subscription.enrolledAt ? new Date(subscription.enrolledAt).toLocaleDateString('ar-EG') : '—'}
                         </div>
                       </div>
                       

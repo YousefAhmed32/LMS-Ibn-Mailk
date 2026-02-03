@@ -1,9 +1,15 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 import axiosInstance from '../api/axiosInstance';
 import { toast } from '../hooks/use-toast';
 
 const NotificationContext = createContext();
+
+// When backend is down (ERR_CONNECTION_REFUSED), we avoid spamming reconnects and logs
+const SOCKET_RECONNECT_ATTEMPTS = 5;
+const SOCKET_RECONNECT_DELAY_MS = 3000;
+const SOCKET_RECONNECT_DELAY_MAX_MS = 15000;
+const LOG_CONNECTION_ERROR_THROTTLE_MS = 10000;
 
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
@@ -20,82 +26,77 @@ export const NotificationProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const lastConnectionErrorLog = useRef(0);
 
-  // Initialize Socket.IO connection
+  // Initialize Socket.IO connection (single instance; no recursive reconnect loop)
   useEffect(() => {
-    const initializeSocket = () => {
-      // In production, use the base URL from env, in dev use localhost
-      const getServerUrl = () => {
-        if (import.meta.env.PROD) {
-          // In production, use the full domain URL
-          return import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_SERVER_URL || window.location.origin;
-        }
-        // In development, use localhost
-        return 'http://localhost:5000';
-      };
-      
-      const serverUrl = getServerUrl();
-      const isProduction = import.meta.env.PROD;
-      
-      const connectionOptions = {
-        transports: ['polling', 'websocket'], // Try polling first
-        timeout: 30000,
-        forceNew: true,
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000
-      };
-
-      if (isProduction) {
-        connectionOptions.autoConnect = true;
-        connectionOptions.upgrade = true;
-        connectionOptions.rememberUpgrade = true;
+    const getServerUrl = () => {
+      if (import.meta.env.PROD) {
+        return import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_SERVER_URL || window.location.origin;
       }
+      return 'http://localhost:5000';
+    };
 
-      const newSocket = io(serverUrl, connectionOptions);
+    const serverUrl = getServerUrl();
+    const isProduction = import.meta.env.PROD;
 
-      newSocket.on('connect', () => {
-        console.log('🔌 Connected to notification server');
-        setIsConnected(true);
-        setError(null);
-      });
+    const connectionOptions = {
+      transports: ['polling', 'websocket'],
+      timeout: 20000,
+      forceNew: true,
+      reconnection: true,
+      reconnectionAttempts: SOCKET_RECONNECT_ATTEMPTS,
+      reconnectionDelay: SOCKET_RECONNECT_DELAY_MS,
+      reconnectionDelayMax: SOCKET_RECONNECT_DELAY_MAX_MS,
+    };
 
-      newSocket.on('disconnect', () => {
-        console.log('🔌 Disconnected from notification server');
-        setIsConnected(false);
-      });
+    if (isProduction) {
+      connectionOptions.autoConnect = true;
+      connectionOptions.upgrade = true;
+      connectionOptions.rememberUpgrade = true;
+    }
 
-      newSocket.on('connect_error', (error) => {
-        console.error('🔌 Connection error:', error);
-        setError('Failed to connect to notification server');
-        setIsConnected(false);
-        
-        // Try to reconnect with different transport
-        if (error.type === 'TransportError') {
-          console.log('🔄 Trying to reconnect notification socket...');
-          setTimeout(() => {
-            newSocket.disconnect();
-            initializeSocket();
-          }, 2000);
+    const newSocket = io(serverUrl, connectionOptions);
+
+    newSocket.on('connect', () => {
+      if (import.meta.env.DEV) console.log('🔌 Connected to notification server');
+      setIsConnected(true);
+      setError(null);
+    });
+
+    newSocket.on('disconnect', () => {
+      if (import.meta.env.DEV) console.log('🔌 Disconnected from notification server');
+      setIsConnected(false);
+    });
+
+    newSocket.on('connect_error', (err) => {
+      setIsConnected(false);
+      setError('Failed to connect to notification server');
+      // Throttle logs when backend is down to avoid console spam
+      const now = Date.now();
+      if (now - lastConnectionErrorLog.current >= LOG_CONNECTION_ERROR_THROTTLE_MS) {
+        lastConnectionErrorLog.current = now;
+        if (import.meta.env.DEV) {
+          console.warn('🔌 Notification server unreachable (is the backend running on port 5000?). Socket.io will retry automatically.');
         }
-      });
+      }
+    });
 
-      newSocket.on('reconnect', (attemptNumber) => {
-        console.log('🔄 Notification socket reconnected after', attemptNumber, 'attempts');
-        setIsConnected(true);
-        setError(null);
-      });
+    newSocket.on('reconnect', (attemptNumber) => {
+      if (import.meta.env.DEV) console.log('🔄 Notification socket reconnected after', attemptNumber, 'attempts');
+      setIsConnected(true);
+      setError(null);
+    });
 
-      newSocket.on('reconnect_error', (error) => {
-        console.error('❌ Notification socket reconnection error:', error);
-      });
+    newSocket.on('reconnect_error', () => {
+      // Log throttled via connect_error; avoid duplicate noise
+    });
 
-      newSocket.on('reconnect_failed', () => {
-        console.error('❌ Notification socket reconnection failed');
-        setError('Failed to reconnect to notification server');
-        setIsConnected(false);
-      });
+    newSocket.on('reconnect_failed', () => {
+      setError('Failed to reconnect to notification server');
+      setIsConnected(false);
+      if (import.meta.env.DEV) console.warn('🔌 Notification socket reconnection failed. Start the backend (e.g. npm run dev in project root) to restore live notifications.');
+    });
 
       // Listen for new notifications
       newSocket.on('notification', (notification) => {
@@ -126,15 +127,10 @@ export const NotificationProvider = ({ children }) => {
         });
       });
 
-      setSocket(newSocket);
-    };
-
-    initializeSocket();
+    setSocket(newSocket);
 
     return () => {
-      if (socket) {
-        socket.disconnect();
-      }
+      newSocket.disconnect();
     };
   }, []);
 
@@ -228,24 +224,26 @@ export const NotificationProvider = ({ children }) => {
         return { notifications: fetchedNotifications, pagination };
       }
     } catch (error) {
-      console.error('❌ Error fetching notifications:', error);
-      
-      // إذا كان الخطأ 401 (غير مُصادق عليه)، لا نعرض رسالة خطأ
-      if (error.response?.status === 401) {
-        console.log('🔐 User not authenticated, skipping notifications fetch');
+      const isNetworkError = error.code === 'ERR_NETWORK' || error.message === 'Network Error';
+      const isUnauth = error.response?.status === 401;
+
+      if (isUnauth) {
+        if (import.meta.env.DEV) console.log('🔐 User not authenticated, skipping notifications fetch');
         return;
       }
-      
-      setError('Failed to fetch notifications');
-      
-      // عرض رسالة خطأ فقط إذا لم يكن المستخدم مُصادق عليه
-      if (error.response?.status !== 401) {
-        toast({
-          title: 'خطأ في تحميل الإشعارات',
-          description: 'فشل في تحميل الإشعارات',
-          variant: 'destructive'
-        });
+      if (isNetworkError) {
+        // Backend likely not running; avoid noisy toast and log
+        setError('Failed to fetch notifications');
+        return;
       }
+
+      console.error('❌ Error fetching notifications:', error);
+      setError('Failed to fetch notifications');
+      toast({
+        title: 'خطأ في تحميل الإشعارات',
+        description: 'فشل في تحميل الإشعارات',
+        variant: 'destructive'
+      });
     } finally {
       setLoading(false);
     }
@@ -260,13 +258,13 @@ export const NotificationProvider = ({ children }) => {
         return response.data.data.unreadCount;
       }
     } catch (error) {
-      console.error('❌ Error fetching unread count:', error);
-      
-      // إذا كان الخطأ 401 (غير مُصادق عليه)، لا نعرض رسالة خطأ
-      if (error.response?.status === 401) {
-        console.log('🔐 User not authenticated, skipping unread count fetch');
+      const isNetworkError = error.code === 'ERR_NETWORK' || error.message === 'Network Error';
+      const isUnauth = error.response?.status === 401;
+      if (isUnauth || isNetworkError) {
+        if (import.meta.env.DEV && isUnauth) console.log('🔐 User not authenticated, skipping unread count fetch');
         return;
       }
+      console.error('❌ Error fetching unread count:', error);
     }
   }, []);
 

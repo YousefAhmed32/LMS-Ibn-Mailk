@@ -211,10 +211,9 @@ const StudentStatisticsPage = () => {
       
       if (response.data.success) {
         const data = response.data.data;
-        setStudent(data.student);
-        setStats(data.statistics);
-        
-        // Process chart data
+        setStudent(data.student || null);
+        const rawStats = data.statistics;
+        setStats(rawStats ? { ...rawStats } : { averageGrade: 0, completedCourses: 0, totalCourses: 0, attendanceRate: 0, streakDays: 0 });
         processChartData(data);
         generateInsights(data);
         generateLearningJourney(data);
@@ -240,9 +239,8 @@ const StudentStatisticsPage = () => {
     }
   };
 
-  // Process chart data
+  // Process chart data - real data only, zeros when none
   const processChartData = (data) => {
-    // Exam scores by subject
     const examScoresData = data.charts?.subjectDistribution?.map(subject => ({
       subject: subject.subject,
       score: subject.score,
@@ -250,65 +248,47 @@ const StudentStatisticsPage = () => {
       percentage: subject.score,
       color: getSubjectColor(subject.subject)
     })) || [];
-
-    // Attendance data
+    const attendanceRate = data.statistics?.attendanceRate ?? 0;
     const attendanceData = [
-      { name: 'حضور', value: data.statistics?.attendanceRate || 85, color: '#10B981' },
-      { name: 'غياب', value: 100 - (data.statistics?.attendanceRate || 85), color: '#EF4444' }
+      { name: 'حضور', value: attendanceRate, color: '#10B981' },
+      { name: 'غياب', value: Math.max(0, 100 - attendanceRate), color: '#EF4444' }
     ];
-
-    // Progress over time
     const progressData = data.charts?.gradeProgression?.map(item => ({
       month: item.month,
       progress: item.grade,
       target: 90
     })) || [];
-
-    // Performance levels
-    const performanceData = [
-      { level: 'مبتدئ', students: 15, color: '#F59E0B' },
-      { level: 'متوسط', students: 25, color: '#3B82F6' },
-      { level: 'متقدم', students: 10, color: '#10B981' }
-    ];
-
     setExamScores(examScoresData);
     setAttendanceData(attendanceData);
     setProgressData(progressData);
-    setPerformanceData(performanceData);
+    setPerformanceData([]);
   };
 
-  // Generate smart insights based on real data
+  // Generate smart insights - real data only, لا يوجد when none
   const generateInsights = (data) => {
+    const s = data.statistics || {};
     const insights = [
       {
         type: 'success',
         icon: Star,
         title: 'أفضل مادة',
-        description: `الرياضيات - ${data.statistics?.averageScore || 95}%`,
+        description: s.averageScore != null ? `متوسط الدرجات ${s.averageScore}%` : 'لا توجد بيانات',
         color: 'from-emerald-400 to-green-500',
         gradient: 'bg-gradient-to-r from-emerald-400 to-green-500'
-      },
-      {
-        type: 'warning',
-        icon: AlertTriangle,
-        title: 'تحتاج تحسين',
-        description: 'الفيزياء - راجع الفصول 3 و 4',
-        color: 'from-amber-400 to-orange-500',
-        gradient: 'bg-gradient-to-r from-amber-400 to-orange-500'
       },
       {
         type: 'info',
         icon: TrendingUp,
         title: 'تطور إيجابي',
-        description: `تحسن ${data.statistics?.improvementRate || 12}% هذا الشهر`,
+        description: s.improvementRate != null ? `تحسن ${s.improvementRate}% هذا الشهر` : 'لا توجد بيانات تحسن',
         color: 'from-blue-400 to-cyan-500',
         gradient: 'bg-gradient-to-r from-blue-400 to-cyan-500'
       },
       {
         type: 'achievement',
         icon: Trophy,
-        title: 'إنجاز جديد',
-        description: `أكملت ${data.statistics?.completedCourses || 5} دورات`,
+        title: 'الدورات المكتملة',
+        description: s.completedCourses != null ? `أكملت ${s.completedCourses} دورة` : 'لا توجد',
         color: 'from-purple-400 to-indigo-500',
         gradient: 'bg-gradient-to-r from-purple-400 to-indigo-500'
       },
@@ -316,7 +296,7 @@ const StudentStatisticsPage = () => {
         type: 'streak',
         icon: Flame,
         title: 'سلسلة النجاح',
-        description: `${data.statistics?.streakDays || 15} يوم متتالي من الدراسة`,
+        description: s.streakDays != null ? `${s.streakDays} يوم متتالي من الدراسة` : 'لا توجد بيانات',
         color: 'from-red-400 to-pink-500',
         gradient: 'bg-gradient-to-r from-red-400 to-pink-500'
       },
@@ -324,7 +304,7 @@ const StudentStatisticsPage = () => {
         type: 'perfect',
         icon: Crown,
         title: 'الدرجات الكاملة',
-        description: `${data.statistics?.perfectScores || 3} درجات كاملة`,
+        description: s.perfectScores != null ? `${s.perfectScores} درجة كاملة` : 'لا توجد',
         color: 'from-yellow-400 to-amber-500',
         gradient: 'bg-gradient-to-r from-yellow-400 to-amber-500'
       }
@@ -332,15 +312,19 @@ const StudentStatisticsPage = () => {
     setInsights(insights);
   };
 
-  // Generate learning journey
+  // Generate learning journey - real data only; empty or minimal when none
   const generateLearningJourney = (data) => {
-    const journey = [
-      { stage: 'البداية', completed: true, progress: 100, color: '#10B981' },
-      { stage: 'منتصف الدورة', completed: true, progress: 100, color: '#10B981' },
-      { stage: 'الامتحان النهائي', completed: false, progress: 75, color: '#3B82F6' },
-      { stage: 'الشهادة', completed: false, progress: 0, color: '#6B7280' }
-    ];
-    setLearningJourney(journey);
+    const progress = data.charts?.gradeProgression;
+    if (progress && progress.length > 0) {
+      const last = progress[progress.length - 1];
+      setLearningJourney([
+        { stage: 'البداية', completed: true, progress: 100, color: '#10B981' },
+        { stage: 'التقدم', completed: (last?.grade || 0) >= 50, progress: last?.grade || 0, color: '#3B82F6' },
+        { stage: 'الامتحان النهائي', completed: false, progress: 0, color: '#6B7280' }
+      ]);
+    } else {
+      setLearningJourney([]);
+    }
   };
 
   // Generate achievements with real data
@@ -757,7 +741,7 @@ const StudentStatisticsPage = () => {
                       <motion.div 
                         className="bg-gradient-to-r from-emerald-500 to-teal-500 h-3 rounded-full shadow-lg"
                         initial={{ width: 0 }}
-                        animate={{ width: `${(stats.completedCourses / stats.totalCourses) * 100}%` }}
+                        animate={{ width: `${(stats.completedCourses / (stats.totalCourses || 1)) * 100}%` }}
                         transition={{ duration: 1, delay: 0.7 }}
                       ></motion.div>
                     </div>
@@ -845,7 +829,10 @@ const StudentStatisticsPage = () => {
               
               <div className="relative">
                 <div className="flex items-center justify-between">
-                  {learningJourney.map((stage, index) => (
+                  {learningJourney.length === 0 ? (
+                    <p className="text-gray-500 dark:text-gray-400 py-4 w-full text-center">لا توجد بيانات للتقدم</p>
+                  ) : (
+                  learningJourney.map((stage, index) => (
                     <div key={index} className="flex flex-col items-center relative">
                       <motion.div
                         initial={{ scale: 0 }}
@@ -884,7 +871,8 @@ const StudentStatisticsPage = () => {
                         </div>
                       )}
                     </div>
-                  ))}
+                  ))
+                  )}
                 </div>
               </div>
             </motion.div>
