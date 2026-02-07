@@ -213,12 +213,15 @@ UserSchema.methods.comparePassword = async function(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-// Static method to find user by phone number (E.164 normalized)
+// Static method to find user by phone number (E.164 + legacy local for Egypt)
 UserSchema.statics.findByPhoneNumber = function(phoneNumber) {
-  const { normalizeForStorage } = require('../utils/phoneUtils');
-  const e164 = normalizeForStorage(phoneNumber);
-  const lookup = e164 || phoneNumber.trim().replace(/\s+/g, '');
-  return this.findOne({ phoneNumber: lookup });
+  const { getPhoneCandidatesForLogin } = require('../utils/normalizePhone');
+  try {
+    const { candidates } = getPhoneCandidatesForLogin(phoneNumber);
+    return this.findOne({ $or: candidates.map((c) => ({ phoneNumber: c })) });
+  } catch {
+    return this.findOne({ phoneNumber: phoneNumber && phoneNumber.trim() });
+  }
 };
 
 module.exports = mongoose.model('User', UserSchema);

@@ -12,8 +12,8 @@ const CourseSchema = new mongoose.Schema({
   description: {
     type: String,
     required: false,
-    trim: true,
-    maxlength: [500, "Course description cannot exceed 500 characters"]
+    trim: true
+    // ✅ No character limit - users can write as much as they want
   },
   
   grade: {
@@ -202,34 +202,30 @@ const CourseSchema = new mongoose.Schema({
         type: [{
           id: {
             type: String,
-            required: false // Make optional
+            required: false // Pre-save generates if missing; frontend should send option.id for correctAnswer match
           },
           text: {
             type: String,
-            required: false, // Make optional - will be set from optionText
+            required: true, // ✅ REQUIRED: Option text is mandatory
             trim: true,
             maxlength: [500, 'Option text cannot exceed 500 characters']
           },
           optionText: {
             type: String,
-            required: false, // Make optional - will be set from text
+            required: false, // Will be synced with text
             trim: true,
             maxlength: [500, 'Option text cannot exceed 500 characters']
-          },
-          isCorrect: {
-            type: Boolean,
-            default: false
           }
+          // ✅ REMOVED: isCorrect - not needed for single-choice
         }],
         set: function(options) {
-          // Handle string arrays by converting to object format
+          // Handle string arrays by converting to object format (no isCorrect)
           if (Array.isArray(options)) {
             return options.map((option, index) => {
               if (typeof option === 'string') {
                 return {
                   text: option,
-                  optionText: option,
-                  isCorrect: false // Will be set by correctAnswer later
+                  optionText: option
                 };
               }
               return option;
@@ -238,11 +234,28 @@ const CourseSchema = new mongoose.Schema({
           return options;
         }
       },
-      // For true/false questions
+      // ✅ SINGLE-CHOICE ONLY: For MCQ, must be option.id (string). For true/false, boolean.
       correctAnswer: {
-        type: mongoose.Schema.Types.Mixed, // Can be boolean or string/index
-        required: false // Make optional - will be set based on question type
+        type: mongoose.Schema.Types.Mixed, // Boolean for true_false, String (option.id) for MCQ
+        required: function() {
+          return this.type === 'mcq' || this.type === 'multiple_choice';
+        },
+        validate: {
+          validator: function(value) {
+            // For MCQ, must be string (option.id)
+            if (this.type === 'mcq' || this.type === 'multiple_choice') {
+              return typeof value === 'string' && value.trim().length > 0;
+            }
+            // For true_false, must be boolean
+            if (this.type === 'true_false') {
+              return typeof value === 'boolean';
+            }
+            return true;
+          },
+          message: 'MCQ correctAnswer must be option.id (string), true_false must be boolean'
+        }
       },
+      // ✅ REMOVED: correctAnswers - no longer supported
       // For essay questions
       sampleAnswer: {
         type: String,
@@ -423,68 +436,59 @@ const CourseSchema = new mongoose.Schema({
   CourseSchema.index({ createdBy: 1 });
   CourseSchema.index({ isActive: 1 });
 
-// Pre-save middleware to calculate totalQuestions for each exam and normalize question types
+// Pre-save middleware: ONLY generate missing IDs and calculate totalPoints/totalQuestions.
+// NO normalization or conversion of correctAnswer (no index→id, no text→id).
+// correctAnswer must come from frontend as option.id (string) for MCQ, boolean for true_false.
 CourseSchema.pre('save', function(next) {
   if (this.exams && Array.isArray(this.exams)) {
     this.exams.forEach(exam => {
-      exam.totalQuestions = exam.questions ? exam.questions.length : 0;
-      
-      // Calculate totalPoints and totalMarks automatically
-      let totalPoints = 0;
-      
-      if (exam.questions && Array.isArray(exam.questions)) {
-        exam.questions.forEach((question, index) => {
-          // Set default points if not provided
-          if (!question.points || question.points < 1) {
-            question.points = 1;
-          }
-          
-          // Add to total points
-          totalPoints += question.points;
-          
-          // Normalize question type - use 'type' if provided, otherwise use 'questionType'
-          if (question.type && !question.questionType) {
-            question.questionType = question.type;
-          } else if (question.questionType && !question.type) {
-            question.type = question.questionType;
-          }
-          
-          // Ensure both fields are set for consistency
-          if (question.questionType) {
-            question.type = question.questionType;
-          }
-          
-          // Normalize options - support both 'optionText' and 'text'
-          if (question.options && Array.isArray(question.options)) {
-            question.options.forEach((option, optIndex) => {
-              // Normalize field names
-              if (option.optionText && !option.text) {
-                option.text = option.optionText;
-              } else if (option.text && !option.optionText) {
-                option.optionText = option.text;
-              }
-              
-              // Set isCorrect based on correctAnswer index for multiple choice
-              if ((question.type === 'multiple_choice' || question.type === 'mcq') && 
-                  typeof question.correctAnswer === 'number') {
-                option.isCorrect = question.correctAnswer === optIndex;
-              }
-            });
-          }
-          
-          // For multiple choice questions, set correctAnswer based on isCorrect
-          if (question.type === 'multiple_choice' && question.options && !question.correctAnswer) {
-            const correctOption = question.options.find(opt => opt.isCorrect);
-            if (correctOption) {
-              question.correctAnswer = correctOption.optionText || correctOption.text;
-            }
-          }
-        });
+      if (!exam.questions || !Array.isArray(exam.questions)) {
+        exam.totalQuestions = 0;
+        exam.totalPoints = 0;
+        exam.totalMarks = 0;
+        return;
       }
-      
-      // Set the calculated totalPoints and totalMarks
+      exam.totalQuestions = exam.questions.length;
+      let totalPoints = 0;
+
+      exam.questions.forEach((question, qIndex) => {
+        // Default points
+        if (!question.points || question.points < 1) {
+          question.points = 1;
+        }
+        totalPoints += question.points;
+
+        // Sync question type with questionType if one is missing
+        if (question.type && !question.questionType) question.questionType = question.type;
+        else if (question.questionType && !question.type) question.type = question.questionType;
+
+        // Generate question.id only if missing
+        if (!question.id || String(question.id).trim() === '') {
+          question.id = `q_${Date.now()}_${qIndex}`;
+        }
+
+        // Options: generate option.id only if missing; sync text/optionText; remove isCorrect
+        if (question.options && Array.isArray(question.options)) {
+          question.options.forEach((option, optIndex) => {
+            if (typeof option === 'object') {
+              if (option.optionText && !option.text) option.text = option.optionText;
+              else if (option.text && !option.optionText) option.optionText = option.text;
+              if (!option.id || String(option.id).trim() === '') {
+                option.id = `opt_${question.id}_${optIndex}`;
+              }
+              delete option.isCorrect;
+            }
+          });
+        }
+
+        // Remove legacy correctAnswers (keep only correctAnswer)
+        if (question.correctAnswers !== undefined) {
+          delete question.correctAnswers;
+        }
+      });
+
       exam.totalPoints = totalPoints;
-      exam.totalMarks = totalPoints; // totalMarks should equal totalPoints
+      exam.totalMarks = totalPoints;
     });
   }
   next();

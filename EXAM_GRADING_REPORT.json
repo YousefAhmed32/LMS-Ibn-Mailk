@@ -1,0 +1,80 @@
+{
+  "reportType": "Corrected Exam Grading Report",
+  "generatedAt": "2025-02-03",
+  "summary": {
+    "backendFixesApplied": true,
+    "gradingLogic": "Set-based comparison for single and multiple correct answers",
+    "resultStructure": "Per-question score, percentage, and pass/fail at exam level"
+  },
+  "correctedGradesStructure": {
+    "result": {
+      "score": "number — total earned marks",
+      "maxScore": "number — total possible marks",
+      "percentage": "number 0–100 — overall percentage (guarded against maxScore=0)",
+      "grade": "string — letter grade (A+ … F)",
+      "level": "string — performance level",
+      "passingScore": "number — threshold used (e.g. 60)",
+      "isPassed": "boolean — true if percentage >= passingScore",
+      "submittedAt": "ISO date string",
+      "questionResults": "array of per-question objects"
+    },
+    "questionResultsItem": {
+      "questionId": "string",
+      "questionText": "string",
+      "type": "string — mcq | true_false | essay",
+      "userAnswer": "any — single value when applicable",
+      "selectedAnswers": "array or null — for multiple choice",
+      "correctAnswer": "any — single correct (legacy)",
+      "correctAnswers": "array or null — multiple correct",
+      "isCorrect": "boolean",
+      "earnedMarks": "number",
+      "maxMarks": "number",
+      "percentagePerQuestion": "number 0–100 — earnedMarks/maxMarks * 100",
+      "detail": "string — full | correct | incorrect | partial | essay | etc."
+    }
+  },
+  "examplePayload": {
+    "result": {
+      "score": 24,
+      "maxScore": 30,
+      "percentage": 80,
+      "grade": "B",
+      "level": "Good",
+      "passingScore": 60,
+      "isPassed": true,
+      "submittedAt": "2025-02-03T12:00:00.000Z",
+      "questionResults": [
+        {
+          "questionId": "q_1",
+          "questionText": "ما العاصمة؟",
+          "type": "mcq",
+          "isCorrect": true,
+          "earnedMarks": 10,
+          "maxMarks": 10,
+          "percentagePerQuestion": 100,
+          "detail": "full"
+        },
+        {
+          "questionId": "q_2",
+          "questionText": "اختر كل الصحيحة",
+          "type": "mcq",
+          "isCorrect": true,
+          "earnedMarks": 10,
+          "maxMarks": 10,
+          "percentagePerQuestion": 100,
+          "detail": "full"
+        },
+        {
+          "questionId": "q_3",
+          "questionText": "صح أو خطأ",
+          "type": "true_false",
+          "isCorrect": false,
+          "earnedMarks": 0,
+          "maxMarks": 10,
+          "percentagePerQuestion": 0,
+          "detail": "incorrect"
+        }
+      ]
+    }
+  }
+}

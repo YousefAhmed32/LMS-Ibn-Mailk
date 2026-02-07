@@ -83,9 +83,9 @@ const updateCourse = async (req, res) => {
       }
     }
 
-    // Handle exams - parse JSON string if present (do this first)
+    // Handle exams - parse JSON string if present. NO transformations: correctAnswer stored as-is (option.id for MCQ).
     if (updateData.exams !== undefined) {
-      console.log('🔍 Processing exams:', typeof updateData.exams, updateData.exams);
+      console.log('🔍 Processing exams:', typeof updateData.exams);
       try {
         if (typeof updateData.exams === 'string') {
           console.log('📝 Parsing exams JSON string...');
@@ -137,15 +137,45 @@ const updateCourse = async (req, res) => {
                     throw new Error(`Exam ${index + 1}, Question ${qIndex + 1}: Multiple choice must have at least 2 options`);
                   }
                   
+                  // ✅ SINGLE-CHOICE ONLY: correctAnswer must be string (option.id)
                   if (question.correctAnswer === undefined || question.correctAnswer === null) {
                     throw new Error(`Exam ${index + 1}, Question ${qIndex + 1}: Correct answer is required for multiple choice`);
                   }
+                  
+                  // Validate correctAnswer is string (option.id) and exists in options — no transformation
+                  if (typeof question.correctAnswer !== 'string') {
+                    throw new Error(`Exam ${index + 1}, Question ${qIndex + 1}: Correct answer must be option.id (string), got ${typeof question.correctAnswer}`);
+                  }
+                  
+                  const correctAnswerId = question.correctAnswer.trim();
+                  const optionExists = question.options.some(opt => {
+                    const optId = typeof opt === 'object' ? (opt.id || opt._id) : null;
+                    return optId === correctAnswerId;
+                  });
+                  
+                  if (!optionExists) {
+                    console.error(`❌ Option IDs available:`, question.options.map(opt => typeof opt === 'object' ? (opt.id || opt._id) : 'N/A'));
+                    throw new Error(`Exam ${index + 1}, Question ${qIndex + 1}: Correct answer option.id "${correctAnswerId}" not found in options`);
+                  }
+                  
+                  // ✅ REJECT: Remove correctAnswers if present
+                  if (question.correctAnswers) {
+                    delete question.correctAnswers;
+                  }
+                  
+                  // ✅ REJECT: Remove isCorrect flags from options
+                  question.options.forEach(opt => {
+                    if (typeof opt === 'object') {
+                      delete opt.isCorrect;
+                    }
+                  });
                 }
                 
                 if (question.type === 'true_false') {
                   if (typeof question.correctAnswer !== 'boolean') {
                     throw new Error(`Exam ${index + 1}, Question ${qIndex + 1}: True/False must have boolean correct answer`);
                   }
+                  console.log(`✅ Validated true_false correctAnswer: ${question.correctAnswer}`);
                 }
               });
             }
@@ -158,7 +188,7 @@ const updateCourse = async (req, res) => {
               }, 0);
             }
             
-            return {
+            const processedExam = {
               id: exam.id || `exam_${Date.now()}_${index}`,
               title: exam.title.trim(),
               type: exam.type || 'internal_exam', // Default to internal_exam
@@ -173,6 +203,8 @@ const updateCourse = async (req, res) => {
               totalQuestions: isExternalExam ? 0 : (exam.questions ? exam.questions.length : 0),
               createdAt: exam.createdAt || new Date().toISOString()
             };
+            
+            return processedExam;
           });
         } else {
           updateData.exams = [];
@@ -247,9 +279,10 @@ const updateCourse = async (req, res) => {
     }
 
     // Validate description if provided
-    if (updateData.description !== undefined && updateData.description.length > 500) {
-      validationErrors.push('Description cannot exceed 500 characters');
-    }
+    // ✅ No character limit for description - users can write as much as they want
+    // Removed: if (updateData.description !== undefined && updateData.description.length > 500) {
+    //   validationErrors.push('Description cannot exceed 500 characters');
+    // }
 
     // Return validation errors if any
     if (validationErrors.length > 0) {
@@ -284,16 +317,59 @@ const updateCourse = async (req, res) => {
       examsCount: updateData.exams?.length || 'not updated'
     });
 
-    // Update the course
-    const updatedCourse = await Course.findByIdAndUpdate(
-      id,
-      updateData,
-      { 
-        new: true, 
-        runValidators: true,
-        context: 'query'
-      }
-    );
+    // ── Atomic exam merge: merge by exam ID to preserve existing IDs ──
+    // Instead of replacing the entire exams array, merge incoming exams with existing ones.
+    // New exams (no matching ID) are appended. Existing exams are updated in place.
+    // Exams not in the update payload are removed (intentional delete by admin).
+    if (updateData.exams && Array.isArray(updateData.exams)) {
+      const existingExams = existingCourse.exams || [];
+      const existingExamMap = {};
+      existingExams.forEach(e => { if (e.id) existingExamMap[e.id] = e; });
+
+      updateData.exams = updateData.exams.map((incomingExam) => {
+        const existing = incomingExam.id ? existingExamMap[incomingExam.id] : null;
+        if (!existing) {
+          // New exam -- use as-is (IDs already generated above)
+          return incomingExam;
+        }
+        // Existing exam -- merge: preserve question/option IDs from DB where possible
+        const mergedQuestions = (incomingExam.questions || []).map((inQ, qIdx) => {
+          // Try to match by question ID
+          const existingQ = existing.questions?.find(eq => eq.id && eq.id === inQ.id);
+          if (!existingQ) {
+            // New question -- generate ID if missing
+            if (!inQ.id) inQ.id = `q_${Date.now()}_${qIdx}`;
+            return inQ;
+          }
+          // Existing question -- preserve its ID, merge options
+          const mergedOptions = (inQ.options || []).map((inOpt, oIdx) => {
+            if (typeof inOpt !== 'object') return inOpt;
+            // Try to match by option ID
+            const existingOpt = existingQ.options?.find(eo => eo.id && eo.id === inOpt.id);
+            if (existingOpt) {
+              // Preserve ID, update text
+              return { ...inOpt, id: existingOpt.id };
+            }
+            // New option -- keep incoming ID or generate
+            if (!inOpt.id) inOpt.id = `opt_${inQ.id}_${oIdx}`;
+            return inOpt;
+          });
+          return { ...inQ, id: existingQ.id, options: mergedOptions };
+        });
+        return { ...incomingExam, id: existing.id, questions: mergedQuestions };
+      });
+
+      console.log('✅ Atomic exam merge complete:', {
+        incoming: updateData.exams.length,
+        previousExisting: existingExams.length
+      });
+    }
+
+    // Update the course using save() to trigger pre-save middleware (ID generation, totalPoints calc)
+    Object.keys(updateData).forEach(key => {
+      existingCourse[key] = updateData[key];
+    });
+    const updatedCourse = await existingCourse.save();
 
     if (!updatedCourse) {
       return res.status(404).json({

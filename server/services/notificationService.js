@@ -282,14 +282,12 @@ class NotificationService {
     }
   }
 
-  // Emit real-time notification via Socket.IO
+  // Emit real-time notification via Socket.IO (non-blocking: does not await save)
   static emitNotification(userId, notification) {
     try {
-      // Get Socket.IO instance from global app
       const io = global.io;
       if (io) {
-        // Emit to user's room
-        io.to(`user_${userId}`).emit('notification', {
+        const payload = {
           id: notification._id,
           type: notification.type,
           title: notification.title,
@@ -301,55 +299,49 @@ class NotificationService {
           confirmationCode: notification.confirmationCode,
           expiresAt: notification.expiresAt,
           read: notification.read
+        };
+        io.to(`user_${userId}`).emit('notification', payload);
+        // Update deliveredAt in background so request is not blocked
+        setImmediate(() => {
+          notification.deliveredAt = new Date();
+          notification.save().catch(err => console.error('Error updating deliveredAt:', err));
         });
-        
-        // Update deliveredAt timestamp
-        notification.deliveredAt = new Date();
-        notification.save().catch(err => console.error('Error updating deliveredAt:', err));
-        
-        console.log(`🔔 Notification emitted to user ${userId}:`, notification.title);
-      } else {
-        console.log('⚠️ Socket.IO instance not available for notification emission');
       }
     } catch (error) {
-      console.error('Error emitting notification:', error);
+      setImmediate(() => console.error('Error emitting notification:', error));
     }
   }
 
-  // Emit notification to multiple users
+  // Emit notification to multiple users (non-blocking)
   static emitBulkNotification(userIds, notification) {
     try {
       const io = global.io;
       if (io) {
-        userIds.forEach(userId => {
-          io.to(`user_${userId}`).emit('notification', {
-            id: notification._id,
-            type: notification.type,
-            title: notification.title,
-            message: notification.message,
-            priority: notification.priority,
-            category: notification.category,
-            createdAt: notification.createdAt,
-            data: notification.data,
-            confirmationCode: notification.confirmationCode,
-            expiresAt: notification.expiresAt,
-            read: notification.read
-          });
-        });
-        
-        console.log(`🔔 Bulk notification emitted to ${userIds.length} users:`, notification.title);
+        const payload = {
+          id: notification._id,
+          type: notification.type,
+          title: notification.title,
+          message: notification.message,
+          priority: notification.priority,
+          category: notification.category,
+          createdAt: notification.createdAt,
+          data: notification.data,
+          confirmationCode: notification.confirmationCode,
+          expiresAt: notification.expiresAt,
+          read: notification.read
+        };
+        userIds.forEach(userId => io.to(`user_${userId}`).emit('notification', payload));
       }
     } catch (error) {
-      console.error('Error emitting bulk notification:', error);
+      setImmediate(() => console.error('Error emitting bulk notification:', error));
     }
   }
 
-  // Emit system-wide announcement
+  // Emit system-wide announcement (non-blocking)
   static emitSystemAnnouncement(notification) {
     try {
       const io = global.io;
       if (io) {
-        // Emit to all connected users
         io.emit('system_announcement', {
           id: notification._id,
           type: notification.type,
@@ -360,11 +352,9 @@ class NotificationService {
           createdAt: notification.createdAt,
           data: notification.data
         });
-        
-        console.log(`📢 System announcement emitted to all users:`, notification.title);
       }
     } catch (error) {
-      console.error('Error emitting system announcement:', error);
+      setImmediate(() => console.error('Error emitting system announcement:', error));
     }
   }
 

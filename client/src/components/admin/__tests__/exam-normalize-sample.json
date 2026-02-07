@@ -1,0 +1,70 @@
+{
+  "description": "Sample exam data that should pass after normalizeModernQuestionsForSave fix. correctAnswer must match an option.id.",
+  "fromModernBuilder": {
+    "title": "امتحان تجريبي",
+    "questions": [
+      {
+        "id": "q_test_1",
+        "questionText": "ما هي عاصمة مصر؟",
+        "type": "mcq",
+        "choices": [
+          { "id": "choice_1_0", "text": "الإسكندرية", "isCorrect": false },
+          { "id": "choice_1_1", "text": "القاهرة", "isCorrect": true },
+          { "id": "choice_1_2", "text": "الجيزة", "isCorrect": false }
+        ],
+        "marks": 2
+      },
+      {
+        "questionText": "2 + 2 = ?",
+        "type": "mcq",
+        "choices": [
+          { "text": "3", "isCorrect": false },
+          { "text": "4", "isCorrect": true },
+          { "text": "5", "isCorrect": false }
+        ],
+        "marks": 1
+      },
+      {
+        "questionText": "10 > 5",
+        "type": "true_false",
+        "correctAnswer": true,
+        "marks": 1
+      }
+    ]
+  },
+  "expectedAfterNormalize": {
+    "questions": [
+      {
+        "id": "q_test_1",
+        "questionText": "ما هي عاصمة مصر؟",
+        "type": "mcq",
+        "correctAnswer": "opt_q_test_1_1",
+        "options": [
+          { "id": "opt_q_test_1_0", "text": "الإسكندرية" },
+          { "id": "opt_q_test_1_1", "text": "القاهرة" },
+          { "id": "opt_q_test_1_2", "text": "الجيزة" }
+        ],
+        "points": 2
+      },
+      {
+        "id": "q_<timestamp>_1",
+        "questionText": "2 + 2 = ?",
+        "type": "mcq",
+        "correctAnswer": "opt_q_<timestamp>_1_1",
+        "options": [
+          { "id": "opt_q_<timestamp>_1_0", "text": "3" },
+          { "id": "opt_q_<timestamp>_1_1", "text": "4" },
+          { "id": "opt_q_<timestamp>_1_2", "text": "5" }
+        ],
+        "points": 1
+      },
+      {
+        "id": "q_<timestamp>_2",
+        "type": "true_false",
+        "correctAnswer": true,
+        "points": 1
+      }
+    ]
+  },
+  "backendValidation": "correctAnswer must be string and equal to one of options[].id for MCQ"
+}

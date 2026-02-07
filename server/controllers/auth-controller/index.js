@@ -2,7 +2,7 @@ const User = require("../../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { validateRoleBasedRegistration } = require("../../middleware/roleValidation");
-const { normalizeForStorage } = require("../../utils/phoneUtils");
+const { normalizePhone, getPhoneCandidatesForLogin } = require("../../utils/normalizePhone");
 
 // Generate JWT Token with longer expiry
 const generateToken = (userId) => {
@@ -50,9 +50,17 @@ const registerUser = async (req, res) => {
       phoneNumber, role, phoneStudent, guardianPhone, governorate, grade, relation
     });
 
-    // Normalize to E.164 for storage and lookup (any country)
-    const normalizedPhone = normalizeForStorage(phoneNumber) || phoneNumber.trim().replace(/\s+/g, '');
-    
+    // Normalize to E.164 for storage (throws if invalid)
+    let normalizedPhone;
+    try {
+      normalizedPhone = normalizePhone(phoneNumber);
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message || "Invalid phone number"
+      });
+    }
+
     // Check if user already exists
     const existingUser = await User.findOne({ phoneNumber: normalizedPhone });
     if (existingUser) {
@@ -79,8 +87,26 @@ const registerUser = async (req, res) => {
 
     // Add role-specific fields (E.164 for all phone fields)
     if (role === 'student') {
-      if (phoneStudent) userData.phoneStudent = normalizeForStorage(phoneStudent) || phoneStudent.trim().replace(/\s+/g, '');
-      if (guardianPhone) userData.guardianPhone = normalizeForStorage(guardianPhone) || guardianPhone.trim().replace(/\s+/g, '');
+      if (phoneStudent) {
+        try {
+          userData.phoneStudent = normalizePhone(phoneStudent);
+        } catch {
+          return res.status(400).json({
+            success: false,
+            error: "Invalid student phone number"
+          });
+        }
+      }
+      if (guardianPhone) {
+        try {
+          userData.guardianPhone = normalizePhone(guardianPhone);
+        } catch {
+          return res.status(400).json({
+            success: false,
+            error: "Invalid guardian phone number"
+          });
+        }
+      }
       
       userData.governorate = governorate?.trim();
       userData.grade = grade?.trim();
@@ -199,11 +225,23 @@ const loginUser = async (req, res) => {
     }
 
     console.log('🔍 Searching for user with phone number:', phoneNumber);
-    
-    // Normalize to E.164 for lookup (any country)
-    const normalizedPhone = normalizeForStorage(phoneNumber) || phoneNumber.trim().replace(/\s+/g, '');
-    const user = await User.findOne({ phoneNumber: normalizedPhone });
-    
+
+    // Backward-compatible lookup: E.164 + legacy local (Egypt)
+    let normalizedPhone;
+    let user;
+    try {
+      const { normalized, candidates } = getPhoneCandidatesForLogin(phoneNumber);
+      normalizedPhone = normalized;
+      user = await User.findOne({
+        $or: candidates.map((c) => ({ phoneNumber: c }))
+      });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message || "Invalid phone number"
+      });
+    }
+
     if (!user) {
       console.log('❌ Login failed: User not found for phone number:', phoneNumber);
       return res.status(401).json({

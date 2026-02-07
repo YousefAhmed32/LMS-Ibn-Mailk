@@ -619,7 +619,7 @@ const getStudentGrades = async (req, res) => {
     }
     
     // Verify parent has access to this student
-    const parent = await User.findById(parentId);
+    const parent = await User.findById(parentId).select('linkedStudents').lean();
     if (!parent || !parent.linkedStudents.includes(childId)) {
       return res.status(403).json({
         success: false,
@@ -628,7 +628,7 @@ const getStudentGrades = async (req, res) => {
     }
 
     // Get student data
-    const student = await User.findById(childId);
+    const student = await User.findById(childId).select('-password').lean();
     if (!student) {
       return res.status(404).json({
         success: false,
@@ -692,7 +692,7 @@ const getStudentAttendance = async (req, res) => {
     }
     
     // Verify parent has access to this student
-    const parent = await User.findById(parentId);
+    const parent = await User.findById(parentId).select('linkedStudents').lean();
     if (!parent || !parent.linkedStudents.includes(childId)) {
       return res.status(403).json({
         success: false,
@@ -758,7 +758,7 @@ const getStudentProgress = async (req, res) => {
     }
     
     // Verify parent has access to this student
-    const parent = await User.findById(parentId);
+    const parent = await User.findById(parentId).select('linkedStudents').lean();
     if (!parent || !parent.linkedStudents.includes(childId)) {
       return res.status(403).json({
         success: false,
@@ -767,7 +767,7 @@ const getStudentProgress = async (req, res) => {
     }
 
     // Get student data
-    const student = await User.findById(childId);
+    const student = await User.findById(childId).select('-password').lean();
     if (!student) {
       return res.status(404).json({
         success: false,

@@ -1252,14 +1252,45 @@ const createCourse = async (req, res) => {
             throw new Error(`Exam ${index + 1}, Question ${qIndex + 1}: Invalid question type`);
           }
           
-          if (question.type === 'mcq') {
+          if (question.type === 'mcq' || question.type === 'multiple_choice') {
             if (!question.options || !Array.isArray(question.options) || question.options.length < 2) {
               throw new Error(`Exam ${index + 1}, Question ${qIndex + 1}: MCQ must have at least 2 options`);
             }
             
-            if (!question.correctAnswer) {
-              throw new Error(`Exam ${index + 1}, Question ${qIndex + 1}: Correct answer is required for MCQ`);
+            // ✅ SINGLE-CHOICE ONLY: Reject correctAnswers array
+            if (question.correctAnswers) {
+              throw new Error(`Exam ${index + 1}, Question ${qIndex + 1}: MCQ must use correctAnswer (single value), not correctAnswers array`);
             }
+            
+            // ✅ SINGLE-CHOICE ONLY: Require exactly one correctAnswer
+            if (!question.correctAnswer) {
+              throw new Error(`Exam ${index + 1}, Question ${qIndex + 1}: MCQ must have exactly one correctAnswer`);
+            }
+            
+            // ✅ SINGLE-CHOICE ONLY: correctAnswer must be string (option.id)
+            if (typeof question.correctAnswer !== 'string') {
+              throw new Error(`Exam ${index + 1}, Question ${qIndex + 1}: MCQ correctAnswer must be a string (option.id)`);
+            }
+            
+            // ✅ SINGLE-CHOICE ONLY: Ensure all options have IDs
+            question.options.forEach((opt, optIdx) => {
+              if (!opt.id || typeof opt.id !== 'string') {
+                throw new Error(`Exam ${index + 1}, Question ${qIndex + 1}, Option ${optIdx + 1}: Every option must have a unique id`);
+              }
+            });
+            
+            // ✅ SINGLE-CHOICE ONLY: Verify correctAnswer matches one option.id
+            const optionIds = question.options.map(opt => opt.id);
+            if (!optionIds.includes(question.correctAnswer)) {
+              throw new Error(`Exam ${index + 1}, Question ${qIndex + 1}: correctAnswer "${question.correctAnswer}" must match one of the option IDs`);
+            }
+            
+            // ✅ REJECT: Remove isCorrect from options if present
+            question.options.forEach(opt => {
+              if (opt.hasOwnProperty('isCorrect')) {
+                delete opt.isCorrect;
+              }
+            });
           }
           
           if (question.type === 'true_false') {
@@ -3102,7 +3133,7 @@ const approveOrder = async (req, res) => {
         await course.save({ session });
       }
 
-      // Create notification for student
+      // Create notification for student (NotificationService also emits 'notification')
       await NotificationService.createNotification(user._id, {
         type: 'payment_approved',
         title: 'تم الموافقة على الدفع',
@@ -3116,14 +3147,22 @@ const approveOrder = async (req, res) => {
         category: 'payment'
       });
 
-      // Emit socket.io event to student's room
-      if (req.app.get('io')) {
-        const io = req.app.get('io');
-        io.to(`user_${user._id}`).emit('course:enrolled', {
-          courseId: course._id,
-          orderId: payment._id,
-          courseTitle: course.title,
-          message: 'تم تفعيل الدورة بنجاح'
+      // Emit course:enrolled after response (non-blocking so transaction reply is fast)
+      const io = req.app.get('io');
+      const enrolledPayload = {
+        courseId: course._id,
+        orderId: payment._id,
+        courseTitle: course.title,
+        message: 'تم تفعيل الدورة بنجاح'
+      };
+      const userIdForEmit = user._id;
+      if (io) {
+        setImmediate(() => {
+          try {
+            io.to(`user_${userIdForEmit}`).emit('course:enrolled', enrolledPayload);
+          } catch (e) {
+            console.error('Error emitting course:enrolled:', e);
+          }
         });
       }
 

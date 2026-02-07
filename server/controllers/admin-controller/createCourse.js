@@ -195,9 +195,38 @@ const createCourse = async (req, res) => {
                     throw new Error(`Exam ${index + 1}, Question ${qIndex + 1}: Multiple choice must have at least 2 options`);
                   }
                   
+                  // ✅ SINGLE-CHOICE ONLY: correctAnswer must be string (option.id)
                   if (question.correctAnswer === undefined || question.correctAnswer === null) {
                     throw new Error(`Exam ${index + 1}, Question ${qIndex + 1}: Correct answer is required for multiple choice`);
                   }
+                  
+                  // Validate correctAnswer is string (option.id) and exists in options — no transformation
+                  if (typeof question.correctAnswer !== 'string') {
+                    throw new Error(`Exam ${index + 1}, Question ${qIndex + 1}: Correct answer must be option.id (string), got ${typeof question.correctAnswer}`);
+                  }
+                  
+                  const correctAnswerId = question.correctAnswer.trim();
+                  const optionExists = question.options.some(opt => {
+                    const optId = typeof opt === 'object' ? (opt.id || opt._id) : null;
+                    return optId === correctAnswerId;
+                  });
+                  
+                  if (!optionExists) {
+                    console.error(`❌ Option IDs available:`, question.options.map(opt => typeof opt === 'object' ? (opt.id || opt._id) : 'N/A'));
+                    throw new Error(`Exam ${index + 1}, Question ${qIndex + 1}: Correct answer option.id "${correctAnswerId}" not found in options`);
+                  }
+                  
+                  // ✅ REJECT: Remove correctAnswers if present
+                  if (question.correctAnswers) {
+                    delete question.correctAnswers;
+                  }
+                  
+                  // ✅ REJECT: Remove isCorrect flags from options
+                  question.options.forEach(opt => {
+                    if (typeof opt === 'object') {
+                      delete opt.isCorrect;
+                    }
+                  });
                 }
                 
                 if (question.type === 'true_false') {

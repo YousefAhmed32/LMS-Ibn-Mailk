@@ -4,19 +4,24 @@
  */
 
 const errorHandler = (err, req, res, next) => {
-  console.error('🚨 Error Handler:', {
+  // Non-blocking: avoid logging large body/query in production; don't block event loop
+  const logPayload = {
     timestamp: new Date().toISOString(),
     method: req.method,
     url: req.url,
-    error: {
-      name: err.name,
-      message: err.message,
-      stack: err.stack
-    },
-    user: req.user ? { id: req.user._id, role: req.user.role } : 'No user',
-    body: req.body,
-    query: req.query,
-    params: req.params
+    error: { name: err.name, message: err.message }
+  };
+  if (req.user) logPayload.user = { id: req.user._id, role: req.user.role };
+  if (process.env.NODE_ENV === 'development') {
+    logPayload.error.stack = err.stack;
+    logPayload.query = req.query;
+    logPayload.params = req.params;
+    if (req.body && typeof req.body === 'object' && Object.keys(req.body).length <= 10) {
+      logPayload.body = req.body;
+    }
+  }
+  setImmediate(() => {
+    console.error('🚨 Error Handler:', logPayload);
   });
 
   // Handle specific error types

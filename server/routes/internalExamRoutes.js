@@ -5,7 +5,8 @@ const {
   getCourseExams,
   getExamForTaking,
   submitExam,
-  getExamResult
+  getExamResult,
+  getExamSubmission
 } = require('../controllers/examController');
 
 // GET /api/exams/course/:courseId - Get all exams for a course
@@ -19,5 +20,8 @@ router.post('/:courseId/:examId/submit', authenticateToken, submitExam);
 
 // GET /api/exams/:courseId/:examId/result - Get exam result
 router.get('/:courseId/:examId/result', authenticateToken, getExamResult);
+
+// GET /api/exams/:courseId/:examId/submission - Get student's submission (for editing/review)
+router.get('/:courseId/:examId/submission', authenticateToken, getExamSubmission);
 
 module.exports = router;

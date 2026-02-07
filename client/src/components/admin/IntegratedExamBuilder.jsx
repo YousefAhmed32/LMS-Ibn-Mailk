@@ -9,13 +9,15 @@ import {
   BookOpen,
   CheckCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ArrowLeft,
+  Maximize2
 } from 'lucide-react';
 import { toast } from '../../hooks/use-toast';
 import { ExamBuilderProvider } from '../../contexts/ExamBuilderContext';
 import ModernExamBuilder from '../exam-builder/ModernExamBuilder';
 
-// لوحة ألوان عصرية للـ Exam Builder — تباين واضح، تعمل في الوضعين
+// لوحة ألوان فخمة
 const getExamBuilderPalette = (isDark) => (isDark ? {
   bg: 'linear-gradient(180deg, #0f0f14 0%, #16161d 100%)',
   card: 'rgba(22, 22, 30, 0.95)',
@@ -31,9 +33,9 @@ const getExamBuilderPalette = (isDark) => (isDark ? {
   textMuted: '#71717a',
   danger: '#f87171',
   dangerHover: 'rgba(248, 113, 113, 0.15)',
-  modalBg: 'rgba(22, 22, 30, 0.98)',
+  modalBg: 'linear-gradient(135deg, #0f0f14 0%, #1a1a24 100%)',
   modalBorder: 'rgba(255,255,255,0.06)',
-  overlay: 'rgba(0,0,0,0.6)'
+  overlay: 'rgba(0,0,0,0.75)'
 } : {
   bg: 'transparent',
   card: 'rgba(255, 255, 255, 0.98)',
@@ -49,109 +51,143 @@ const getExamBuilderPalette = (isDark) => (isDark ? {
   textMuted: '#71717a',
   danger: '#dc2626',
   dangerHover: 'rgba(220, 38, 38, 0.1)',
-  modalBg: 'rgba(255, 255, 255, 0.98)',
+  modalBg: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
   modalBorder: 'rgba(0,0,0,0.06)',
-  overlay: 'rgba(0,0,0,0.4)'
+  overlay: 'rgba(0,0,0,0.5)'
 });
 
 const springTransition = { type: 'tween', duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] };
-const modalTransition = { type: 'tween', duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] };
+const modalTransition = { type: 'spring', stiffness: 300, damping: 30 };
 
 const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode }) => {
   const palette = getExamBuilderPalette(!!isDarkMode);
 
-  // State
   const [showExamBuilder, setShowExamBuilder] = useState(false);
   const [editingExam, setEditingExam] = useState(null);
   const [expandedExam, setExpandedExam] = useState(null);
 
-  // Normalize modern builder format (choices with isCorrect) to backend format
-  const normalizeModernQuestionsForSave = (questions) => {
-    return questions.map((question) => {
-      if (question.type === 'mcq' && question.choices) {
-        const correctIndex = question.choices.findIndex((c) => c.isCorrect);
-        return {
-          ...question,
-          correctAnswer: correctIndex >= 0 ? correctIndex : 0,
-          options: question.choices.map((c) => c.text || ''),
-        };
-      }
-      if (question.type === 'true_false') {
-        return {
-          ...question,
-          correctAnswer: Boolean(question.correctAnswer),
-        };
-      }
-      return question;
-    });
-  };
-
-  // Edit exam — opens modal; ExamBuilderProvider gets initialExam from editingExam
   const editExam = (exam) => {
     setEditingExam(exam);
     setShowExamBuilder(true);
   };
 
-  // Delete exam
   const deleteExam = (examId) => {
     if (window.confirm('هل أنت متأكد من حذف هذا الامتحان؟')) {
       const updatedExams = exams.filter(exam => exam.id !== examId);
       onExamsChange(updatedExams);
-      
-      toast({
-        title: 'تم حذف الامتحان',
-        description: 'تم حذف الامتحان بنجاح'
-      });
+      toast({ title: 'تم حذف الامتحان', description: 'تم حذف الامتحان بنجاح' });
     }
   };
 
-  // Save from Modern Exam Builder
   const handleSaveFromModernBuilder = (formFromContext) => {
+    console.log('📋 RECEIVED FROM BUILDER:', formFromContext);
+
     if (!formFromContext.title?.trim()) {
-      toast({ title: 'خطأ في البيانات', description: 'يرجى إدخال عنوان الامتحان', variant: 'destructive' });
+      toast({ title: 'خطأ', description: 'يرجى إدخال عنوان الامتحان', variant: 'destructive' });
       return;
     }
-    if (!formFromContext.questions?.length) {
-      toast({ title: 'خطأ في البيانات', description: 'يرجى إضافة سؤال واحد على الأقل', variant: 'destructive' });
+
+    if (!formFromContext.questions || formFromContext.questions.length === 0) {
+      toast({ title: 'خطأ', description: 'يرجى إضافة سؤال واحد على الأقل', variant: 'destructive' });
       return;
     }
+
     for (let i = 0; i < formFromContext.questions.length; i++) {
       const q = formFromContext.questions[i];
+      
       if (!q.questionText?.trim()) {
-        toast({ title: 'خطأ في البيانات', description: `يرجى إدخال نص السؤال ${i + 1}`, variant: 'destructive' });
+        toast({ title: 'خطأ', description: `السؤال ${i + 1}: يرجى إدخال نص السؤال`, variant: 'destructive' });
         return;
       }
+      
       if (q.type === 'mcq') {
-        if (!q.choices?.length || q.choices.length < 2) {
-          toast({ title: 'خطأ في البيانات', description: `السؤال ${i + 1} يجب أن يحتوي على خيارين على الأقل`, variant: 'destructive' });
+        if (!q.choices || q.choices.length < 2) {
+          toast({ title: 'خطأ', description: `السؤال ${i + 1}: يجب أن يحتوي على خيارين على الأقل`, variant: 'destructive' });
           return;
         }
-        if (!q.choices.some((c) => c.isCorrect)) {
-          toast({ title: 'خطأ في البيانات', description: `يرجى اختيار الإجابة الصحيحة للسؤال ${i + 1}`, variant: 'destructive' });
+        
+        const emptyChoices = q.choices.filter(c => !c.text?.trim());
+        if (emptyChoices.length > 0) {
+          toast({ title: 'خطأ', description: `السؤال ${i + 1}: بعض الخيارات فارغة`, variant: 'destructive' });
+          return;
+        }
+        
+        const hasCorrectAnswer = q.choices.some(c => c.isCorrect === true);
+        if (!hasCorrectAnswer) {
+          toast({
+            title: 'خطأ',
+            description: `السؤال ${i + 1}: يرجى تحديد الإجابة الصحيحة`,
+            variant: 'destructive',
+            duration: 8000
+          });
+          return;
+        }
+      }
+      
+      if (q.type === 'true_false') {
+        if (q.correctAnswer !== true && q.correctAnswer !== false) {
+          toast({ title: 'خطأ', description: `السؤال ${i + 1}: يرجى تحديد الإجابة الصحيحة`, variant: 'destructive' });
           return;
         }
       }
     }
-    const normalizedQuestions = normalizeModernQuestionsForSave(formFromContext.questions);
-    const totalMarksValue = normalizedQuestions.reduce((s, q) => s + (q.marks ?? 10), 0);
+
+    const totalMarks = formFromContext.questions.reduce((sum, q) => sum + (q.marks || 10), 0);
+
     const examData = {
-      id: editingExam?.id || `exam_${Date.now()}`,
-      title: formFromContext.title,
+      id: editingExam?.id || `exam_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      title: formFromContext.title.trim(),
       type: 'internal_exam',
-      totalMarks: totalMarksValue,
-      totalPoints: totalMarksValue,
-      duration: 30,
-      passingScore: 60,
-      questions: normalizedQuestions,
+      url: '',
       migratedFromGoogleForm: false,
       migrationNote: '',
-      createdAt: editingExam?.createdAt || new Date().toISOString()
+      totalMarks: totalMarks,
+      totalPoints: totalMarks,
+      duration: formFromContext.duration || 30,
+      passingScore: formFromContext.passingScore || 60,
+      isActive: true,
+      createdAt: editingExam?.createdAt || new Date().toISOString(),
+      questions: formFromContext.questions.map((q, index) => {
+        const question = {
+          id: q.id || `q_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`,
+          questionText: q.questionText?.trim() || '',
+          type: q.type,
+          points: q.marks || 10,
+          marks: q.marks || 10,
+          order: index + 1
+        };
+
+        if (q.type === 'mcq') {
+          question.options = (q.choices || []).map((choice) => ({
+            id: choice.id || `opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            text: choice.text?.trim() || '',
+            optionText: choice.text?.trim() || ''
+          }));
+
+          const correctChoiceIndex = q.choices.findIndex(c => c.isCorrect === true);
+          if (correctChoiceIndex !== -1 && question.options[correctChoiceIndex]) {
+            question.correctAnswer = question.options[correctChoiceIndex].id;
+          } else {
+            question.correctAnswer = null;
+          }
+        } else if (q.type === 'true_false') {
+          question.options = [];
+          question.correctAnswer = Boolean(q.correctAnswer);
+        } else if (q.type === 'essay') {
+          question.options = [];
+          question.sampleAnswer = q.sampleAnswer || '';
+        }
+
+        return question;
+      })
     };
+
     const updatedExams = editingExam
       ? exams.map((ex) => (ex.id === editingExam.id ? examData : ex))
       : [...exams, examData];
+
     onExamsChange(updatedExams);
-    toast({ title: 'تم حفظ الامتحان', description: editingExam ? 'تم تحديث الامتحان بنجاح' : 'تم إضافة الامتحان بنجاح' });
+    toast({ title: 'تم حفظ الامتحان', description: editingExam ? 'تم التحديث بنجاح' : 'تم الإضافة بنجاح' });
     setShowExamBuilder(false);
     setEditingExam(null);
   };
@@ -162,7 +198,7 @@ const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode }) => {
   };
 
   return (
-    <div className="space-y-5 sm:space-y-6" style={{ minHeight: 1 }}>
+    <div className="space-y-5 sm:space-y-6">
       {/* قائمة الامتحانات */}
       <div className="space-y-4">
         {exams.map((exam, index) => (
@@ -171,7 +207,7 @@ const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode }) => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ...springTransition, delay: index * 0.03 }}
-            className="rounded-2xl border overflow-hidden transition-all duration-300 ease-out"
+            className="rounded-2xl border overflow-hidden transition-all duration-300"
             style={{
               background: palette.card,
               borderColor: palette.cardBorder,
@@ -179,7 +215,7 @@ const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode }) => {
             }}
           >
             <div
-              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5 sm:p-6 transition-colors duration-200"
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5 sm:p-6"
               style={{ color: palette.text }}
             >
               <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
@@ -194,9 +230,7 @@ const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode }) => {
                   <BookOpen className="w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
                 <div className="min-w-0">
-                  <h4 className="text-lg sm:text-xl font-bold truncate" style={{ color: palette.text }}>
-                    {exam.title}
-                  </h4>
+                  <h4 className="text-lg sm:text-xl font-bold truncate">{exam.title}</h4>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm" style={{ color: palette.textSoft }}>
                     <span>{exam.questions?.length ?? 0} سؤال</span>
                     <span>{exam.totalPoints ?? exam.totalMarks ?? 0} نقطة</span>
@@ -207,27 +241,24 @@ const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode }) => {
                 <button
                   type="button"
                   onClick={() => setExpandedExam(expandedExam === exam.id ? null : exam.id)}
-                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-all duration-200 active:opacity-80"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-all"
                   style={{ background: palette.cardHover, color: palette.textSoft }}
-                  aria-label={expandedExam === exam.id ? 'طي' : 'عرض الأسئلة'}
                 >
                   {expandedExam === exam.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                 </button>
                 <button
                   type="button"
                   onClick={() => editExam(exam)}
-                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-all duration-200 active:opacity-80"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-all"
                   style={{ background: palette.accentLight, color: palette.accent }}
-                  aria-label="تعديل"
                 >
                   <Edit3 className="w-5 h-5" />
                 </button>
                 <button
                   type="button"
                   onClick={() => deleteExam(exam.id)}
-                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-all duration-200 active:opacity-80"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-all"
                   style={{ background: palette.dangerHover, color: palette.danger }}
-                  aria-label="حذف"
                 >
                   <Trash2 className="w-5 h-5" />
                 </button>
@@ -243,30 +274,13 @@ const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode }) => {
                   transition={springTransition}
                   className="overflow-hidden"
                 >
-                  <div
-                    className="border-t px-5 sm:px-6 py-5"
-                    style={{ borderColor: palette.cardBorder }}
-                  >
+                  <div className="border-t px-5 sm:px-6 py-5" style={{ borderColor: palette.cardBorder }}>
                     <div className="space-y-4">
                       {(exam.questions || []).map((question, qIndex) => (
-                        <Motion.div
+                        <div
                           key={question.id ?? qIndex}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={springTransition}
-                          className="rounded-xl border p-4 sm:p-5 transition-all duration-200 hover:border-opacity-60"
-                          style={{
-                            background: palette.cardHover,
-                            borderColor: palette.cardBorder
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
-                            e.currentTarget.style.borderColor = palette.accent + '40';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = palette.cardHover;
-                            e.currentTarget.style.borderColor = palette.cardBorder;
-                          }}
+                          className="rounded-xl border p-4 sm:p-5"
+                          style={{ background: palette.cardHover, borderColor: palette.cardBorder }}
                         >
                           <div className="flex items-start gap-4">
                             <div
@@ -276,25 +290,19 @@ const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode }) => {
                               {qIndex + 1}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-base leading-snug" style={{ color: palette.text }}>
-                                {question.questionText || '—'}
-                              </p>
+                              <p className="font-semibold text-base">{question.questionText || '—'}</p>
                               <div className="mt-3 space-y-2">
                                 {question.type === 'mcq' && (question.options || []).map((option, optIndex) => {
                                   const optText = typeof option === 'string' ? option : (option?.text ?? option?.optionText ?? '');
-                                  const isCorrect = typeof question.correctAnswer === 'number'
-                                    ? question.correctAnswer === optIndex
-                                    : question.correctAnswer === option?.id;
+                                  const isCorrect = question.correctAnswer === option?.id;
                                   return (
                                     <div
                                       key={option?.id ?? optIndex}
-                                      className="flex items-center gap-3 py-2 px-3 rounded-lg transition-colors"
-                                      style={{
-                                        background: isCorrect ? palette.correctBg : 'transparent'
-                                      }}
+                                      className="flex items-center gap-3 py-2 px-3 rounded-lg"
+                                      style={{ background: isCorrect ? palette.correctBg : 'transparent' }}
                                     >
                                       <div
-                                        className="w-4 h-4 rounded-full border-2 flex-shrink-0"
+                                        className="w-4 h-4 rounded-full border-2"
                                         style={{
                                           borderColor: isCorrect ? palette.correct : palette.cardBorder,
                                           backgroundColor: isCorrect ? palette.correct : 'transparent'
@@ -303,35 +311,17 @@ const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode }) => {
                                       <span className="text-sm flex-1" style={{ color: isCorrect ? palette.correct : palette.textSoft }}>
                                         {optText || '—'}
                                       </span>
-                                      {isCorrect && <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: palette.correct }} />}
+                                      {isCorrect && <CheckCircle className="w-4 h-4" style={{ color: palette.correct }} />}
                                     </div>
                                   );
                                 })}
-                                {question.type === 'true_false' && (
-                                  <div
-                                    className="flex items-center gap-3 py-2 px-3 rounded-lg"
-                                    style={{ background: palette.correctBg }}
-                                  >
-                                    <div
-                                      className="w-4 h-4 rounded-full border-2 flex-shrink-0"
-                                      style={{ borderColor: palette.correct, backgroundColor: palette.correct }}
-                                    />
-                                    <span className="text-sm font-medium" style={{ color: palette.correct }}>
-                                      {question.correctAnswer ? 'صح' : 'خطأ'}
-                                    </span>
-                                    <CheckCircle className="w-4 h-4" style={{ color: palette.correct }} />
-                                  </div>
-                                )}
-                                {(question.type === 'essay' || !question.type) && (
-                                  <p className="text-sm" style={{ color: palette.textMuted }}>سؤال مقالي</p>
-                                )}
                               </div>
                               <p className="mt-2 text-xs font-medium" style={{ color: palette.textMuted }}>
                                 {question.marks ?? 10} نقطة
                               </p>
                             </div>
                           </div>
-                        </Motion.div>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -346,107 +336,101 @@ const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode }) => {
       <Motion.button
         type="button"
         onClick={openBuilder}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={springTransition}
-        className="w-full flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5 p-6 sm:p-8 rounded-2xl border-2 border-dashed min-h-[120px] sm:min-h-[100px] transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:opacity-95"
+        className="w-full flex items-center justify-center gap-4 p-6 sm:p-8 rounded-2xl border-2 border-dashed min-h-[100px] transition-all"
         style={{
           borderColor: palette.accent + '80',
           background: palette.accentLight,
-          color: palette.accent,
-          boxShadow: 'none'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.boxShadow = palette.accentGlow;
-          e.currentTarget.style.borderColor = palette.accent;
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.boxShadow = 'none';
-          e.currentTarget.style.borderColor = palette.accent + '80';
+          color: palette.accent
         }}
       >
-        <div
-          className="flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center transition-transform duration-200"
-          style={{ background: palette.accent + '25' }}
-        >
-          <Plus className="w-7 h-7" style={{ color: palette.accent }} />
+        <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{ background: palette.accent + '25' }}>
+          <Plus className="w-7 h-7" />
         </div>
-        <div className="text-center sm:text-right">
-          <span className="font-bold text-lg sm:text-xl block" style={{ color: palette.accent }}>إضافة امتحان جديد</span>
+        <div className="text-right">
+          <span className="font-bold text-xl block">إضافة امتحان جديد</span>
           <span className="text-sm block mt-0.5" style={{ color: palette.textSoft }}>أنشئ امتحاناً مع أسئلة متعددة</span>
         </div>
       </Motion.button>
 
-      {/* Modal منشئ الامتحان — زجاجي، زوايا كبيرة، ظل، backdrop-blur */}
+      {/* ✅ FULL-SCREEN Modal فخم جداً */}
       {typeof document !== 'undefined' &&
         createPortal(
           <AnimatePresence>
             {showExamBuilder && (
               <Motion.div
-                key="exam-builder-modal"
+                key="exam-builder-fullscreen"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={modalTransition}
-                className="fixed inset-0 flex items-center justify-center z-[9999] p-3 sm:p-4 md:p-6"
+                transition={{ duration: 0.3 }}
+                className="fixed inset-0 z-[9999] flex flex-col"
                 style={{
-                  background: palette.overlay,
-                  backdropFilter: 'blur(8px)',
-                  WebkitBackdropFilter: 'blur(8px)'
+                  background: palette.modalBg,
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)'
                 }}
-                onClick={() => setShowExamBuilder(false)}
               >
+                {/* Header فخم */}
                 <Motion.div
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.96 }}
-                  transition={modalTransition}
-                  className="w-full max-w-4xl h-[85vh] sm:h-[88vh] md:h-[90vh] rounded-3xl flex flex-col overflow-hidden border shadow-2xl"
+                  initial={{ y: -20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.1, type: 'spring', stiffness: 300 }}
+                  className="flex-shrink-0 border-b backdrop-blur-xl"
                   style={{
-                    background: palette.modalBg,
                     borderColor: palette.modalBorder,
-                    boxShadow: '0 24px 48px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.05)'
+                    background: isDarkMode ? 'rgba(15, 15, 20, 0.95)' : 'rgba(255, 255, 255, 0.95)'
                   }}
-                  onClick={(e) => e.stopPropagation()}
                 >
-                  {/* رأس المودال */}
-                  <div
-                    className="flex items-center justify-between gap-4 p-5 sm:p-6 border-b flex-shrink-0"
-                    style={{ borderColor: palette.cardBorder }}
-                  >
-                    <div className="flex items-center gap-4 min-w-0">
-                      <div
-                        className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
-                        style={{
-                          background: `linear-gradient(135deg, ${palette.accent} 0%, #059669 100%)`,
-                          color: '#fff',
-                          boxShadow: palette.accentGlow
-                        }}
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <button
+                          type="button"
+                          onClick={() => setShowExamBuilder(false)}
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl transition-all hover:scale-105 active:scale-95"
+                          style={{ background: palette.cardHover, color: palette.textSoft }}
+                        >
+                          <ArrowLeft className="w-5 h-5" />
+                          <span className="font-medium">رجوع</span>
+                        </button>
+                        <div
+                          className="w-12 h-12 rounded-xl flex items-center justify-center"
+                          style={{
+                            background: `linear-gradient(135deg, ${palette.accent} 0%, #059669 100%)`,
+                            boxShadow: palette.accentGlow
+                          }}
+                        >
+                          <BookOpen className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <h1 className="text-2xl sm:text-3xl font-black" style={{ color: palette.text }}>
+                            {editingExam ? 'تعديل الامتحان' : 'إنشاء امتحان جديد'}
+                          </h1>
+                          <p className="text-sm mt-0.5" style={{ color: palette.textSoft }}>
+                            قم بإنشاء امتحان احترافي بأسئلة متعددة
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowExamBuilder(false)}
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-all hover:scale-110 active:scale-90"
+                        style={{ background: palette.dangerHover, color: palette.danger }}
                       >
-                        <BookOpen className="w-6 h-6" />
-                      </div>
-                      <div className="min-w-0">
-                        <h2 className="text-xl sm:text-2xl font-bold truncate" style={{ color: palette.text }}>
-                          {editingExam ? 'تعديل الامتحان' : 'إنشاء امتحان جديد'}
-                        </h2>
-                        <p className="text-sm mt-0.5 truncate" style={{ color: palette.textSoft }}>
-                          أضف الأسئلة والإجابات للامتحان
-                        </p>
-                      </div>
+                        <X className="w-6 h-6" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowExamBuilder(false)}
-                      className="flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-all duration-200 active:opacity-80"
-                      style={{ background: palette.dangerHover, color: palette.danger }}
-                      aria-label="إغلاق"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
                   </div>
+                </Motion.div>
 
-                  {/* المحتوى — مساحة وافية */}
-                  <div className="flex-1 overflow-y-auto min-h-0 p-5 sm:p-6">
+                {/* Content — مساحة واسعة جداً */}
+                <Motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                  className="flex-1 overflow-y-auto"
+                >
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <ExamBuilderProvider
                       key={editingExam ? editingExam.id : 'new'}
                       initialExam={
@@ -477,4 +461,3 @@ const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode }) => {
 };
 
 export default IntegratedExamBuilder;
-

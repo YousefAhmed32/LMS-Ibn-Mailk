@@ -150,8 +150,6 @@ NotificationSchema.statics.getUserNotifications = async function(userId, options
     category = 'all'
   } = options;
 
-  console.log('🔔 getUserNotifications called with:', { userId, options });
-
   const query = { userId };
 
   // Add filters

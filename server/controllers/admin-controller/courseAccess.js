@@ -15,7 +15,7 @@ const getStudentEnrolledCourses = async (req, res) => {
 
     const user = await User.findById(studentId)
       .populate({
-        path: 'enrolledCourses.courseId',
+        path: 'enrolledCourses.course',
         select: 'title subject grade price thumbnail description lessons'
       });
 
@@ -76,7 +76,7 @@ const checkCourseAccess = async (req, res) => {
     }
 
     const enrollment = user.enrolledCourses.find(
-      enrollment => enrollment.courseId.toString() === courseId
+      e => e.course && e.course.toString() === courseId
     );
 
     const hasAccess = enrollment && enrollment.paymentStatus === 'approved';

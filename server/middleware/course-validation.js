@@ -8,9 +8,10 @@ const validateCourseCreation = [
     .withMessage('Course title must be between 3 and 100 characters'),
   
   body('description')
+    .optional()
     .trim()
-    .isLength({ min: 10, max: 500 })
-    .withMessage('Course description must be between 10 and 500 characters'),
+    // ✅ No character limit - users can write as much as they want
+,
   
   body('grade')
     .isIn(['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'])
@@ -59,8 +60,8 @@ const validateCourseUpdate = [
   body('description')
     .optional()
     .trim()
-    .isLength({ min: 10, max: 500 })
-    .withMessage('Course description must be between 10 and 500 characters'),
+    // ✅ No character limit - users can write as much as they want
+,
   
   body('grade')
     .optional()

@@ -26,8 +26,9 @@ const storage = multer.diskStorage({
 // Configure multer with disk storage
 const upload = multer({
   storage,
-  limits: { 
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB per file
+    fieldSize: 20 * 1024 * 1024 // 20MB for form fields (exams/videos JSON) — fixes "Field value too long"
   },
   fileFilter: (req, file, cb) => {
     console.log("📁 File received:", {

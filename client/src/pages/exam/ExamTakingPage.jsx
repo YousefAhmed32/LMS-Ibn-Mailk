@@ -157,12 +157,13 @@ const ExamTakingPage = () => {
       });
       
       if (response.data.success) {
-        setExamResult(response.data.data.result);
+        const result = response.data.data?.result || response.data.result;
+        setExamResult(result);
         setShowResults(true);
         
         toast({
           title: 'تم إرسال الامتحان بنجاح',
-          description: `درجتك: ${response.data.data.result.percentage}%`,
+          description: `درجتك: ${result.percentage}%`,
           variant: 'default'
         });
       } else {

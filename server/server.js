@@ -11,6 +11,8 @@ const rateLimit = require('express-rate-limit');
 
 // Import centralized error handler (✅ moved up)
 const errorHandler = require('./middleware/errorHandler');
+const requestTimeout = require('./middleware/requestTimeout');
+const requestLogger = require('./middleware/requestLogger');
 
 // Security middleware
 const { configureCSP, configureSecurityHeaders } = require('./middleware/security');
@@ -74,6 +76,8 @@ const debugRoutes = require("./routes/debug-routes");
 const adminDashboardRoutes = require("./routes/admin-dashboard-routes");
 const uploadRoutes = require("./routes/upload");
 const uploadRoutesOld = require("./routers/upload-routes");
+const studentStatsRoutes = require('./routers/studentStatsRoutes');
+
 
 // Performance middleware
 app.use(compression({
@@ -179,18 +183,14 @@ app.use(cors({
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
+// Request timeout (prevents hung requests from holding connections)
+app.use(requestTimeout());
+
 // Serve uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Request logging
-app.use('/api', (req, res, next) => {
-    console.log(`📨 ${req.method} ${req.originalUrl}`, {
-        ip: req.ip,
-        origin: req.get('origin'),
-        userAgent: req.get('user-agent')?.substring(0, 50),
-    });
-    next();
-});
+// Non-blocking request logging (dev / LOG_REQUESTS=1 only; avoids large body logging)
+app.use('/api', requestLogger());
 
 // Mount routes
 app.use("/api/auth", authRoutes);
@@ -219,6 +219,8 @@ app.use("/api/student", studentRoutes);
 app.use("/api/debug", debugRoutes);
 app.use("/api/upload-old", uploadRoutes);
 app.use("/api/files", uploadRoutesOld);
+app.use('/api/student', studentStatsRoutes);
+
 
 // Health check
 app.get("/health", (req, res) => {

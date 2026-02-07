@@ -310,83 +310,103 @@ const CourseManagement = () => {
        * Normalize exam data before sending to server
        * Converts correctAnswer to proper format and ensures data consistency
        */
-      const normalizeExamForServer = (exam) => {
-        if (!exam || exam.type !== 'internal_exam' || !exam.questions) {
-          return exam;
-        }
+   /**
+ * Normalize exam data before sending to server
+ * Converts correctAnswer to proper format and ensures data consistency
+ */
+const normalizeExamForServer = (exam) => {
+  if (!exam || exam.type !== 'internal_exam' || !exam.questions) {
+    return exam;
+  }
 
-        const normalizedQuestions = exam.questions.map((question, qIndex) => {
-          // Clean question text
-          const questionText = question.questionText 
-            ? String(question.questionText).trim() 
-            : '';
+  const normalizedQuestions = exam.questions.map((question, qIndex) => {
+    // Clean question text
+    const questionText = question.questionText 
+      ? String(question.questionText).trim() 
+      : '';
 
-          // Normalize options - ensure they are strings
-          let normalizedOptions = [];
-          if (question.options && Array.isArray(question.options)) {
-            normalizedOptions = question.options.map((opt, optIndex) => {
-              // If option is an object, extract text
-              if (typeof opt === 'object' && opt !== null) {
-                return String(opt.text || opt.optionText || opt.value || '').trim();
-              }
-              // If option is a string, use it directly
-              return String(opt).trim();
-            }).filter(opt => opt.length > 0);
+    // ✅ CRITICAL FIX: Handle options based on source format
+    let normalizedOptions = [];
+    let normalizedCorrectAnswer = null;
+
+    if (question.type === 'mcq' || question.type === 'multiple_choice') {
+      // Check if question has options array (from IntegratedExamBuilder)
+      if (question.options && Array.isArray(question.options)) {
+        normalizedOptions = question.options.map((opt, optIndex) => {
+          // If option is an object with id and text
+          if (typeof opt === 'object' && opt !== null) {
+            return {
+              id: opt.id || `opt_${qIndex}_${optIndex}`,
+              text: String(opt.text || opt.optionText || '').trim(),
+              optionText: String(opt.text || opt.optionText || '').trim()
+            };
           }
-
-          // Normalize correctAnswer based on question type
-          let normalizedCorrectAnswer = question.correctAnswer;
-
-          if (question.type === 'true_false') {
-            // For true/false questions, correctAnswer must be boolean
-            if (typeof normalizedCorrectAnswer === 'number') {
-              normalizedCorrectAnswer = normalizedCorrectAnswer === 0; // 0 = true (صحيح)
-            } else if (typeof normalizedCorrectAnswer === 'string') {
-              normalizedCorrectAnswer = normalizedCorrectAnswer === 'true' || 
-                                       normalizedCorrectAnswer === 'صحيح' ||
-                                       normalizedCorrectAnswer === '0';
-            } else if (normalizedCorrectAnswer === null || normalizedCorrectAnswer === undefined) {
-              normalizedCorrectAnswer = false;
-            }
-            normalizedCorrectAnswer = Boolean(normalizedCorrectAnswer);
-          } else if (question.type === 'multiple_choice' || question.type === 'mcq') {
-            // For multiple choice, correctAnswer should be index (number) or option text (string)
-            if (normalizedCorrectAnswer === null || normalizedCorrectAnswer === undefined) {
-              normalizedCorrectAnswer = null;
-            } else if (typeof normalizedCorrectAnswer === 'number') {
-              // Keep as number (index) - this is correct
-              normalizedCorrectAnswer = normalizedCorrectAnswer;
-            } else if (typeof normalizedCorrectAnswer === 'string') {
-              // If it's a string, try to find matching option index
-              const correctAnswerText = normalizedCorrectAnswer.trim();
-              const index = normalizedOptions.findIndex(opt => 
-                String(opt).trim() === correctAnswerText
-              );
-              normalizedCorrectAnswer = index >= 0 ? index : null;
-            }
-          }
-
-          // Ensure points is a valid number
-          const points = Math.max(1, parseInt(question.points || question.marks || 1) || 1);
-
+          // If option is a string
           return {
-            id: question.id || `q_${Date.now()}_${qIndex}`,
-            questionText,
-            type: question.type || 'multiple_choice',
-            options: normalizedOptions,
-            correctAnswer: normalizedCorrectAnswer,
-            points,
-            ...(question.sampleAnswer && { sampleAnswer: question.sampleAnswer }),
-            ...(question.explanation && { explanation: question.explanation }),
-            ...(question.order !== undefined && { order: question.order })
+            id: `opt_${qIndex}_${optIndex}`,
+            text: String(opt).trim(),
+            optionText: String(opt).trim()
           };
-        });
+        }).filter(opt => opt.text.length > 0);
 
-        return {
-          ...exam,
-          questions: normalizedQuestions
-        };
-      };
+        // ✅ correctAnswer should be the option ID
+        if (question.correctAnswer) {
+          // If correctAnswer is already an option ID string, use it
+          if (typeof question.correctAnswer === 'string') {
+            normalizedCorrectAnswer = question.correctAnswer;
+          }
+          // If correctAnswer is a number (index), convert to option ID
+          else if (typeof question.correctAnswer === 'number') {
+            if (normalizedOptions[question.correctAnswer]) {
+              normalizedCorrectAnswer = normalizedOptions[question.correctAnswer].id;
+            }
+          }
+        }
+      }
+    } else if (question.type === 'true_false') {
+      // For true/false questions, correctAnswer must be boolean
+      normalizedOptions = [];
+      
+      if (typeof question.correctAnswer === 'boolean') {
+        normalizedCorrectAnswer = question.correctAnswer;
+      } else if (typeof question.correctAnswer === 'number') {
+        normalizedCorrectAnswer = question.correctAnswer === 0 || question.correctAnswer === 1 
+          ? Boolean(question.correctAnswer) 
+          : false;
+      } else if (typeof question.correctAnswer === 'string') {
+        normalizedCorrectAnswer = question.correctAnswer === 'true' || 
+                                 question.correctAnswer === 'صحيح' ||
+                                 question.correctAnswer === '0';
+      } else {
+        normalizedCorrectAnswer = false;
+      }
+    } else if (question.type === 'essay') {
+      normalizedOptions = [];
+      normalizedCorrectAnswer = null; // Essay questions don't have correct answers
+    }
+
+    // Ensure points is a valid number
+    const points = Math.max(1, parseInt(question.points || question.marks || 10) || 10);
+
+    return {
+      id: question.id || `q_${Date.now()}_${qIndex}`,
+      questionText,
+      type: question.type || 'mcq',
+      options: normalizedOptions,
+      correctAnswer: normalizedCorrectAnswer,
+      points,
+      marks: points,
+      ...(question.sampleAnswer && { sampleAnswer: question.sampleAnswer }),
+      ...(question.explanation && { explanation: question.explanation }),
+      order: qIndex + 1
+    };
+  });
+
+  return {
+    ...exam,
+    questions: normalizedQuestions
+  };
+};
 
       // Process exams from enhanced form data
       const exams = [];

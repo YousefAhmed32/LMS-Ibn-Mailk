@@ -46,7 +46,8 @@ const EnhancedUsersPage = lazy(() => import("./pages/admin/EnhancedUsersPage"));
 
 // Exam Pages
 import ExamPageStandalone from "./pages/exam/ExamPage";
-const ExamTakingPage = lazy(() => import("./pages/exam/ExamTakingPage"));
+const ExamTakingPage = lazy(() => import("./pages/exam/ExamTakingPage")); // deprecated
+const ExamPageWrapper = lazy(() => import("./pages/exam/ExamPageWrapper"));
 import StudentProfile from "./pages/admin/StudentProfile";
 import PaymentManagement from "./pages/admin/PaymentManagement";
 const AdminPaymentsPage = lazy(() => import("./pages/admin/AdminPaymentsPage"));
@@ -168,7 +169,7 @@ function App() {
                   path="/exam/:courseId/:examId"
                   element={
                     <ProtectedRoute>
-                      <ExamTakingPage />
+                      <ExamPageWrapper />
                     </ProtectedRoute>
                   }
                 />
@@ -186,7 +187,7 @@ function App() {
                   path="/courses/:courseId/exams/:examId"
                   element={
                     <ProtectedRoute>
-                      <ExamPage />
+                      <ExamPageWrapper />
                     </ProtectedRoute>
                   }
                 />

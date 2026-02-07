@@ -140,12 +140,79 @@ const ParentDashboard = () => {
       if (response.data.success) {
         const data = response.data;
         
-        // Update student info
+        // Calculate additional statistics from exam results
+        let examsPassed = 0;
+        let totalExams = 0;
+        let highestGrade = 0;
+        let lowestGrade = 100;
+        let lastActivity = 'غير محدد';
+        
+        if (data.examResults && data.examResults.length > 0) {
+          totalExams = data.examResults.length;
+          examsPassed = data.examResults.filter(exam => {
+            const percentage = exam.percentage || (exam.score && exam.maxScore ? Math.round((exam.score / exam.maxScore) * 100) : 0);
+            return percentage >= 50; // Passing threshold
+          }).length;
+          
+          // Calculate highest and lowest grades
+          const percentages = data.examResults.map(exam => 
+            exam.percentage || (exam.score && exam.maxScore ? Math.round((exam.score / exam.maxScore) * 100) : 0)
+          ).filter(p => p > 0);
+          
+          if (percentages.length > 0) {
+            highestGrade = Math.max(...percentages);
+            lowestGrade = Math.min(...percentages);
+          }
+        }
+        
+        // Get last activity from recentActivity or last exam
+        if (data.recentActivity && data.recentActivity.length > 0) {
+          const lastActivityDate = new Date(data.recentActivity[0].date);
+          const now = new Date();
+          const diffMs = now - lastActivityDate;
+          const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+          
+          if (diffDays === 0) {
+            lastActivity = 'اليوم';
+          } else if (diffDays === 1) {
+            lastActivity = 'أمس';
+          } else if (diffDays < 7) {
+            lastActivity = `منذ ${diffDays} أيام`;
+          } else if (diffDays < 30) {
+            const weeks = Math.floor(diffDays / 7);
+            lastActivity = `منذ ${weeks} ${weeks === 1 ? 'أسبوع' : 'أسابيع'}`;
+          } else {
+            const months = Math.floor(diffDays / 30);
+            lastActivity = `منذ ${months} ${months === 1 ? 'شهر' : 'أشهر'}`;
+          }
+        } else if (data.examResults && data.examResults.length > 0) {
+          const lastExamDate = new Date(data.examResults[0].submittedAt || data.examResults[0].createdAt);
+          const now = new Date();
+          const diffMs = now - lastExamDate;
+          const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+          
+          if (diffDays === 0) {
+            lastActivity = 'اليوم';
+          } else if (diffDays === 1) {
+            lastActivity = 'أمس';
+          } else {
+            lastActivity = `منذ ${diffDays} أيام`;
+          }
+        }
+        
+        // Update student info with enhanced statistics
         if (data.student) {
           setSelectedChild(prev => ({
             ...prev,
             ...data.student,
-            stats: data.statistics,
+            stats: {
+              ...data.statistics,
+              examsPassed,
+              totalExams,
+              highestGrade,
+              lowestGrade,
+              lastActivity
+            },
             enrolledCourses: data.enrolledCourses || []
           }));
         }
@@ -1482,7 +1549,7 @@ const ParentDashboard = () => {
         )}
 
           {/* Main Content - Full Screen */}
-        <div className="relative z-10 w-full px-8 py-8">
+        <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
           {/* Welcome Message */}
           {selectedChild && (
             <motion.div
@@ -1521,17 +1588,17 @@ const ParentDashboard = () => {
               >
                 {/* Child Info Card */}
                 {selectedChild && (
-                  <LuxuryCard className="p-8 bg-gradient-to-r from-white to-blue-50 dark:from-gray-800 dark:to-gray-700">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 md:gap-0">
-                      <div className="flex items-center gap-6">
-                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shrink-0">
-                          <GraduationCap size={32} className="text-white" />
+                  <LuxuryCard className="p-4 sm:p-6 lg:p-8 bg-gradient-to-r from-white to-blue-50 dark:from-gray-800 dark:to-gray-700">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 sm:gap-6 md:gap-0">
+                      <div className="flex items-center gap-4 sm:gap-6">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shrink-0">
+                          <GraduationCap size={24} className="sm:w-8 sm:h-8 text-white" />
                         </div>
-                        <div>
-                          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white mb-2 break-words leading-snug">
+                        <div className="flex-1 min-w-0">
+                          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white mb-2 break-words leading-snug">
                             {selectedChild.firstName} {selectedChild.secondName} {selectedChild.thirdName} {selectedChild.fourthName}
                           </h2>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
                             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 break-all">
                               <span className="flex items-center gap-1">
                                 <Users size={16} className="text-gray-500 dark:text-gray-400" />
@@ -1568,10 +1635,11 @@ const ParentDashboard = () => {
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => exportReport(selectedChild._id)}
-                          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center gap-2 shadow-lg justify-center w-full md:w-auto"
+                          className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg sm:rounded-xl text-sm sm:text-base font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 flex items-center gap-2 shadow-lg justify-center w-full md:w-auto"
                         >
-                          <Download size={18} />
-                          تصدير التقرير
+                          <Download size={16} className="sm:w-[18px] sm:h-[18px]" />
+                          <span className="hidden xs:inline">تصدير التقرير</span>
+                          <span className="xs:hidden">تصدير</span>
                         </motion.button>
                       </div>
                     </div>
@@ -1590,23 +1658,23 @@ const ParentDashboard = () => {
                 {!loading && selectedChild && selectedChild.stats && (
                   <div className="space-y-8">
                     {/* Ultra Premium Stats Overview */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
                       <motion.div
                         whileHover={{ scale: 1.05, rotateY: 5 }}
                         whileTap={{ scale: 0.95 }}
                         className="group"
                       >
-                        <LuxuryCard className="p-8 bg-gradient-to-br from-cyan-50/20 to-blue-100/20 dark:from-gray-800/15 dark:to-gray-900/15 light:from-white/20 light:to-gray-50/20 hover:shadow-[0_0_60px_rgba(6,182,212,0.5)] dark:hover:shadow-[0_0_80px_rgba(6,182,212,0.7)] light:hover:shadow-[0_0_50px_rgba(6,182,212,0.3)] transition-all duration-500 border border-cyan-400/40 dark:border-cyan-400/50 light:border-cyan-600/30 backdrop-blur-md relative overflow-hidden shadow-[0_0_30px_rgba(6,182,212,0.3)] dark:shadow-[0_0_40px_rgba(6,182,212,0.5)] light:shadow-[0_0_25px_rgba(6,182,212,0.2)]">
+                        <LuxuryCard className="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-cyan-50/20 to-blue-100/20 dark:from-gray-800/15 dark:to-gray-900/15 light:from-white/20 light:to-gray-50/20 hover:shadow-[0_0_60px_rgba(6,182,212,0.5)] dark:hover:shadow-[0_0_80px_rgba(6,182,212,0.7)] light:hover:shadow-[0_0_50px_rgba(6,182,212,0.3)] transition-all duration-500 border border-cyan-400/40 dark:border-cyan-400/50 light:border-cyan-600/30 backdrop-blur-md relative overflow-hidden shadow-[0_0_30px_rgba(6,182,212,0.3)] dark:shadow-[0_0_40px_rgba(6,182,212,0.5)] light:shadow-[0_0_25px_rgba(6,182,212,0.2)]">
                           <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 dark:from-cyan-500/20 dark:to-blue-500/20 light:from-cyan-500/5 light:to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-cyan-400/30 to-blue-500/30 dark:from-cyan-400/40 dark:to-blue-500/40 light:from-cyan-400/20 light:to-blue-500/20 rounded-full blur-xl shadow-[0_0_30px_rgba(6,182,212,0.4)] dark:shadow-[0_0_40px_rgba(6,182,212,0.6)] light:shadow-[0_0_25px_rgba(6,182,212,0.2)]"></div>
-                          <div className="relative z-10 flex items-center justify-between">
-                          <div>
-                              <p className="text-sm font-medium text-cyan-600 dark:text-cyan-400 light:text-cyan-700 mb-2 font-semibold">إجمالي الكورسات</p>
-                              <p className="text-4xl font-bold text-cyan-800 dark:text-cyan-200 light:text-cyan-900 mb-1 drop-shadow-[0_0_10px_rgba(6,182,212,0.3)] dark:drop-shadow-[0_0_15px_rgba(6,182,212,0.5)] light:drop-shadow-[0_0_8px_rgba(6,182,212,0.2)]">{selectedChild.stats.totalCourses || 0}</p>
+                          <div className="absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-cyan-400/30 to-blue-500/30 dark:from-cyan-400/40 dark:to-blue-500/40 light:from-cyan-400/20 light:to-blue-500/20 rounded-full blur-xl shadow-[0_0_30px_rgba(6,182,212,0.4)] dark:shadow-[0_0_40px_rgba(6,182,212,0.6)] light:shadow-[0_0_25px_rgba(6,182,212,0.2)]"></div>
+                          <div className="relative z-10 flex items-center justify-between gap-3 sm:gap-4">
+                          <div className="flex-1 min-w-0">
+                              <p className="text-xs sm:text-sm font-medium text-cyan-600 dark:text-cyan-400 light:text-cyan-700 mb-1 sm:mb-2 font-semibold">إجمالي الكورسات</p>
+                              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-cyan-800 dark:text-cyan-200 light:text-cyan-900 mb-1 drop-shadow-[0_0_10px_rgba(6,182,212,0.3)] dark:drop-shadow-[0_0_15px_rgba(6,182,212,0.5)] light:drop-shadow-[0_0_8px_rgba(6,182,212,0.2)]">{selectedChild.stats?.totalCourses || 0}</p>
                               <p className="text-xs text-cyan-500 dark:text-cyan-300 light:text-cyan-600 font-medium">مقررات مسجلة</p>
                           </div>
-                            <div className="bg-gradient-to-r from-cyan-500 to-blue-500 p-4 rounded-2xl shadow-[0_0_30px_rgba(6,182,212,0.4)] dark:shadow-[0_0_40px_rgba(6,182,212,0.6)] light:shadow-[0_0_25px_rgba(6,182,212,0.2)] group-hover:shadow-[0_0_40px_rgba(6,182,212,0.6)] dark:group-hover:shadow-[0_0_50px_rgba(6,182,212,0.8)] light:group-hover:shadow-[0_0_35px_rgba(6,182,212,0.3)] transition-all duration-500 group-hover:scale-110">
-                              <BookOpen size={28} className="text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]" />
+                            <div className="bg-gradient-to-r from-cyan-500 to-blue-500 p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-[0_0_30px_rgba(6,182,212,0.4)] dark:shadow-[0_0_40px_rgba(6,182,212,0.6)] light:shadow-[0_0_25px_rgba(6,182,212,0.2)] group-hover:shadow-[0_0_40px_rgba(6,182,212,0.6)] dark:group-hover:shadow-[0_0_50px_rgba(6,182,212,0.8)] light:group-hover:shadow-[0_0_35px_rgba(6,182,212,0.3)] transition-all duration-500 group-hover:scale-110 flex-shrink-0">
+                              <BookOpen size={20} className="sm:w-7 sm:h-7 text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]" />
                           </div>
                         </div>
                       </LuxuryCard>
@@ -1617,17 +1685,17 @@ const ParentDashboard = () => {
                         whileTap={{ scale: 0.95 }}
                         className="group"
                       >
-                        <LuxuryCard className="p-8 bg-gradient-to-br from-emerald-50/20 to-green-100/20 dark:from-gray-800/15 dark:to-gray-900/15 light:from-white/20 light:to-gray-50/20 hover:shadow-[0_0_60px_rgba(16,185,129,0.5)] dark:hover:shadow-[0_0_80px_rgba(16,185,129,0.7)] light:hover:shadow-[0_0_50px_rgba(16,185,129,0.3)] transition-all duration-500 border border-emerald-400/40 dark:border-emerald-400/50 light:border-emerald-600/30 backdrop-blur-md relative overflow-hidden shadow-[0_0_30px_rgba(16,185,129,0.3)] dark:shadow-[0_0_40px_rgba(16,185,129,0.5)] light:shadow-[0_0_25px_rgba(16,185,129,0.2)]">
+                        <LuxuryCard className="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-emerald-50/20 to-green-100/20 dark:from-gray-800/15 dark:to-gray-900/15 light:from-white/20 light:to-gray-50/20 hover:shadow-[0_0_60px_rgba(16,185,129,0.5)] dark:hover:shadow-[0_0_80px_rgba(16,185,129,0.7)] light:hover:shadow-[0_0_50px_rgba(16,185,129,0.3)] transition-all duration-500 border border-emerald-400/40 dark:border-emerald-400/50 light:border-emerald-600/30 backdrop-blur-md relative overflow-hidden shadow-[0_0_30px_rgba(16,185,129,0.3)] dark:shadow-[0_0_40px_rgba(16,185,129,0.5)] light:shadow-[0_0_25px_rgba(16,185,129,0.2)]">
                           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-green-500/10 dark:from-emerald-500/20 dark:to-green-500/20 light:from-emerald-500/5 light:to-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400/30 to-green-500/30 dark:from-emerald-400/40 dark:to-green-500/40 light:from-emerald-400/20 light:to-green-500/20 rounded-full blur-xl shadow-[0_0_30px_rgba(16,185,129,0.4)] dark:shadow-[0_0_40px_rgba(16,185,129,0.6)] light:shadow-[0_0_25px_rgba(16,185,129,0.2)]"></div>
-                          <div className="relative z-10 flex items-center justify-between">
-                          <div>
-                              <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 light:text-emerald-700 mb-2 font-semibold">الكورسات المكتملة</p>
-                              <p className="text-4xl font-bold text-emerald-800 dark:text-emerald-200 light:text-emerald-900 mb-1 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)] dark:drop-shadow-[0_0_15px_rgba(16,185,129,0.5)] light:drop-shadow-[0_0_8px_rgba(16,185,129,0.2)]">{selectedChild.stats.completedCourses || 0}</p>
+                          <div className="absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-emerald-400/30 to-green-500/30 dark:from-emerald-400/40 dark:to-green-500/40 light:from-emerald-400/20 light:to-green-500/20 rounded-full blur-xl shadow-[0_0_30px_rgba(16,185,129,0.4)] dark:shadow-[0_0_40px_rgba(16,185,129,0.6)] light:shadow-[0_0_25px_rgba(16,185,129,0.2)]"></div>
+                          <div className="relative z-10 flex items-center justify-between gap-3 sm:gap-4">
+                          <div className="flex-1 min-w-0">
+                              <p className="text-xs sm:text-sm font-medium text-emerald-600 dark:text-emerald-400 light:text-emerald-700 mb-1 sm:mb-2 font-semibold">الكورسات المكتملة</p>
+                              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-emerald-800 dark:text-emerald-200 light:text-emerald-900 mb-1 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)] dark:drop-shadow-[0_0_15px_rgba(16,185,129,0.5)] light:drop-shadow-[0_0_8px_rgba(16,185,129,0.2)]">{selectedChild.stats?.completedCourses || 0}</p>
                               <p className="text-xs text-emerald-500 dark:text-emerald-300 light:text-emerald-600 font-medium">مقررات منجزة</p>
                           </div>
-                            <div className="bg-gradient-to-r from-emerald-500 to-green-500 p-4 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.4)] dark:shadow-[0_0_40px_rgba(16,185,129,0.6)] light:shadow-[0_0_25px_rgba(16,185,129,0.2)] group-hover:shadow-[0_0_40px_rgba(16,185,129,0.6)] dark:group-hover:shadow-[0_0_50px_rgba(16,185,129,0.8)] light:group-hover:shadow-[0_0_35px_rgba(16,185,129,0.3)] transition-all duration-500 group-hover:scale-110">
-                              <CheckCircle size={28} className="text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]" />
+                            <div className="bg-gradient-to-r from-emerald-500 to-green-500 p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.4)] dark:shadow-[0_0_40px_rgba(16,185,129,0.6)] light:shadow-[0_0_25px_rgba(16,185,129,0.2)] group-hover:shadow-[0_0_40px_rgba(16,185,129,0.6)] dark:group-hover:shadow-[0_0_50px_rgba(16,185,129,0.8)] light:group-hover:shadow-[0_0_35px_rgba(16,185,129,0.3)] transition-all duration-500 group-hover:scale-110 flex-shrink-0">
+                              <CheckCircle size={20} className="sm:w-7 sm:h-7 text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]" />
                           </div>
                         </div>
                       </LuxuryCard>
@@ -1638,17 +1706,17 @@ const ParentDashboard = () => {
                         whileTap={{ scale: 0.95 }}
                         className="group"
                       >
-                        <LuxuryCard className="p-8 bg-gradient-to-br from-amber-50/20 to-yellow-100/20 dark:from-gray-800/15 dark:to-gray-900/15 light:from-white/20 light:to-gray-50/20 hover:shadow-[0_0_60px_rgba(245,158,11,0.5)] dark:hover:shadow-[0_0_80px_rgba(245,158,11,0.7)] light:hover:shadow-[0_0_50px_rgba(245,158,11,0.3)] transition-all duration-500 border border-amber-400/40 dark:border-amber-400/50 light:border-amber-600/30 backdrop-blur-md relative overflow-hidden shadow-[0_0_30px_rgba(245,158,11,0.3)] dark:shadow-[0_0_40px_rgba(245,158,11,0.5)] light:shadow-[0_0_25px_rgba(245,158,11,0.2)]">
+                        <LuxuryCard className="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-amber-50/20 to-yellow-100/20 dark:from-gray-800/15 dark:to-gray-900/15 light:from-white/20 light:to-gray-50/20 hover:shadow-[0_0_60px_rgba(245,158,11,0.5)] dark:hover:shadow-[0_0_80px_rgba(245,158,11,0.7)] light:hover:shadow-[0_0_50px_rgba(245,158,11,0.3)] transition-all duration-500 border border-amber-400/40 dark:border-amber-400/50 light:border-amber-600/30 backdrop-blur-md relative overflow-hidden shadow-[0_0_30px_rgba(245,158,11,0.3)] dark:shadow-[0_0_40px_rgba(245,158,11,0.5)] light:shadow-[0_0_25px_rgba(245,158,11,0.2)]">
                           <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-yellow-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-400/20 to-yellow-500/20 rounded-full blur-xl"></div>
-                          <div className="relative z-10 flex items-center justify-between">
-                          <div>
-                              <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-2">متوسط الدرجات</p>
-                              <p className="text-4xl font-bold text-yellow-800 dark:text-yellow-200 mb-1">{selectedChild.stats.averageGrade || 0}%</p>
+                          <div className="absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-amber-400/20 to-yellow-500/20 rounded-full blur-xl"></div>
+                          <div className="relative z-10 flex items-center justify-between gap-3 sm:gap-4">
+                          <div className="flex-1 min-w-0">
+                              <p className="text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-1 sm:mb-2">متوسط الدرجات</p>
+                              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-yellow-800 dark:text-yellow-200 mb-1">{selectedChild.stats?.averageGrade || 0}%</p>
                               <p className="text-xs text-yellow-500 dark:text-yellow-300">تقييم ممتاز</p>
                           </div>
-                            <div className="bg-gradient-to-r from-amber-500 to-yellow-500 p-4 rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-110">
-                              <Award size={28} className="text-white" />
+                            <div className="bg-gradient-to-r from-amber-500 to-yellow-500 p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-110 flex-shrink-0">
+                              <Award size={20} className="sm:w-7 sm:h-7 text-white" />
                           </div>
                         </div>
                       </LuxuryCard>
@@ -1659,17 +1727,17 @@ const ParentDashboard = () => {
                         whileTap={{ scale: 0.95 }}
                         className="group"
                       >
-                        <LuxuryCard className="p-8 bg-gradient-to-br from-violet-50/20 to-purple-100/20 dark:from-gray-800/15 dark:to-gray-900/15 light:from-white/20 light:to-gray-50/20 hover:shadow-[0_0_60px_rgba(168,85,247,0.5)] dark:hover:shadow-[0_0_80px_rgba(168,85,247,0.7)] light:hover:shadow-[0_0_50px_rgba(168,85,247,0.3)] transition-all duration-500 border border-violet-400/40 dark:border-violet-400/50 light:border-violet-600/30 backdrop-blur-md relative overflow-hidden shadow-[0_0_30px_rgba(168,85,247,0.3)] dark:shadow-[0_0_40px_rgba(168,85,247,0.5)] light:shadow-[0_0_25px_rgba(168,85,247,0.2)]">
+                        <LuxuryCard className="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-violet-50/20 to-purple-100/20 dark:from-gray-800/15 dark:to-gray-900/15 light:from-white/20 light:to-gray-50/20 hover:shadow-[0_0_60px_rgba(168,85,247,0.5)] dark:hover:shadow-[0_0_80px_rgba(168,85,247,0.7)] light:hover:shadow-[0_0_50px_rgba(168,85,247,0.3)] transition-all duration-500 border border-violet-400/40 dark:border-violet-400/50 light:border-violet-600/30 backdrop-blur-md relative overflow-hidden shadow-[0_0_30px_rgba(168,85,247,0.3)] dark:shadow-[0_0_40px_rgba(168,85,247,0.5)] light:shadow-[0_0_25px_rgba(168,85,247,0.2)]">
                           <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-violet-400/20 to-purple-500/20 rounded-full blur-xl"></div>
-                          <div className="relative z-10 flex items-center justify-between">
-                          <div>
-                              <p className="text-sm font-medium text-purple-600 dark:text-purple-400 mb-2">معدل الحضور</p>
-                              <p className="text-4xl font-bold text-purple-800 dark:text-purple-200 mb-1">{selectedChild.stats.attendanceRate || 0}%</p>
+                          <div className="absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-violet-400/20 to-purple-500/20 rounded-full blur-xl"></div>
+                          <div className="relative z-10 flex items-center justify-between gap-3 sm:gap-4">
+                          <div className="flex-1 min-w-0">
+                              <p className="text-xs sm:text-sm font-medium text-purple-600 dark:text-purple-400 mb-1 sm:mb-2">معدل الحضور</p>
+                              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-purple-800 dark:text-purple-200 mb-1">{selectedChild.stats?.attendanceRate || 0}%</p>
                               <p className="text-xs text-purple-500 dark:text-purple-300">حضور منتظم</p>
                           </div>
-                            <div className="bg-gradient-to-r from-violet-500 to-purple-500 p-4 rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-110">
-                              <Calendar size={28} className="text-white" />
+                            <div className="bg-gradient-to-r from-violet-500 to-purple-500 p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-110 flex-shrink-0">
+                              <Calendar size={20} className="sm:w-7 sm:h-7 text-white" />
                           </div>
                         </div>
                       </LuxuryCard>
@@ -1677,23 +1745,23 @@ const ParentDashboard = () => {
                     </div>
 
                     {/* Ultra Premium Real-time Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                       <motion.div
                         whileHover={{ scale: 1.05, rotateY: 5 }}
                         whileTap={{ scale: 0.95 }}
                         className="group"
                       >
-                        <LuxuryCard className="p-8 bg-gradient-to-br from-rose-50/90 to-pink-100/90 dark:from-rose-900/40 dark:to-pink-800/40 hover:shadow-2xl transition-all duration-500 border border-rose-200/30 dark:border-rose-500/30 backdrop-blur-sm relative overflow-hidden">
+                        <LuxuryCard className="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-rose-50/90 to-pink-100/90 dark:from-rose-900/40 dark:to-pink-800/40 hover:shadow-2xl transition-all duration-500 border border-rose-200/30 dark:border-rose-500/30 backdrop-blur-sm relative overflow-hidden">
                           <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-rose-400/20 to-pink-500/20 rounded-full blur-xl"></div>
-                          <div className="relative z-10 flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-pink-600 dark:text-pink-400 mb-2">الاختبارات المجتازة</p>
-                              <p className="text-4xl font-bold text-pink-800 dark:text-pink-200 mb-1">{selectedChild.stats.examsPassed || 0}</p>
-                              <p className="text-xs text-pink-500 dark:text-pink-300">من أصل {selectedChild.stats.totalExams || 0}</p>
+                          <div className="absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-rose-400/20 to-pink-500/20 rounded-full blur-xl"></div>
+                          <div className="relative z-10 flex items-center justify-between gap-3 sm:gap-4">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs sm:text-sm font-medium text-pink-600 dark:text-pink-400 mb-1 sm:mb-2">الاختبارات المجتازة</p>
+                              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-pink-800 dark:text-pink-200 mb-1">{selectedChild.stats?.examsPassed || 0}</p>
+                              <p className="text-xs text-pink-500 dark:text-pink-300">من أصل {selectedChild.stats?.totalExams || 0}</p>
                             </div>
-                            <div className="bg-gradient-to-r from-rose-500 to-pink-500 p-4 rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-110">
-                              <Target size={28} className="text-white" />
+                            <div className="bg-gradient-to-r from-rose-500 to-pink-500 p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-110 flex-shrink-0">
+                              <Target size={20} className="sm:w-7 sm:h-7 text-white" />
                             </div>
                           </div>
                         </LuxuryCard>
@@ -1704,17 +1772,17 @@ const ParentDashboard = () => {
                         whileTap={{ scale: 0.95 }}
                         className="group"
                       >
-                        <LuxuryCard className="p-8 bg-gradient-to-br from-indigo-50/90 to-indigo-100/90 dark:from-indigo-900/40 dark:to-indigo-800/40 hover:shadow-2xl transition-all duration-500 border border-indigo-200/30 dark:border-indigo-500/30 backdrop-blur-sm relative overflow-hidden">
+                        <LuxuryCard className="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-indigo-50/90 to-indigo-100/90 dark:from-indigo-900/40 dark:to-indigo-800/40 hover:shadow-2xl transition-all duration-500 border border-indigo-200/30 dark:border-indigo-500/30 backdrop-blur-sm relative overflow-hidden">
                           <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-indigo-400/20 to-blue-500/20 rounded-full blur-xl"></div>
-                          <div className="relative z-10 flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400 mb-2">آخر نشاط</p>
-                              <p className="text-2xl font-bold text-indigo-800 dark:text-indigo-200 mb-1">{selectedChild.stats.lastActivity || 'غير محدد'}</p>
+                          <div className="absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-indigo-400/20 to-blue-500/20 rounded-full blur-xl"></div>
+                          <div className="relative z-10 flex items-center justify-between gap-3 sm:gap-4">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs sm:text-sm font-medium text-indigo-600 dark:text-indigo-400 mb-1 sm:mb-2">آخر نشاط</p>
+                              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-indigo-800 dark:text-indigo-200 mb-1 break-words">{selectedChild.stats?.lastActivity || 'غير محدد'}</p>
                               <p className="text-xs text-indigo-500 dark:text-indigo-300">نشاط حديث</p>
                             </div>
-                            <div className="bg-gradient-to-r from-indigo-500 to-blue-500 p-4 rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-110">
-                              <TrendingUp size={28} className="text-white" />
+                            <div className="bg-gradient-to-r from-indigo-500 to-blue-500 p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-110 flex-shrink-0">
+                              <TrendingUp size={20} className="sm:w-7 sm:h-7 text-white" />
                             </div>
                           </div>
                         </LuxuryCard>
@@ -1725,17 +1793,17 @@ const ParentDashboard = () => {
                         whileTap={{ scale: 0.95 }}
                         className="group"
                       >
-                        <LuxuryCard className="p-8 bg-gradient-to-br from-teal-50/90 to-emerald-100/90 dark:from-teal-900/40 dark:to-emerald-800/40 hover:shadow-2xl transition-all duration-500 border border-teal-200/30 dark:border-teal-500/30 backdrop-blur-sm relative overflow-hidden">
+                        <LuxuryCard className="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-teal-50/90 to-emerald-100/90 dark:from-teal-900/40 dark:to-emerald-800/40 hover:shadow-2xl transition-all duration-500 border border-teal-200/30 dark:border-teal-500/30 backdrop-blur-sm relative overflow-hidden">
                           <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-emerald-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-teal-400/20 to-emerald-500/20 rounded-full blur-xl"></div>
-                          <div className="relative z-10 flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-2">أعلى درجة</p>
-                              <p className="text-4xl font-bold text-emerald-800 dark:text-emerald-200 mb-1">{selectedChild.stats.highestGrade || 0}%</p>
+                          <div className="absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-teal-400/20 to-emerald-500/20 rounded-full blur-xl"></div>
+                          <div className="relative z-10 flex items-center justify-between gap-3 sm:gap-4">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs sm:text-sm font-medium text-emerald-600 dark:text-emerald-400 mb-1 sm:mb-2">أعلى درجة</p>
+                              <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-emerald-800 dark:text-emerald-200 mb-1">{selectedChild.stats?.highestGrade || 0}%</p>
                               <p className="text-xs text-emerald-500 dark:text-emerald-300">أفضل أداء</p>
                             </div>
-                            <div className="bg-gradient-to-r from-teal-500 to-emerald-500 p-4 rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-110">
-                              <Award size={28} className="text-white" />
+                            <div className="bg-gradient-to-r from-teal-500 to-emerald-500 p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-xl group-hover:shadow-2xl transition-all duration-500 group-hover:scale-110 flex-shrink-0">
+                              <Award size={20} className="sm:w-7 sm:h-7 text-white" />
                             </div>
                           </div>
                         </LuxuryCard>
@@ -1743,29 +1811,29 @@ const ParentDashboard = () => {
                     </div>
 
                     {/* Additional Detailed Stats */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                       {/* Academic Performance - Real Data */}
-                      <LuxuryCard className="p-6">
-                        <h4 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                          <TrendingUp size={20} className="text-green-500" />
+                      <LuxuryCard className="p-4 sm:p-6">
+                        <h4 className="text-base sm:text-lg font-bold text-gray-800 dark:text-white mb-3 sm:mb-4 flex items-center gap-2">
+                          <TrendingUp size={18} className="sm:w-5 sm:h-5 text-green-500" />
                           الأداء الأكاديمي من قاعدة البيانات
                         </h4>
                         <div className="space-y-4">
                           <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <span className="text-sm text-gray-600 dark:text-gray-300">أعلى درجة</span>
-                            <span className="font-bold text-green-600 dark:text-green-400">
+                            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">أعلى درجة</span>
+                            <span className="text-sm sm:text-base font-bold text-green-600 dark:text-green-400">
                               {selectedChild.stats?.highestGrade || 0}%
                             </span>
                           </div>
                           <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <span className="text-sm text-gray-600 dark:text-gray-300">أقل درجة</span>
-                            <span className="font-bold text-yellow-600 dark:text-yellow-400">
+                            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">أقل درجة</span>
+                            <span className="text-sm sm:text-base font-bold text-yellow-600 dark:text-yellow-400">
                               {selectedChild.stats?.lowestGrade || 0}%
                             </span>
                           </div>
                           <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <span className="text-sm text-gray-600 dark:text-gray-300">الاختبارات المجتازة</span>
-                            <span className="font-bold text-blue-600 dark:text-blue-400">
+                            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">الاختبارات المجتازة</span>
+                            <span className="text-sm sm:text-base font-bold text-blue-600 dark:text-blue-400">
                               {selectedChild.stats?.examsPassed || 0}/{selectedChild.stats?.totalExams || 0}
                             </span>
                           </div>
@@ -1779,9 +1847,9 @@ const ParentDashboard = () => {
                       </LuxuryCard>
 
                       {/* Progress & Activity - Real Data */}
-                      <LuxuryCard className="p-6">
-                        <h4 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                          <Activity size={20} className="text-blue-500" />
+                      <LuxuryCard className="p-4 sm:p-6">
+                        <h4 className="text-base sm:text-lg font-bold text-gray-800 dark:text-white mb-3 sm:mb-4 flex items-center gap-2">
+                          <Activity size={18} className="sm:w-5 sm:h-5 text-blue-500" />
                           النشاط والتقدم من قاعدة البيانات
                         </h4>
                         <div className="space-y-4">
@@ -1804,8 +1872,8 @@ const ParentDashboard = () => {
                             </span>
                           </div>
                           <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <span className="text-sm text-gray-600 dark:text-gray-300">آخر نشاط</span>
-                            <span className="font-bold text-orange-600 dark:text-orange-400">
+                            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">آخر نشاط</span>
+                            <span className="text-xs sm:text-sm font-bold text-orange-600 dark:text-orange-400 break-words text-left">
                               {selectedChild.stats?.lastActivity || 'غير محدد'}
                             </span>
                           </div>
@@ -1814,20 +1882,20 @@ const ParentDashboard = () => {
                     </div>
 
                     {/* Real Course Progress Summary */}
-                    <LuxuryCard className="p-6">
-                      <h4 className="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                        <BarChart3 size={20} className="text-orange-500" />
+                    <LuxuryCard className="p-4 sm:p-6">
+                      <h4 className="text-base sm:text-lg font-bold text-gray-800 dark:text-white mb-3 sm:mb-4 flex items-center gap-2">
+                        <BarChart3 size={18} className="sm:w-5 sm:h-5 text-orange-500" />
                         ملخص تقدم الكورسات من قاعدة البيانات
                       </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                         {selectedChild?.enrolledCourses && selectedChild.enrolledCourses.length > 0 ? (
                           selectedChild.enrolledCourses.map((course, index) => (
-                            <div key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg hover:shadow-md transition-shadow">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 line-clamp-2">
+                            <div key={index} className="bg-gray-50 dark:bg-gray-700 p-3 sm:p-4 rounded-lg hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-center mb-2 gap-2">
+                                <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 line-clamp-2 flex-1 min-w-0">
                                   {course.courseName || 'كورس غير محدد'}
                                 </span>
-                                <span className="text-sm font-bold text-gray-800 dark:text-white">{course.progress || 0}%</span>
+                                <span className="text-xs sm:text-sm font-bold text-gray-800 dark:text-white flex-shrink-0">{course.progress || 0}%</span>
                             </div>
                               <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                                 {course.completedLessons || 0} من {course.totalLessons || 0} درس
@@ -1882,37 +1950,37 @@ const ParentDashboard = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 1.6 }}
-                  className="mb-8 p-6 rounded-2xl bg-gradient-to-br from-cyan-50/20 to-blue-100/20 dark:from-gray-800/15 dark:to-gray-700/15 light:from-cyan-50/30 light:to-blue-100/30 backdrop-blur-xl border border-cyan-400/40 dark:border-cyan-400/60 light:border-cyan-600/30 shadow-[0_0_30px_rgba(6,182,212,0.3)] dark:shadow-[0_0_40px_rgba(6,182,212,0.4)] light:shadow-[0_0_20px_rgba(6,182,212,0.2)]"
+                  className="mb-6 sm:mb-8 p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-gradient-to-br from-cyan-50/20 to-blue-100/20 dark:from-gray-800/15 dark:to-gray-700/15 light:from-cyan-50/30 light:to-blue-100/30 backdrop-blur-xl border border-cyan-400/40 dark:border-cyan-400/60 light:border-cyan-600/30 shadow-[0_0_30px_rgba(6,182,212,0.3)] dark:shadow-[0_0_40px_rgba(6,182,212,0.4)] light:shadow-[0_0_20px_rgba(6,182,212,0.2)]"
                 >
-                  <h3 className="text-xl font-bold text-cyan-300 dark:text-cyan-200 light:text-cyan-700 mb-6 flex items-center gap-2">
-                    <Award size={24} />
+                  <h3 className="text-lg sm:text-xl font-bold text-cyan-300 dark:text-cyan-200 light:text-cyan-700 mb-4 sm:mb-6 flex items-center gap-2">
+                    <Award size={20} className="sm:w-6 sm:h-6" />
                     نتائج الاختبارات الأخيرة
                   </h3>
                   
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto -mx-4 sm:mx-0">
                     {gradesData && gradesData.length > 0 ? (
-                      <table className="w-full table-fixed">
+                      <table className="w-full min-w-[640px] table-auto sm:table-fixed">
                         <thead>
                           <tr className="border-b border-cyan-400/30 dark:border-cyan-400/40 light:border-cyan-600/20">
-                            <th className="text-right py-4 px-4 text-cyan-400 dark:text-cyan-300 light:text-cyan-600 font-semibold w-32">
+                            <th className="text-right py-3 sm:py-4 px-2 sm:px-4 text-xs sm:text-sm text-cyan-400 dark:text-cyan-300 light:text-cyan-600 font-semibold sm:w-32">
                               الاختبار
                             </th>
-                            <th className="text-right py-4 px-4 text-cyan-400 dark:text-cyan-300 light:text-cyan-600 font-semibold w-32">
+                            <th className="text-right py-3 sm:py-4 px-2 sm:px-4 text-xs sm:text-sm text-cyan-400 dark:text-cyan-300 light:text-cyan-600 font-semibold sm:w-32">
                               المادة
                             </th>
-                            <th className="text-center py-4 px-4 text-cyan-400 dark:text-cyan-300 light:text-cyan-600 font-semibold w-24">
+                            <th className="text-center py-3 sm:py-4 px-2 sm:px-4 text-xs sm:text-sm text-cyan-400 dark:text-cyan-300 light:text-cyan-600 font-semibold sm:w-24">
                               الدرجة
                             </th>
-                            <th className="text-center py-4 px-4 text-cyan-400 dark:text-cyan-300 light:text-cyan-600 font-semibold w-20">
+                            <th className="text-center py-3 sm:py-4 px-2 sm:px-4 text-xs sm:text-sm text-cyan-400 dark:text-cyan-300 light:text-cyan-600 font-semibold sm:w-20">
                               النسبة
                             </th>
-                            <th className="text-center py-4 px-4 text-cyan-400 dark:text-cyan-300 light:text-cyan-600 font-semibold w-24">
+                            <th className="text-center py-3 sm:py-4 px-2 sm:px-4 text-xs sm:text-sm text-cyan-400 dark:text-cyan-300 light:text-cyan-600 font-semibold sm:w-24">
                               التقدير
                             </th>
-                            <th className="text-center py-4 px-4 text-cyan-400 dark:text-cyan-300 light:text-cyan-600 font-semibold w-28">
+                            <th className="text-center py-3 sm:py-4 px-2 sm:px-4 text-xs sm:text-sm text-cyan-400 dark:text-cyan-300 light:text-cyan-600 font-semibold sm:w-28">
                               التاريخ
                             </th>
-                            <th className="text-center py-4 px-4 text-cyan-400 dark:text-cyan-300 light:text-cyan-600 font-semibold w-20">
+                            <th className="text-center py-3 sm:py-4 px-2 sm:px-4 text-xs sm:text-sm text-cyan-400 dark:text-cyan-300 light:text-cyan-600 font-semibold sm:w-20">
                               الترتيب
                             </th>
                           </tr>
@@ -1926,23 +1994,23 @@ const ParentDashboard = () => {
                               transition={{ duration: 0.6, delay: 1.8 + index * 0.1 }}
                               className="border-b border-cyan-400/20 dark:border-cyan-400/30 light:border-cyan-600/15 hover:bg-cyan-500/5 dark:hover:bg-cyan-500/10 light:hover:bg-cyan-500/5 transition-colors duration-300"
                             >
-                              <td className="py-4 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600 font-medium text-right whitespace-nowrap">
-                                <div className="truncate" title={grade.examTitle || 'امتحان غير محدد'}>
+                              <td className="py-3 sm:py-4 px-2 sm:px-4 text-xs sm:text-sm text-cyan-200 dark:text-cyan-100 light:text-cyan-600 font-medium text-right">
+                                <div className="truncate max-w-[120px] sm:max-w-none" title={grade.examTitle || 'امتحان غير محدد'}>
                                   {grade.examTitle || 'امتحان غير محدد'}
                                 </div>
                               </td>
-                              <td className="py-4 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600 text-right whitespace-nowrap">
-                                <div className="truncate" title={grade.courseName || 'غير محدد'}>
+                              <td className="py-3 sm:py-4 px-2 sm:px-4 text-xs sm:text-sm text-cyan-200 dark:text-cyan-100 light:text-cyan-600 text-right">
+                                <div className="truncate max-w-[120px] sm:max-w-none" title={grade.courseName || 'غير محدد'}>
                                   {grade.courseName || 'غير محدد'}
                                 </div>
                               </td>
-                              <td className="py-4 px-4 text-center">
-                                <span className="bg-cyan-500/10 px-3 py-1 rounded-lg text-sm font-mono font-bold text-cyan-200 dark:text-cyan-100 light:text-cyan-600 whitespace-nowrap">
+                              <td className="py-3 sm:py-4 px-2 sm:px-4 text-center">
+                                <span className="bg-cyan-500/10 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-mono font-bold text-cyan-200 dark:text-cyan-100 light:text-cyan-600 whitespace-nowrap">
                                   {grade.studentScore || 0}/{grade.totalScore || 0}
                                 </span>
                               </td>
-                              <td className="py-4 px-4 text-center">
-                                <span className={`px-3 py-1 rounded-lg text-sm font-bold ${
+                              <td className="py-3 sm:py-4 px-2 sm:px-4 text-center">
+                                <span className={`px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-bold ${
                                   (grade.percentage || 0) >= 90 
                                     ? 'bg-emerald-500/20 text-emerald-300 dark:text-emerald-200 light:text-emerald-700'
                                     : (grade.percentage || 0) >= 80
@@ -1954,8 +2022,8 @@ const ParentDashboard = () => {
                                   {grade.percentage || 0}%
                                 </span>
                               </td>
-                              <td className="py-4 px-4 text-center">
-                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                              <td className="py-3 sm:py-4 px-2 sm:px-4 text-center">
+                                <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${
                                   (grade.percentage || 0) >= 90 
                                     ? 'bg-emerald-500/20 text-emerald-300 dark:text-emerald-200 light:text-emerald-700'
                                     : (grade.percentage || 0) >= 80
@@ -1967,11 +2035,11 @@ const ParentDashboard = () => {
                                   {grade.grade || 'غير محدد'}
                                 </span>
                               </td>
-                              <td className="py-4 px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600 text-sm text-center">
+                              <td className="py-3 sm:py-4 px-2 sm:px-4 text-cyan-200 dark:text-cyan-100 light:text-cyan-600 text-xs sm:text-sm text-center">
                                 {grade.examDate ? new Date(grade.examDate).toLocaleDateString('ar-EG') : 'غير محدد'}
                               </td>
-                              <td className="py-4 px-4 text-center">
-                                <span className="bg-cyan-500/20 px-3 py-1 rounded-lg text-sm font-bold text-cyan-300 dark:text-cyan-200 light:text-cyan-700">
+                              <td className="py-3 sm:py-4 px-2 sm:px-4 text-center">
+                                <span className="bg-cyan-500/20 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-bold text-cyan-300 dark:text-cyan-200 light:text-cyan-700">
                                   {grade.rank ? `#${grade.rank}` : 'غير محدد'}
                                 </span>
                               </td>
@@ -1997,14 +2065,14 @@ const ParentDashboard = () => {
                 </motion.div>
 
                   {/* Charts Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
                   {/* Grade Progression Line Chart */}
-                  <LuxuryCard className="p-6">
-                    <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white">
+                  <LuxuryCard className="p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 text-gray-800 dark:text-white">
                       تطور الدرجات عبر الوقت
                       </h3>
                     {gradeProgression && gradeProgression.length > 0 ? (
-                    <div className="h-80">
+                    <div className="h-64 sm:h-80">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={gradeProgression}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -2051,12 +2119,12 @@ const ParentDashboard = () => {
                     </LuxuryCard>
 
                   {/* Test Scores Bar Chart */}
-                    <LuxuryCard className="p-6">
-                    <h3 className="text-xl font-bold mb-6 text-gray-800 dark:text-white">
+                    <LuxuryCard className="p-4 sm:p-6">
+                    <h3 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 text-gray-800 dark:text-white">
                       توزيع درجات الاختبارات
                       </h3>
                     {subjectDistribution && subjectDistribution.length > 0 ? (
-                    <div className="h-80">
+                    <div className="h-64 sm:h-80">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={subjectDistribution}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -2110,21 +2178,21 @@ const ParentDashboard = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 1.0 }}
-                    className="col-span-1 lg:col-span-2 mb-8 p-6 rounded-2xl bg-gradient-to-br from-cyan-50/20 to-blue-100/20 dark:from-gray-800/15 dark:to-gray-700/15 light:from-cyan-50/30 light:to-blue-100/30 backdrop-blur-xl border border-cyan-400/40 dark:border-cyan-400/60 light:border-cyan-600/30 shadow-[0_0_30px_rgba(6,182,212,0.3)] dark:shadow-[0_0_40px_rgba(6,182,212,0.4)] light:shadow-[0_0_20px_rgba(6,182,212,0.2)]"
+                    className="col-span-1 lg:col-span-2 mb-6 sm:mb-8 p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-gradient-to-br from-cyan-50/20 to-blue-100/20 dark:from-gray-800/15 dark:to-gray-700/15 light:from-cyan-50/30 light:to-blue-100/30 backdrop-blur-xl border border-cyan-400/40 dark:border-cyan-400/60 light:border-cyan-600/30 shadow-[0_0_30px_rgba(6,182,212,0.3)] dark:shadow-[0_0_40px_rgba(6,182,212,0.4)] light:shadow-[0_0_20px_rgba(6,182,212,0.2)]"
                   >
-                    <h3 className="text-xl font-bold text-cyan-300 dark:text-cyan-200 light:text-cyan-700 mb-6 flex items-center gap-2">
-                      <BarChart3 size={24} />
+                    <h3 className="text-lg sm:text-xl font-bold text-cyan-300 dark:text-cyan-200 light:text-cyan-700 mb-4 sm:mb-6 flex items-center gap-2">
+                      <BarChart3 size={20} className="sm:w-6 sm:h-6" />
                       الرسوم البيانية والإحصائيات
                     </h3>
                     
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                       {/* Grade Progression */}
                       <div className="lg:col-span-2">
-                        <h4 className="text-lg font-semibold text-cyan-400 dark:text-cyan-300 light:text-cyan-600 mb-4">
+                        <h4 className="text-base sm:text-lg font-semibold text-cyan-400 dark:text-cyan-300 light:text-cyan-600 mb-3 sm:mb-4">
                           تطور الدرجات الشهري
                         </h4>
                         {gradeProgression && gradeProgression.length > 0 ? (
-                        <div className="h-64">
+                        <div className="h-56 sm:h-64">
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={gradeProgression}>
                               <CartesianGrid strokeDasharray="3 3" stroke="rgba(6,182,212,0.2)" />
@@ -2163,10 +2231,10 @@ const ParentDashboard = () => {
 
                       {/* Completion Rates */}
                       <div>
-                        <h4 className="text-lg font-semibold text-cyan-400 dark:text-cyan-300 light:text-cyan-600 mb-4">
+                        <h4 className="text-base sm:text-lg font-semibold text-cyan-400 dark:text-cyan-300 light:text-cyan-600 mb-3 sm:mb-4">
                           معدل الإكمال
                         </h4>
-                        <div className="h-64">
+                        <div className="h-56 sm:h-64">
                       <ResponsiveContainer width="100%" height="100%">
                         <RechartsPieChart>
                           <Pie
@@ -2197,11 +2265,11 @@ const ParentDashboard = () => {
                     </div>
 
                     {/* Test Distribution */}
-                    <div className="mt-6">
-                      <h4 className="text-lg font-semibold text-cyan-400 dark:text-cyan-300 light:text-cyan-600 mb-4">
+                    <div className="mt-4 sm:mt-6">
+                      <h4 className="text-base sm:text-lg font-semibold text-cyan-400 dark:text-cyan-300 light:text-cyan-600 mb-3 sm:mb-4">
                         توزيع درجات الاختبارات
                       </h4>
-                      <div className="h-80">
+                      <div className="h-64 sm:h-80">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart 
                             data={subjectDistribution}

@@ -73,6 +73,80 @@ const ExamResultSchema = new mongoose.Schema({
     required: false,
     trim: true,
     maxlength: [500, 'Notes cannot exceed 500 characters']
+  },
+  
+  // ✅ Store individual answers with correctness for review/editing
+  answers: [{
+    questionId: {
+      type: String,
+      required: true
+    },
+    questionText: {
+      type: String,
+      required: false,
+      trim: true
+    },
+    questionType: {
+      type: String,
+      enum: ['mcq', 'multiple_choice', 'true_false', 'essay'],
+      required: false
+    },
+    // Student's answer - can be string (option.id for MCQ), boolean (true/false), or string (essay)
+    answer: {
+      type: mongoose.Schema.Types.Mixed,
+      required: true
+    },
+    // Whether the answer is correct (null for essay questions requiring manual grading)
+    isCorrect: {
+      type: Boolean,
+      required: false,
+      default: null
+    },
+    // Correct answer for reference
+    correctAnswer: {
+      type: mongoose.Schema.Types.Mixed,
+      required: false
+    },
+    // Points earned for this question
+    earnedMarks: {
+      type: Number,
+      required: false,
+      default: 0,
+      min: 0
+    },
+    // Maximum points for this question
+    maxMarks: {
+      type: Number,
+      required: false,
+      default: 0,
+      min: 0
+    },
+    // Whether the student skipped (did not answer) this question
+    skipped: {
+      type: Boolean,
+      required: false,
+      default: false
+    }
+  }],
+  
+  // Time spent on exam (in seconds)
+  timeSpent: {
+    type: Number,
+    required: false,
+    default: 0,
+    min: 0
+  },
+  
+  // Whether exam is still editable (allows resubmission)
+  isEditable: {
+    type: Boolean,
+    default: false
+  },
+  
+  // Whether exam has been passed
+  passed: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

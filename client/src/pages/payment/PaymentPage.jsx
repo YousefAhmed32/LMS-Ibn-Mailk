@@ -18,7 +18,12 @@ import {
   Clock,
   BookOpen,
   Camera,
-  X
+  X,
+  Sparkles,
+  Zap,
+  Star,
+  Copy,
+  CheckCircle2
 } from 'lucide-react';
 import axiosInstance from '../../api/axiosInstance';
 import LuxuryCard from '../../components/ui/LuxuryCard';
@@ -30,7 +35,7 @@ const PaymentPage = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const theme = useTheme();
-  const { colors, spacing, borderRadius, typography, shadows, isDarkMode } = theme;
+  const { colors, spacing, typography } = theme;
 
   // State management
   const [course, setCourse] = useState(null);
@@ -48,8 +53,8 @@ const PaymentPage = () => {
   });
 
   const [screenshot, setScreenshot] = useState(null);
-  const [checkingTransactionId, setCheckingTransactionId] = useState(false);
   const [transactionIdStatus, setTransactionIdStatus] = useState(null); // 'valid', 'invalid', 'checking'
+  const [copiedNumber, setCopiedNumber] = useState(false);
 
   // Vodafone Cash number
   const VODAFONE_NUMBER = '01022880651';
@@ -58,6 +63,7 @@ const PaymentPage = () => {
     if (courseId) {
       fetchCourseDetails();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseId]);
 
   const fetchCourseDetails = async () => {
@@ -375,13 +381,12 @@ const PaymentPage = () => {
   };
 
   // Check if transaction ID exists
-  const checkTransactionId = async (transactionId) => {
+  const checkTransactionId = React.useCallback(async (transactionId) => {
     if (!transactionId || transactionId.length < 5) {
       setTransactionIdStatus(null);
       return;
     }
 
-    setCheckingTransactionId(true);
     setTransactionIdStatus('checking');
 
     try {
@@ -397,15 +402,13 @@ const PaymentPage = () => {
     } catch (error) {
       console.error('Error checking transaction ID:', error);
       setTransactionIdStatus(null);
-    } finally {
-      setCheckingTransactionId(false);
     }
-  };
+  }, []);
 
   // Debounced transaction ID checking
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (formData.transactionId) {
+      if (formData.transactionId && formData.transactionId.length >= 5) {
         checkTransactionId(formData.transactionId);
       } else {
         setTransactionIdStatus(null);
@@ -413,16 +416,49 @@ const PaymentPage = () => {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [formData.transactionId]);
+  }, [formData.transactionId, checkTransactionId]);
+
+  // Copy phone number to clipboard
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(VODAFONE_NUMBER);
+      setCopiedNumber(true);
+      toast({
+        title: 'تم النسخ',
+        description: 'تم نسخ رقم Vodafone Cash إلى الحافظة',
+        variant: 'success',
+        duration: 2000
+      });
+      setTimeout(() => setCopiedNumber(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.background }}>
         <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center"
         >
-          <CreditCard size={48} color={colors.accent} />
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="mb-4"
+          >
+            <CreditCard size={64} color={colors.accent} />
+          </motion.div>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="text-lg font-medium"
+            style={{ color: colors.textMuted }}
+          >
+            جاري تحميل بيانات الدورة...
+          </motion.p>
         </motion.div>
       </div>
     );
@@ -445,392 +481,717 @@ const PaymentPage = () => {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: colors.background }}>
-      {/* Header */}
-      <div className="relative overflow-hidden" style={{
-        background: `linear-gradient(135deg, ${colors.background} 0%, ${colors.surface} 100%)`,
-        borderBottom: `1px solid ${colors.border}`,
-        padding: `${spacing['2xl']} ${spacing.lg}`
-      }}>
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-0 right-0 w-96 h-96 rounded-full" style={{
+    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: colors.background }}>
+      {/* Static Background Elements */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div
+          className="absolute top-20 right-20 w-96 h-96 rounded-full blur-3xl opacity-20"
+          style={{
             background: `radial-gradient(circle, ${colors.accent} 0%, transparent 70%)`
-          }}></div>
+          }}
+        />
+        <div
+          className="absolute bottom-20 left-20 w-96 h-96 rounded-full blur-3xl opacity-15"
+          style={{
+            background: `radial-gradient(circle, ${colors.success} 0%, transparent 70%)`
+          }}
+        />
+      </div>
+
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="relative overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, ${colors.background} 0%, ${colors.surface} 50%, ${colors.background} 100%)`,
+          borderBottom: `1px solid ${colors.border}`,
+          padding: `${spacing['2xl']} ${spacing.lg}`,
+          boxShadow: `0 4px 20px ${colors.shadow}20`
+        }}
+      >
+        {/* Decorative Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div
+            className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-10"
+            style={{
+              background: `radial-gradient(circle, ${colors.accent} 0%, transparent 70%)`
+            }}
+          />
         </div>
         
-        <div className="relative z-10 max-w-4xl mx-auto">
-          <div className="flex items-center gap-4 mb-6">
+        <div className="relative z-10 max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex items-center gap-4 mb-8"
+          >
             <LuxuryButton
               variant="outline"
               onClick={() => navigate(-1)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 group"
+              style={{
+                borderColor: colors.border,
+                color: colors.text,
+                transition: 'all 0.3s ease'
+              }}
             >
               <ArrowLeft size={18} />
               العودة
             </LuxuryButton>
-          </div>
+          </motion.div>
           
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl mb-6" style={{
-              background: `linear-gradient(135deg, ${colors.accent}20, ${colors.accent}10)`,
-              border: `2px solid ${colors.accent}30`
-            }}>
-              <CreditCard size={40} color={colors.accent} />
-            </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="text-center"
+          >
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
+              className="inline-flex items-center justify-center w-24 h-24 rounded-3xl mb-6 relative"
+              style={{
+                background: `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`,
+                border: `2px solid ${colors.accent}40`,
+                boxShadow: `0 8px 32px ${colors.accent}30`
+              }}
+            >
+              <CreditCard size={48} color={colors.accent} />
+            </motion.div>
             
-            <h1 className="text-4xl lg:text-5xl font-bold mb-4" style={{ color: colors.text }}>
+            <motion.h1
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 bg-gradient-to-r bg-clip-text"
+              style={{
+                backgroundImage: `linear-gradient(135deg, ${colors.accent}, ${colors.success})`,
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}
+            >
               دفع رسوم الدورة
-            </h1>
-            <p className="text-lg mb-2" style={{ color: colors.textMuted }}>
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="text-xl sm:text-2xl mb-3 font-semibold"
+              style={{ color: colors.text }}
+            >
               {course ? course.title : 'جاري التحميل...'}
-            </p>
-            <p className="text-sm" style={{ color: colors.textMuted }}>
-              {course ? `${course.subject} • الصف ${course.grade}` : 'جاري التحميل...'}
-            </p>
-          </div>
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              className="flex items-center justify-center gap-2 text-sm sm:text-base"
+              style={{ color: colors.textMuted }}
+            >
+              <BookOpen size={16} />
+              <span>{course ? `${course.subject} • الصف ${course.grade}` : 'جاري التحميل...'}</span>
+            </motion.div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Payment Form */}
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Vodafone Cash Info */}
-          <LuxuryCard className="h-fit" style={{
-            background: `linear-gradient(135deg, ${colors.surface} 0%, ${colors.background} 100%)`,
-            border: `1px solid ${colors.border}`,
-            boxShadow: shadows.lg
-          }}>
-            <div className="p-8">
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4" style={{
-                  background: `linear-gradient(135deg, ${colors.accent}20, ${colors.accent}10)`,
-                  border: `2px solid ${colors.accent}30`
-                }}>
-                  <Smartphone size={32} color={colors.accent} />
-                </div>
-                
-                <h2 className="text-2xl font-bold mb-2" style={{ color: colors.text }}>
-                  Vodafone Cash
-                </h2>
-                <p className="text-sm mb-6" style={{ color: colors.textMuted }}>
-                  قم بتحويل المبلغ إلى الرقم التالي
-                </p>
-              </div>
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+          >
+            <LuxuryCard className="h-fit relative overflow-hidden group" style={{
+              background: `linear-gradient(135deg, ${colors.surface} 0%, ${colors.surfaceElevated} 100%)`,
+              border: `2px solid ${colors.border}`,
+              boxShadow: `0 20px 60px ${colors.shadow}30`,
+              transition: 'all 0.3s ease'
+            }}>
+              {/* Decorative gradient overlay */}
+              <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl opacity-20 group-hover:opacity-30 transition-opacity"
+                style={{ background: `radial-gradient(circle, ${colors.accent} 0%, transparent 70%)` }}
+              />
+              
+              <div className="relative z-10 p-6 sm:p-8 lg:p-10">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+                  className="text-center mb-8"
+                >
+                  <div className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-3xl mb-6 relative" style={{
+                    background: `linear-gradient(135deg, ${colors.accent}30, ${colors.accent}15)`,
+                    border: `3px solid ${colors.accent}40`,
+                    boxShadow: `0 8px 32px ${colors.accent}40`
+                  }}>
+                    <Smartphone size={40} color={colors.accent} />
+                  </div>
+                  
+                  <h2 className="text-3xl sm:text-4xl font-bold mb-3 bg-gradient-to-r bg-clip-text" style={{
+                    backgroundImage: `linear-gradient(135deg, ${colors.accent}, ${colors.success})`,
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text'
+                  }}>
+                    Vodafone Cash
+                  </h2>
+                  <p className="text-base sm:text-lg mb-8" style={{ color: colors.textMuted }}>
+                    قم بتحويل المبلغ إلى الرقم التالي
+                  </p>
+                </motion.div>
 
-              {/* Vodafone Number - Large and Bold */}
-              <div className="text-center mb-8">
-                <div className="inline-block p-6 rounded-2xl" style={{
-                  background: `linear-gradient(135deg, ${colors.accent}15, ${colors.accent}05)`,
-                  border: `2px solid ${colors.accent}30`
-                }}>
-                  <p className="text-sm font-medium mb-2" style={{ color: colors.textMuted }}>
-                    رقم Vodafone Cash
-                  </p>
-                  <p className="text-4xl font-bold" style={{ color: colors.accent }}>
-                    {VODAFONE_NUMBER}
-                  </p>
-                </div>
-              </div>
+                {/* Vodafone Number - Large and Bold with Copy Button */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  className="text-center mb-8"
+                >
+                  <div className="relative inline-block p-6 sm:p-8 rounded-3xl group/number" style={{
+                    background: `linear-gradient(135deg, ${colors.accent}20, ${colors.accent}10)`,
+                    border: `2px solid ${colors.accent}40`,
+                    boxShadow: `0 8px 32px ${colors.accent}30`,
+                    transition: 'all 0.3s ease'
+                  }}>
+                    <p className="text-xs sm:text-sm font-semibold mb-3 uppercase tracking-wider" style={{ color: colors.textMuted }}>
+                      رقم Vodafone Cash
+                    </p>
+                    <div className="flex items-center justify-center gap-3">
+                      <p className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-wider" style={{ color: colors.accent }}>
+                        {VODAFONE_NUMBER}
+                      </p>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={copyToClipboard}
+                        className="p-2 sm:p-3 rounded-xl transition-all duration-200"
+                        style={{
+                          background: copiedNumber ? colors.success + '20' : colors.accent + '20',
+                          border: `2px solid ${copiedNumber ? colors.success + '40' : colors.accent + '40'}`,
+                          color: copiedNumber ? colors.success : colors.accent
+                        }}
+                        title="نسخ الرقم"
+                      >
+                        {copiedNumber ? (
+                          <CheckCircle2 size={20} />
+                        ) : (
+                          <Copy size={20} />
+                        )}
+                      </motion.button>
+                    </div>
+                    {copiedNumber && (
+                      <motion.p
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-xs mt-2 font-medium"
+                        style={{ color: colors.success }}
+                      >
+                        تم النسخ!
+                      </motion.p>
+                    )}
+                  </div>
+                </motion.div>
 
-              {/* Course Price */}
-              <div className="text-center mb-6">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl" style={{
-                  background: `linear-gradient(135deg, ${colors.success}20, ${colors.success}10)`,
-                  border: `1px solid ${colors.success}30`
-                }}>
-                  <DollarSign size={20} color={colors.success} />
-                  <span className="text-lg font-bold" style={{ color: colors.success }}>
-                    {course ? formatCurrency(course.price) : '0 جنيه'}
-                  </span>
-                </div>
-              </div>
+                {/* Course Price */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.7 }}
+                  className="text-center mb-8"
+                >
+                  <div className="inline-flex items-center gap-3 px-6 sm:px-8 py-4 rounded-2xl relative overflow-hidden group/price" style={{
+                    background: `linear-gradient(135deg, ${colors.success}25, ${colors.success}15)`,
+                    border: `2px solid ${colors.success}40`,
+                    boxShadow: `0 8px 24px ${colors.success}30`
+                  }}>
+                    <DollarSign size={24} color={colors.success} />
+                    <span className="text-2xl sm:text-3xl font-black" style={{ color: colors.success }}>
+                      {course ? formatCurrency(course.price) : '0 جنيه'}
+                    </span>
+                  </div>
+                </motion.div>
 
-              {/* Instructions */}
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center mt-0.5" style={{
-                    background: `${colors.accent}20`,
-                    border: `1px solid ${colors.accent}30`
-                  }}>
-                    <span className="text-xs font-bold" style={{ color: colors.accent }}>1</span>
-                  </div>
-                  <p className="text-sm" style={{ color: colors.textMuted }}>
-                    افتح تطبيق Vodafone Cash على هاتفك
-                  </p>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center mt-0.5" style={{
-                    background: `${colors.accent}20`,
-                    border: `1px solid ${colors.accent}30`
-                  }}>
-                    <span className="text-xs font-bold" style={{ color: colors.accent }}>2</span>
-                  </div>
-                  <p className="text-sm" style={{ color: colors.textMuted }}>
-                    اختر "إرسال أموال" وأدخل الرقم: <strong>{VODAFONE_NUMBER}</strong>
-                  </p>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center mt-0.5" style={{
-                    background: `${colors.accent}20`,
-                    border: `1px solid ${colors.accent}30`
-                  }}>
-                    <span className="text-xs font-bold" style={{ color: colors.accent }}>3</span>
-                  </div>
-                  <p className="text-sm" style={{ color: colors.textMuted }}>
-                    أدخل المبلغ: <strong>{formatCurrency(course.price)}</strong>
-                  </p>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center mt-0.5" style={{
-                    background: `${colors.accent}20`,
-                    border: `1px solid ${colors.accent}30`
-                  }}>
-                    <span className="text-xs font-bold" style={{ color: colors.accent }}>4</span>
-                  </div>
-                  <p className="text-sm" style={{ color: colors.textMuted }}>
-                    أكمل العملية والتقط صورة للإثبات
-                  </p>
-                </div>
+                {/* Instructions */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8 }}
+                  className="space-y-4"
+                >
+                  {[
+                    { step: 1, text: 'افتح تطبيق Vodafone Cash على هاتفك', icon: Smartphone },
+                    { step: 2, text: `اختر "إرسال أموال" وأدخل الرقم: ${VODAFONE_NUMBER}`, icon: Phone },
+                    { step: 3, text: `أدخل المبلغ: ${formatCurrency(course?.price || 0)}`, icon: DollarSign },
+                    { step: 4, text: 'أكمل العملية والتقط صورة للإثبات', icon: Camera }
+                  ].map((item, index) => (
+                    <motion.div
+                      key={item.step}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.8 + index * 0.1 }}
+                      className="flex items-start gap-4 p-4 rounded-2xl group/step transition-all duration-200 hover:scale-[1.02]"
+                      style={{
+                        background: `linear-gradient(135deg, ${colors.surface} 0%, ${colors.background} 100%)`,
+                        border: `1px solid ${colors.border}`
+                      }}
+                    >
+                      <div className="relative flex-shrink-0">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center relative overflow-hidden" style={{
+                          background: `linear-gradient(135deg, ${colors.accent}30, ${colors.accent}15)`,
+                          border: `2px solid ${colors.accent}40`,
+                          boxShadow: `0 4px 12px ${colors.accent}30`
+                        }}>
+                          <span className="text-sm sm:text-base font-black relative z-10" style={{ color: colors.accent }}>
+                            {item.step}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex-1 pt-1">
+                        <p className="text-sm sm:text-base font-medium leading-relaxed" style={{ color: colors.text }}>
+                          {item.text}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
               </div>
-            </div>
-          </LuxuryCard>
+            </LuxuryCard>
+          </motion.div>
 
           {/* Payment Form */}
-          <LuxuryCard style={{
-            background: `linear-gradient(135deg, ${colors.surface} 0%, ${colors.background} 100%)`,
-            border: `1px solid ${colors.border}`,
-            boxShadow: shadows.lg
-          }}>
-            <div className="p-8">
-              <h3 className="text-2xl font-bold mb-6" style={{ color: colors.text }}>
-                تفاصيل الدفع
-              </h3>
-
-              <form className="space-y-6">
-                {/* Student Name */}
-                <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
-                    الاسم الكامل <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <User size={20} className="absolute right-3 top-1/2 transform -translate-y-1/2" style={{ color: colors.textMuted }} />
-                    <input
-                      type="text"
-                      name="studentName"
-                      value={formData.studentName}
-                      onChange={handleInputChange}
-                      placeholder="أدخل الاسم الكامل"
-                      className="w-full pr-10 pl-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2"
-                      style={{
-                        borderColor: colors.border,
-                        backgroundColor: colors.background,
-                        color: colors.text,
-                        fontSize: typography.fontSize.sm,
-                        '--tw-ring-color': colors.accent + '30'
-                      }}
-                    />
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5, duration: 0.6 }}
+          >
+            <LuxuryCard className="relative overflow-hidden group" style={{
+              background: `linear-gradient(135deg, ${colors.surface} 0%, ${colors.surfaceElevated} 100%)`,
+              border: `2px solid ${colors.border}`,
+              boxShadow: `0 20px 60px ${colors.shadow}30`
+            }}>
+              {/* Decorative gradient overlay */}
+              <div className="absolute top-0 left-0 w-64 h-64 rounded-full blur-3xl opacity-20 group-hover:opacity-30 transition-opacity"
+                style={{ background: `radial-gradient(circle, ${colors.success} 0%, transparent 70%)` }}
+              />
+              
+              <div className="relative z-10 p-6 sm:p-8 lg:p-10">
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  className="flex items-center gap-3 mb-8"
+                >
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{
+                    background: `linear-gradient(135deg, ${colors.accent}30, ${colors.accent}15)`,
+                    border: `2px solid ${colors.accent}40`
+                  }}>
+                    <Shield size={24} color={colors.accent} />
                   </div>
-                </div>
+                  <h3 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r bg-clip-text" style={{
+                    backgroundImage: `linear-gradient(135deg, ${colors.accent}, ${colors.success})`,
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text'
+                  }}>
+                    تفاصيل الدفع
+                  </h3>
+                </motion.div>
 
-                {/* Student Phone */}
-                <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
-                    رقم الهاتف <span className="text-red-500">*</span>
-                  </label>
-                  <div
-                    className="rounded-xl border-2 transition-all duration-200 focus-within:ring-2"
-                    style={{
-                      borderColor: colors.border,
-                      backgroundColor: colors.background,
-                      '--tw-ring-color': colors.accent + '30'
-                    }}
+                <form className="space-y-6">
+                  {/* Student Name */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 }}
                   >
-                    <PhoneInput
-                      value={formData.studentPhone}
-                      onChange={handlePhoneChange}
-                      placeholder="+201234567890"
-                      defaultCountry="EG"
-                      className="!border-0 !bg-transparent"
-                      id="studentPhone"
-                    />
-                  </div>
-                </div>
-
-                {/* Amount */}
-                <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
-                    المبلغ <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <DollarSign size={20} className="absolute right-3 top-1/2 transform -translate-y-1/2" style={{ color: colors.textMuted }} />
-                    <input
-                      type="number"
-                      name="amount"
-                      value={formData.amount}
-                      onChange={handleInputChange}
-                      placeholder="0"
-                      className="w-full pr-10 pl-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2"
-                      style={{
-                        borderColor: colors.border,
-                        backgroundColor: colors.background,
-                        color: colors.text,
-                        fontSize: typography.fontSize.sm,
-                        '--tw-ring-color': colors.accent + '30'
-                      }}
-                      readOnly
-                    />
-                  </div>
-                </div>
-
-                {/* Transaction ID (Optional) */}
-                <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
-                    رقم المعاملة (اختياري)
-                    <button
-                      type="button"
-                      onClick={generateTransactionId}
-                      className="ml-2 px-3 py-1 text-xs bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                      disabled={submitting}
-                    >
-                      🎲 توليد تلقائي
-                    </button>
-                  </label>
-                  <div className="relative">
-                    <CreditCard size={20} className="absolute right-3 top-1/2 transform -translate-y-1/2" style={{ color: colors.textMuted }} />
-                    <input
-                      type="text"
-                      name="transactionId"
-                      value={formData.transactionId}
-                      onChange={handleInputChange}
-                      placeholder="رقم المعاملة من Vodafone Cash أو اتركه فارغاً للتوليد التلقائي"
-                      className="w-full pr-10 pl-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2"
-                      style={{
-                        borderColor: transactionIdStatus === 'invalid' ? '#dc3545' : transactionIdStatus === 'valid' ? '#28a745' : colors.border,
-                        backgroundColor: colors.background,
-                        color: colors.text,
-                        fontSize: typography.fontSize.sm,
-                        '--tw-ring-color': colors.accent + '30'
-                      }}
-                      disabled={submitting}
-                    />
-                    {/* Status indicator */}
-                    {transactionIdStatus === 'checking' && (
-                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
-                      </div>
-                    )}
-                    {transactionIdStatus === 'valid' && (
-                      <CheckCircle size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-500" />
-                    )}
-                    {transactionIdStatus === 'invalid' && (
-                      <AlertCircle size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-red-500" />
-                    )}
-                  </div>
-                  <p className="text-xs mt-1" style={{ color: colors.textMuted }}>
-                    💡 إذا تركت هذا الحقل فارغاً، سيتم توليد رقم معاملة فريد تلقائياً
-                  </p>
-                  
-                  {/* Transaction ID status messages */}
-                  {transactionIdStatus === 'checking' && (
-                    <p className="text-xs mt-1 text-blue-500">
-                      🔄 جاري التحقق من رقم المعاملة...
-                    </p>
-                  )}
-                  {transactionIdStatus === 'valid' && (
-                    <p className="text-xs mt-1 text-green-500">
-                      ✅ رقم المعاملة متاح للاستخدام
-                    </p>
-                  )}
-                  {transactionIdStatus === 'invalid' && (
-                    <p className="text-xs mt-1 text-red-500">
-                      ❌ رقم المعاملة موجود مسبقاً، يرجى استخدام رقم آخر
-                    </p>
-                  )}
-                </div>
-
-                {/* Screenshot Upload */}
-                <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
-                    صورة إثبات الدفع <span className="text-red-500">*</span>
-                  </label>
-                  
-                  {!screenshot ? (
-                    <div className="relative">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleScreenshotChange}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      />
-                      <div className="border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 hover:border-opacity-60" style={{
-                        borderColor: colors.border,
-                        backgroundColor: colors.background + '50'
-                      }}>
-                        <Upload size={32} className="mx-auto mb-4" style={{ color: colors.textMuted }} />
-                        <p className="text-sm font-medium mb-2" style={{ color: colors.text }}>
-                          اضغط لرفع صورة إثبات الدفع
-                        </p>
-                        <p className="text-xs" style={{ color: colors.textMuted }}>
-                          JPG, PNG أو WebP - حد أقصى 5 ميجابايت
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="relative">
-                      <img
-                        src={screenshotPreview}
-                        alt="Payment proof"
-                        className="w-full h-48 object-cover rounded-xl"
-                      />
-                      <button
-                        type="button"
-                        onClick={removeScreenshot}
-                        className="absolute top-2 left-2 p-2 rounded-full transition-all duration-200"
+                    <label className="flex text-sm sm:text-base font-semibold mb-3 items-center gap-2" style={{ color: colors.text }}>
+                      <User size={18} />
+                      <span>الاسم الكامل <span className="text-red-500">*</span></span>
+                    </label>
+                    <div className="relative group/input">
+                      <div className="absolute inset-0 rounded-2xl opacity-0 group-focus-within/input:opacity-100 transition-opacity duration-300"
                         style={{
-                          backgroundColor: colors.error + '20',
-                          color: colors.error
+                          background: `linear-gradient(135deg, ${colors.accent}10, ${colors.accent}05)`,
+                          boxShadow: `0 0 0 2px ${colors.accent}30`
+                        }}
+                      />
+                      <input
+                        type="text"
+                        name="studentName"
+                        value={formData.studentName}
+                        onChange={handleInputChange}
+                        placeholder="أدخل الاسم الكامل"
+                        className="relative w-full pr-12 pl-5 py-4 rounded-2xl border-2 transition-all duration-300 focus:outline-none focus:ring-0 text-base"
+                        style={{
+                          borderColor: colors.border,
+                          backgroundColor: colors.background,
+                          color: colors.text,
+                          fontSize: typography.fontSize.base
+                        }}
+                      />
+                      <User size={20} className="absolute right-4 top-1/2 transform -translate-y-1/2 transition-colors duration-200" style={{ color: colors.textMuted }} />
+                    </div>
+                  </motion.div>
+
+                  {/* Student Phone */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 }}
+                  >
+                    <label className="flex text-sm sm:text-base font-semibold mb-3 items-center gap-2" style={{ color: colors.text }}>
+                      <Phone size={18} />
+                      <span>رقم الهاتف <span className="text-red-500">*</span></span>
+                    </label>
+                    <div className="relative group/phone">
+                      <div className="absolute inset-0 rounded-2xl opacity-0 group-focus-within/phone:opacity-100 transition-opacity duration-300"
+                        style={{
+                          background: `linear-gradient(135deg, ${colors.accent}10, ${colors.accent}05)`,
+                          boxShadow: `0 0 0 2px ${colors.accent}30`
+                        }}
+                      />
+                      <div
+                        className="relative rounded-2xl border-2 transition-all duration-300 focus-within:ring-0"
+                        style={{
+                          borderColor: colors.border,
+                          backgroundColor: colors.background
                         }}
                       >
-                        <X size={16} />
-                      </button>
+                        <PhoneInput
+                          value={formData.studentPhone}
+                          onChange={handlePhoneChange}
+                          placeholder="+201234567890"
+                          defaultCountry="EG"
+                          className="!border-0 !bg-transparent h-14 text-base"
+                          id="studentPhone"
+                        />
+                      </div>
                     </div>
-                  )}
-                </div>
+                  </motion.div>
 
-                {/* Submit Button */}
-                <LuxuryButton
-                  type="button"
-                  onClick={() => setShowConfirmation(true)}
-                  disabled={submitting}
-                  className="w-full py-4 text-lg font-semibold"
-                  style={{
-                    background: `linear-gradient(135deg, ${colors.accent}, ${colors.accent}CC)`,
-                    boxShadow: `0 8px 32px ${colors.accent}30`
-                  }}
-                >
-                  {submitting ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  {/* Amount */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.9 }}
+                  >
+                    <label className="flex text-sm sm:text-base font-semibold mb-3 items-center gap-2" style={{ color: colors.text }}>
+                      <DollarSign size={18} />
+                      <span>المبلغ <span className="text-red-500">*</span></span>
+                    </label>
+                    <div className="relative group/amount">
+                      <div className="absolute inset-0 rounded-2xl opacity-0 group-focus-within/amount:opacity-100 transition-opacity duration-300"
+                        style={{
+                          background: `linear-gradient(135deg, ${colors.success}10, ${colors.success}05)`,
+                          boxShadow: `0 0 0 2px ${colors.success}30`
+                        }}
+                      />
+                      <input
+                        type="number"
+                        name="amount"
+                        value={formData.amount}
+                        onChange={handleInputChange}
+                        placeholder="0"
+                        className="relative w-full pr-12 pl-5 py-4 rounded-2xl border-2 transition-all duration-300 focus:outline-none focus:ring-0 text-lg font-bold"
+                        style={{
+                          borderColor: colors.border,
+                          backgroundColor: colors.background,
+                          color: colors.success,
+                          fontSize: typography.fontSize.lg
+                        }}
+                        readOnly
+                      />
+                      <DollarSign size={20} className="absolute right-4 top-1/2 transform -translate-y-1/2" style={{ color: colors.success }} />
+                    </div>
+                  </motion.div>
+
+                  {/* Transaction ID (Optional) */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1.0 }}
+                  >
+                    <label className="flex text-sm sm:text-base font-semibold mb-3 items-center gap-2 flex-wrap" style={{ color: colors.text }}>
+                      <CreditCard size={18} />
+                      <span className="flex-1">رقم المعاملة (اختياري)</span>
+                      <motion.button
+                        type="button"
+                        onClick={generateTransactionId}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all duration-200 flex items-center gap-2"
+                        style={{
+                          background: `linear-gradient(135deg, ${colors.accent}, ${colors.accent}DD)`,
+                          color: colors.background,
+                          boxShadow: `0 4px 12px ${colors.accent}30`
+                        }}
+                        disabled={submitting}
                       >
-                        <Clock size={20} />
+                        <Zap size={14} />
+                        توليد تلقائي
+                      </motion.button>
+                    </label>
+                    <div className="relative group/txn">
+                      <div className="absolute inset-0 rounded-2xl opacity-0 group-focus-within/txn:opacity-100 transition-opacity duration-300"
+                        style={{
+                          background: `linear-gradient(135deg, ${colors.accent}10, ${colors.accent}05)`,
+                          boxShadow: `0 0 0 2px ${colors.accent}30`
+                        }}
+                      />
+                      <input
+                        type="text"
+                        name="transactionId"
+                        value={formData.transactionId}
+                        onChange={handleInputChange}
+                        placeholder="رقم المعاملة من Vodafone Cash أو اتركه فارغاً للتوليد التلقائي"
+                        className="relative w-full pr-12 pl-12 py-4 rounded-2xl border-2 transition-all duration-300 focus:outline-none focus:ring-0 text-base"
+                        style={{
+                          borderColor: transactionIdStatus === 'invalid' ? colors.error : transactionIdStatus === 'valid' ? colors.success : colors.border,
+                          backgroundColor: colors.background,
+                          color: colors.text,
+                          fontSize: typography.fontSize.base
+                        }}
+                        disabled={submitting}
+                      />
+                      {/* Status indicator */}
+                      <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                        {transactionIdStatus === 'checking' && (
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            className="w-5 h-5 rounded-full border-2 border-blue-500 border-t-transparent"
+                          />
+                        )}
+                        {transactionIdStatus === 'valid' && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: "spring", stiffness: 200 }}
+                          >
+                            <CheckCircle size={20} className="text-green-500" />
+                          </motion.div>
+                        )}
+                        {transactionIdStatus === 'invalid' && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ type: "spring", stiffness: 200 }}
+                          >
+                            <AlertCircle size={20} className="text-red-500" />
+                          </motion.div>
+                        )}
+                      </div>
+                      <CreditCard size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 transition-colors duration-200" style={{ color: colors.textMuted }} />
+                    </div>
+                    <p className="text-xs sm:text-sm mt-2 flex items-center gap-2" style={{ color: colors.textMuted }}>
+                      <Sparkles size={14} />
+                      إذا تركت هذا الحقل فارغاً، سيتم توليد رقم معاملة فريد تلقائياً
+                    </p>
+                    
+                    {/* Transaction ID status messages */}
+                    <AnimatePresence>
+                      {transactionIdStatus === 'checking' && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          className="text-xs sm:text-sm mt-2 flex items-center gap-2 font-medium"
+                          style={{ color: colors.info }}
+                        >
+                          <Clock size={14} className="animate-spin" />
+                          جاري التحقق من رقم المعاملة...
+                        </motion.p>
+                      )}
+                      {transactionIdStatus === 'valid' && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          className="text-xs sm:text-sm mt-2 flex items-center gap-2 font-medium"
+                          style={{ color: colors.success }}
+                        >
+                          <CheckCircle size={14} />
+                          رقم المعاملة متاح للاستخدام
+                        </motion.p>
+                      )}
+                      {transactionIdStatus === 'invalid' && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          className="text-xs sm:text-sm mt-2 flex items-center gap-2 font-medium"
+                          style={{ color: colors.error }}
+                        >
+                          <AlertCircle size={14} />
+                          رقم المعاملة موجود مسبقاً، يرجى استخدام رقم آخر
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+
+                  {/* Screenshot Upload */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1.1 }}
+                  >
+                    <label className="flex text-sm sm:text-base font-semibold mb-3 items-center gap-2" style={{ color: colors.text }}>
+                      <Camera size={18} />
+                      <span>صورة إثبات الدفع <span className="text-red-500">*</span></span>
+                    </label>
+                    
+                    {!screenshot ? (
+                      <div className="relative group/upload">
+                        <label className="block cursor-pointer">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleScreenshotChange}
+                            className="hidden"
+                            id="screenshot-upload"
+                          />
+                          <div className="border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center transition-all duration-300 relative overflow-hidden hover:scale-[1.02] active:scale-[0.98]" style={{
+                            borderColor: colors.border,
+                            backgroundColor: colors.background + '80',
+                            background: `linear-gradient(135deg, ${colors.background}80, ${colors.surface}80)`,
+                            cursor: 'pointer'
+                          }}>
+                            {/* Animated background */}
+                            <div
+                              className="absolute inset-0 opacity-0 group-hover/upload:opacity-100 transition-opacity duration-300"
+                              style={{
+                                background: `linear-gradient(135deg, ${colors.accent}10, ${colors.success}10)`
+                              }}
+                            />
+                            <div className="relative z-10">
+                              <div
+                                className="inline-flex items-center justify-center w-20 h-20 rounded-3xl mb-6"
+                                style={{
+                                  background: `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`,
+                                  border: `2px solid ${colors.accent}40`,
+                                  boxShadow: `0 8px 24px ${colors.accent}30`
+                                }}
+                              >
+                                <Upload size={40} color={colors.accent} />
+                              </div>
+                              <p className="text-base sm:text-lg font-semibold mb-2" style={{ color: colors.text }}>
+                                اضغط لرفع صورة إثبات الدفع
+                              </p>
+                              <p className="text-xs sm:text-sm flex items-center justify-center gap-2" style={{ color: colors.textMuted }}>
+                                <FileImage size={14} />
+                                JPG, PNG أو WebP - حد أقصى 5 ميجابايت
+                              </p>
+                              <div
+                                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl"
+                                style={{
+                                  background: `${colors.accent}15`,
+                                  border: `1px solid ${colors.accent}30`
+                                }}
+                              >
+                                <Camera size={16} color={colors.accent} />
+                                <span className="text-xs font-medium" style={{ color: colors.accent }}>
+                                  التقط صورة أو اختر من الملفات
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="relative group/preview"
+                      >
+                        <div className="relative rounded-2xl overflow-hidden border-2" style={{
+                          borderColor: colors.border,
+                          boxShadow: `0 8px 32px ${colors.shadow}30`
+                        }}>
+                          <img
+                            src={screenshotPreview}
+                            alt="Payment proof"
+                            className="w-full h-64 sm:h-80 object-cover"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/preview:opacity-100 transition-opacity duration-300" />
+                        </div>
+                        <motion.button
+                          type="button"
+                          onClick={removeScreenshot}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          className="absolute top-4 left-4 p-3 rounded-2xl transition-all duration-200 backdrop-blur-sm"
+                          style={{
+                            backgroundColor: colors.error + '90',
+                            color: colors.background,
+                            boxShadow: `0 4px 16px ${colors.error}40`
+                          }}
+                        >
+                          <X size={20} />
+                        </motion.button>
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="absolute bottom-4 left-4 right-4"
+                        >
+                          <div className="flex items-center gap-2 px-4 py-2 rounded-xl backdrop-blur-sm" style={{
+                            backgroundColor: colors.success + '90',
+                            color: colors.background
+                          }}>
+                            <CheckCircle size={18} />
+                            <span className="text-sm font-semibold">تم رفع الصورة بنجاح</span>
+                          </div>
+                        </motion.div>
                       </motion.div>
-                      جاري الإرسال...
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center gap-2">
-                      <Shield size={20} />
-                      إرسال طلب الدفع
-                    </div>
-                  )}
-                </LuxuryButton>
-              </form>
-            </div>
-          </LuxuryCard>
+                    )}
+                  </motion.div>
+
+                  {/* Submit Button */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1.2 }}
+                  >
+                    <LuxuryButton
+                      type="button"
+                      onClick={() => setShowConfirmation(true)}
+                      disabled={submitting}
+                      className="w-full py-5 sm:py-6 text-lg sm:text-xl font-bold relative overflow-hidden group/btn"
+                      style={{
+                        background: `linear-gradient(135deg, ${colors.accent}, ${colors.accent}DD)`,
+                        boxShadow: `0 12px 40px ${colors.accent}40`,
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      {submitting ? (
+                        <div className="relative flex items-center justify-center gap-3">
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          >
+                            <Clock size={24} />
+                          </motion.div>
+                          <span>جاري الإرسال...</span>
+                        </div>
+                      ) : (
+                        <div className="relative flex items-center justify-center gap-3">
+                          <Shield size={24} />
+                          <span>إرسال طلب الدفع</span>
+                        </div>
+                      )}
+                    </LuxuryButton>
+                  </motion.div>
+                </form>
+              </div>
+            </LuxuryCard>
+          </motion.div>
         </div>
       </div>
 
@@ -841,65 +1202,117 @@ const PaymentPage = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
+            onClick={() => !submitting && setShowConfirmation(false)}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-md"
+              initial={{ scale: 0.8, opacity: 0, y: 50 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 50 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="w-full max-w-lg relative"
+              onClick={(e) => e.stopPropagation()}
             >
-              <LuxuryCard style={{
-                background: `linear-gradient(135deg, ${colors.surface} 0%, ${colors.background} 100%)`,
-                border: `1px solid ${colors.border}`,
-                boxShadow: shadows.xl
+              <LuxuryCard className="relative overflow-hidden" style={{
+                background: `linear-gradient(135deg, ${colors.surface} 0%, ${colors.surfaceElevated} 100%)`,
+                border: `2px solid ${colors.border}`,
+                boxShadow: `0 25px 80px ${colors.shadow}50`
               }}>
-                <div className="p-8 text-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-6" style={{
-                    background: `linear-gradient(135deg, ${colors.warning}20, ${colors.warning}10)`,
-                    border: `2px solid ${colors.warning}30`
-                  }}>
-                    <AlertCircle size={32} color={colors.warning} />
-                  </div>
+                {/* Decorative elements */}
+                <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl opacity-20"
+                  style={{ background: `radial-gradient(circle, ${colors.warning} 0%, transparent 70%)` }}
+                />
+                
+                <div className="relative z-10 p-8 sm:p-10 text-center">
+                  <motion.div
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                    className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-3xl mb-6 relative"
+                    style={{
+                      background: `linear-gradient(135deg, ${colors.warning}30, ${colors.warning}15)`,
+                      border: `3px solid ${colors.warning}40`,
+                      boxShadow: `0 8px 32px ${colors.warning}40`
+                    }}
+                  >
+                    <AlertCircle size={40} color={colors.warning} />
+                  </motion.div>
                   
-                  <h3 className="text-2xl font-bold mb-4" style={{ color: colors.text }}>
+                  <motion.h3
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-3xl sm:text-4xl font-bold mb-4 bg-gradient-to-r bg-clip-text"
+                    style={{
+                      backgroundImage: `linear-gradient(135deg, ${colors.warning}, ${colors.accent})`,
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text'
+                    }}
+                  >
                     تأكيد الدفع
-                  </h3>
+                  </motion.h3>
                   
-                  <p className="text-lg mb-6" style={{ color: colors.textMuted }}>
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4 }}
+                    className="text-lg sm:text-xl mb-8 font-medium"
+                    style={{ color: colors.textMuted }}
+                  >
                     هل أنت متأكد من أنك قمت بتحويل المبلغ إلى الرقم
-                  </p>
+                  </motion.p>
                   
-                  <div className="inline-block p-4 rounded-xl mb-6" style={{
-                    background: `linear-gradient(135deg, ${colors.accent}15, ${colors.accent}05)`,
-                    border: `2px solid ${colors.accent}30`
-                  }}>
-                    <p className="text-2xl font-bold" style={{ color: colors.accent }}>
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="inline-block p-6 sm:p-8 rounded-3xl mb-8 relative group/number"
+                    style={{
+                      background: `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`,
+                      border: `2px solid ${colors.accent}40`,
+                      boxShadow: `0 8px 32px ${colors.accent}40`
+                    }}
+                  >
+                    <p className="text-3xl sm:text-4xl font-black tracking-wider" style={{ color: colors.accent }}>
                       {VODAFONE_NUMBER}
                     </p>
-                  </div>
+                  </motion.div>
                   
-                  <div className="flex gap-3">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                    className="flex flex-col sm:flex-row gap-4"
+                  >
                     <LuxuryButton
                       variant="outline"
                       onClick={() => setShowConfirmation(false)}
-                      className="flex-1"
+                      disabled={submitting}
+                      className="flex-1 py-4 text-base sm:text-lg font-semibold"
+                      style={{
+                        borderColor: colors.border,
+                        color: colors.text
+                      }}
                     >
                       إلغاء
                     </LuxuryButton>
                     <LuxuryButton
                       onClick={handleSubmit}
                       disabled={submitting}
-                      className="flex-1"
+                      className="flex-1 py-4 text-base sm:text-lg font-bold relative overflow-hidden group/confirm"
                       style={{
-                        background: `linear-gradient(135deg, ${colors.success}, ${colors.success}CC)`,
-                        boxShadow: `0 8px 32px ${colors.success}30`
+                        background: `linear-gradient(135deg, ${colors.success}, ${colors.success}DD)`,
+                        boxShadow: `0 12px 40px ${colors.success}40`
                       }}
                     >
-                      تأكيد الإرسال
+                      <span className="relative flex items-center justify-center gap-2">
+                        <CheckCircle2 size={20} />
+                        تأكيد الإرسال
+                      </span>
                     </LuxuryButton>
-                  </div>
+                  </motion.div>
                 </div>
               </LuxuryCard>
             </motion.div>

@@ -1,8 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-
-// ─── Stable ID Generator ─────────────────────────────────────────
-const generateStableId = (prefix = 'id') =>
-  `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+import { generateStableId, serverToUI, uiToServer, validateExamForSubmit } from '../utils/examNormalization';
 
 // ─── Create default choices for MCQ (min 2) ───────────────────────
 const createDefaultChoices = (count = 2) =>
@@ -25,7 +22,18 @@ export const ExamBuilderProvider = ({
   initialExam = { title: '', questions: [] },
   children
 }) => {
-  const [examForm, setExamForm] = useState(() => initializeExamForm(initialExam));
+  // Initialize using shared serverToUI normalization
+  const [examForm, setExamForm] = useState(() => {
+    const uiData = serverToUI(initialExam);
+    // Ensure every MCQ question has at least 2 choices
+    uiData.questions = uiData.questions.map(q => {
+      if (q.type === 'mcq' && (!q.choices || q.choices.length < 2)) {
+        return { ...q, choices: createDefaultChoices(2) };
+      }
+      return q;
+    });
+    return uiData;
+  });
 
   const updateQuestion = useCallback((questionId, field, value) => {
     setExamForm(prev => ({
@@ -146,21 +154,26 @@ export const ExamBuilderProvider = ({
     });
   }, []);
 
-  // Toggle correct: allows multiple correct answers (checkbox behavior for MCQ)
-  const setCorrectAnswer = useCallback((questionId, choiceId) => {
-    setExamForm(prev => ({
-      ...prev,
-      questions: prev.questions.map(q => {
-        if (q.id !== questionId || !q.choices) return q;
-        return {
-          ...q,
-          choices: q.choices.map(c =>
-            c.id === choiceId ? { ...c, isCorrect: !c.isCorrect } : c
-          )
-        };
-      })
-    }));
-  }, []);
+  // Single-choice only: Radio behavior -- selecting one unselects others
+// Mark a choice as correct (for MCQ)
+// Mark a choice as correct (for MCQ)
+const setCorrectAnswer = useCallback((qId, choiceId) => {
+  setExamForm(prev => ({
+    ...prev,
+    questions: prev.questions.map(q => {
+      if (q.id !== qId) return q;
+      
+      // ✅ CRITICAL FIX: Update isCorrect flag on ALL choices
+      return {
+        ...q,
+        choices: (q.choices || []).map(c => ({
+          ...c,
+          isCorrect: c.id === choiceId  // ← Only the selected choice gets true
+        }))
+      };
+    })
+  }));
+}, []);
 
   const updateChoice = useCallback((questionId, choiceId, field, value) => {
     setExamForm(prev => ({
@@ -182,8 +195,25 @@ export const ExamBuilderProvider = ({
   }, []);
 
   const resetForm = useCallback(newInitial => {
-    setExamForm(initializeExamForm(newInitial ?? initialExam));
+    const uiData = serverToUI(newInitial ?? initialExam);
+    uiData.questions = uiData.questions.map(q => {
+      if (q.type === 'mcq' && (!q.choices || q.choices.length < 2)) {
+        return { ...q, choices: createDefaultChoices(2) };
+      }
+      return q;
+    });
+    setExamForm(uiData);
   }, [initialExam]);
+
+  // Export exam data in server format (for saving)
+  const getExamForServer = useCallback((existingExamId = null) => {
+    return uiToServer(examForm, existingExamId);
+  }, [examForm]);
+
+  // Validate current exam form
+  const validate = useCallback(() => {
+    return validateExamForSubmit(examForm);
+  }, [examForm]);
 
   const value = {
     examForm,
@@ -196,7 +226,9 @@ export const ExamBuilderProvider = ({
     removeChoice,
     updateChoice,
     setCorrectAnswer,
-    resetForm
+    resetForm,
+    getExamForServer,
+    validate
   };
 
   return (
@@ -205,46 +237,5 @@ export const ExamBuilderProvider = ({
     </ExamBuilderContext.Provider>
   );
 };
-
-// ─── Normalize incoming exam (from API or existing form) to UI format ─
-function initializeExamForm(exam) {
-  const questions = (exam.questions ?? []).map((q, idx) => {
-    let choices = [];
-    if ((q.type === 'mcq' || q.type === 'multiple_choice') && q.options) {
-      const opts = Array.isArray(q.options) ? q.options : [];
-      const correctIds = new Set(
-        Array.isArray(q.correctAnswers)
-          ? q.correctAnswers.map(a => String(a))
-          : []
-      );
-      const correctIndex =
-        !correctIds.size && typeof q.correctAnswer === 'number' ? q.correctAnswer : -1;
-      choices = opts.map((opt, i) => {
-        const id = opt?.id ?? generateStableId('opt');
-        const text = typeof opt === 'object' ? opt?.text ?? opt?.optionText ?? '' : String(opt);
-        const isCorrect = correctIds.size > 0 ? correctIds.has(String(id)) : i === correctIndex;
-        return { id, text, isCorrect };
-      });
-      if (choices.length === 0) {
-        choices = createDefaultChoices(2);
-      }
-    }
-    return {
-      id: q.id ?? generateStableId('q'),
-      type: q.type === 'multiple_choice' ? 'mcq' : (q.type || 'mcq'),
-      questionText: q.questionText ?? q.question ?? '',
-      choices,
-      correctAnswer: q.correctAnswer,
-      marks: q.marks ?? q.points ?? 10,
-      order: q.order ?? idx + 1
-    };
-  });
-
-  return {
-    title: exam.title ?? '',
-    totalMarks: exam.totalMarks ?? 0,
-    questions
-  };
-}
 
 export default ExamBuilderContext;

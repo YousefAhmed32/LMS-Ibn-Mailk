@@ -110,7 +110,8 @@ const getAdminGroups = async (req, res) => {
       .populate('createdBy', 'firstName secondName userEmail')
       .sort({ createdAt: -1 })
       .limit(limit * 1)
-      .skip((page - 1) * limit);
+      .skip((page - 1) * limit)
+      .lean();
 
     const total = await Group.countDocuments(query);
 
@@ -157,7 +158,8 @@ const getStudentGroups = async (req, res) => {
       .populate('createdBy', 'firstName secondName userEmail')
       .sort({ createdAt: -1 })
       .limit(limit * 1)
-      .skip((page - 1) * limit);
+      .skip((page - 1) * limit)
+      .lean();
 
     const total = await Group.countDocuments({
       students: studentId,

@@ -28,6 +28,8 @@ import axiosInstance from '../../api/axiosInstance';
 import LuxuryCard from '../../components/ui/LuxuryCard';
 import LuxuryButton from '../../components/ui/LuxuryButton';
 import IntegratedExamBuilder from '../../components/admin/IntegratedExamBuilder';
+import { validateExamForSubmit } from '../../utils/examNormalization';
+import useFormDraft from '../../hooks/useFormDraft';
 
 const EditCourse = () => {
   const { id } = useParams();
@@ -66,146 +68,16 @@ const EditCourse = () => {
     thumbnail: ''
   });
 
-  /**
-   * Normalize and clean exam data before sending to server
-   * This ensures consistent data structure and fixes common issues:
-   * - Converts true_false correctAnswer from index (0/1) to boolean
-   * - Ensures options are strings, not objects
-   * - Validates and cleans all question fields
-   */
-  const normalizeExamData = (exam) => {
-    if (!exam || exam.type !== 'internal_exam' || !exam.questions) {
-      return exam;
-    }
+  // Draft persistence for edit form
+  const editDraftData = { courseForm, videos, exams };
+  const { hasDraft: hasEditDraft, draftDate: editDraftDate, restoreDraft: restoreEditDraft, discardDraft: discardEditDraft, clearDraft: clearEditDraft } = useFormDraft(
+    `edit-course-${id}`, editDraftData, { enabled: !loading }
+  );
 
-    const normalizedQuestions = exam.questions.map((question, qIndex) => {
-      // Clean question text
-      const questionText = question.questionText 
-        ? String(question.questionText).trim() 
-        : '';
-
-      // Options: prefer builder format (choices with id, text) for MCQ so option ids are stable
-      let normalizedOptions = [];
-      let correctAnswersArray = null;
-
-      if (question.type === 'multiple_choice' || question.type === 'mcq') {
-        if (question.choices && Array.isArray(question.choices)) {
-          normalizedOptions = question.choices
-            .map(c => ({ id: c.id, text: String(c.text || '').trim() }))
-            .filter(opt => opt.text.length > 0);
-          const correctIds = question.choices.filter(c => c.isCorrect).map(c => c.id);
-          if (correctIds.length > 0) correctAnswersArray = correctIds;
-        }
-        if (normalizedOptions.length === 0 && question.options && Array.isArray(question.options)) {
-          normalizedOptions = question.options.map((opt, optIndex) => {
-            if (typeof opt === 'object' && opt !== null) {
-              return { id: opt.id ?? optIndex, text: String(opt.text || opt.optionText || opt.value || '').trim() };
-            }
-            return { id: optIndex, text: String(opt).trim() };
-          }).filter(opt => opt.text.length > 0);
-        }
-      } else if (question.options && Array.isArray(question.options)) {
-        normalizedOptions = question.options.map((opt, optIndex) => {
-          if (typeof opt === 'object' && opt !== null) {
-            return String(opt.text || opt.optionText || opt.value || '').trim();
-          }
-          return String(opt).trim();
-        }).filter(opt => opt.length > 0);
-      }
-
-      // Normalize correctAnswer based on question type
-      let normalizedCorrectAnswer = question.correctAnswer;
-
-      if (question.type === 'true_false') {
-        if (typeof normalizedCorrectAnswer === 'number') {
-          normalizedCorrectAnswer = normalizedCorrectAnswer === 0;
-        } else if (typeof normalizedCorrectAnswer === 'string') {
-          normalizedCorrectAnswer = normalizedCorrectAnswer === 'true' || 
-                                     normalizedCorrectAnswer === 'صحيح' ||
-                                     normalizedCorrectAnswer === '0';
-        } else if (normalizedCorrectAnswer === null || normalizedCorrectAnswer === undefined) {
-          normalizedCorrectAnswer = false;
-        }
-        normalizedCorrectAnswer = Boolean(normalizedCorrectAnswer);
-      } else if (question.type === 'multiple_choice' || question.type === 'mcq') {
-        if (correctAnswersArray && correctAnswersArray.length === 1) {
-          normalizedCorrectAnswer = correctAnswersArray[0];
-        } else if (correctAnswersArray == null && (normalizedCorrectAnswer === null || normalizedCorrectAnswer === undefined)) {
-          normalizedCorrectAnswer = null;
-        } else if (correctAnswersArray == null && typeof normalizedCorrectAnswer === 'number') {
-          // keep as index
-        } else if (correctAnswersArray == null && typeof normalizedCorrectAnswer === 'string') {
-          normalizedCorrectAnswer = normalizedCorrectAnswer.trim();
-        }
-      }
-
-      const points = Math.max(1, parseInt(question.points || question.marks || 1) || 1);
-
-      const out = {
-        id: question.id || `q_${Date.now()}_${qIndex}`,
-        questionText,
-        type: question.type || 'multiple_choice',
-        options: normalizedOptions,
-        correctAnswer: normalizedCorrectAnswer,
-        points,
-        ...(question.sampleAnswer && { sampleAnswer: question.sampleAnswer }),
-        ...(question.explanation && { explanation: question.explanation }),
-        ...(question.order !== undefined && { order: question.order })
-      };
-      if (correctAnswersArray != null) out.correctAnswers = correctAnswersArray;
-      return out;
-    });
-
-    return {
-      ...exam,
-      questions: normalizedQuestions
-    };
-  };
-
-  /**
-   * Convert correctAnswer from server format to UI display format
-   * - For true_false: boolean -> index (true = 0, false = 1)
-   * - For multiple_choice: string -> index (find matching option)
-   * - For multiple_choice: number -> keep as is
-   */
-  const convertCorrectAnswerForDisplay = (question) => {
-    if (!question || question.correctAnswer === null || question.correctAnswer === undefined) {
-      return null;
-    }
-
-    if (question.type === 'true_false') {
-      // Convert boolean to index: true (صحيح) = 0, false (خطأ) = 1
-      if (typeof question.correctAnswer === 'boolean') {
-        return question.correctAnswer ? 0 : 1;
-      }
-      // If it's already a number, return it
-      if (typeof question.correctAnswer === 'number') {
-        return question.correctAnswer;
-      }
-      // If it's a string, try to convert
-      if (typeof question.correctAnswer === 'string') {
-        return question.correctAnswer === 'true' || question.correctAnswer === 'صحيح' ? 0 : 1;
-      }
-      return null;
-    } else if (question.type === 'multiple_choice' || question.type === 'mcq') {
-      // If it's already a number (index), return it
-      if (typeof question.correctAnswer === 'number') {
-        return question.correctAnswer;
-      }
-      // If it's a string, find the matching option index
-      if (typeof question.correctAnswer === 'string' && question.options) {
-        const correctAnswerText = question.correctAnswer.trim();
-        const index = question.options.findIndex(opt => {
-          const optText = typeof opt === 'string' ? opt : (opt.text || opt.optionText || '');
-          return String(optText).trim() === correctAnswerText;
-        });
-        return index >= 0 ? index : null;
-      }
-      return null;
-    }
-
-    return question.correctAnswer;
-  };
+  // Normalization is now handled by the shared examNormalization.js utility.
+  // - ExamBuilderProvider calls serverToUI() when loading exams for editing
+  // - IntegratedExamBuilder calls uiToServer() when saving exams from the builder
+  // - No inline normalizeExamData or convertCorrectAnswerForDisplay needed here
 
   // Fetch course data on component mount
   useEffect(() => {
@@ -237,42 +109,11 @@ const EditCourse = () => {
           imageUrl: courseData.imageUrl || ''
         });
         
-        // Load videos and exams with proper initialization
+        // Load videos and exams
+        // Exams are stored in server format (options[{id,text}] + correctAnswer as option.id).
+        // The ExamBuilderProvider will call serverToUI() to convert to UI format when editing.
         const videosData = courseData.videos || [];
-        let examsData = courseData.exams || [];
-        
-        // Normalize exams data when loading from server
-        // This fixes issues with options being objects instead of strings
-        // AND converts correctAnswer to display format (index) for UI
-        examsData = examsData.map(exam => {
-          if (exam.type === 'internal_exam' && exam.questions) {
-            const normalizedQuestions = exam.questions.map((q, qIdx) => {
-              // Keep options as { id, text } for MCQ so builder and grading can use stable ids
-              let normalizedOptions = [];
-              if (q.options && Array.isArray(q.options)) {
-                normalizedOptions = q.options.map((opt, optIdx) => {
-                  if (typeof opt === 'object' && opt !== null) {
-                    const text = String(opt.text || opt.optionText || opt.value || '').trim();
-                    return { id: opt.id ?? optIdx, text };
-                  }
-                  return { id: optIdx, text: String(opt).trim() };
-                }).filter(opt => opt.text.length > 0);
-              }
-              const displayCorrectAnswer = convertCorrectAnswerForDisplay({
-                ...q,
-                options: normalizedOptions.length > 0 ? normalizedOptions : (q.options || [])
-              });
-              return {
-                ...q,
-                options: normalizedOptions.length > 0 ? normalizedOptions : (q.options || []),
-                correctAnswer: displayCorrectAnswer,
-                ...(Array.isArray(q.correctAnswers) && q.correctAnswers.length > 0 && { correctAnswers: q.correctAnswers })
-              };
-            });
-            return { ...exam, questions: normalizedQuestions };
-          }
-          return exam;
-        });
+        const examsData = courseData.exams || [];
         
         console.log('🎥 Videos loaded:', videosData);
         console.log('📝 Exams loaded:', examsData);
@@ -280,6 +121,24 @@ const EditCourse = () => {
         setVideos(videosData);
         setExams(examsData);
         
+        // Check for unsaved draft after loading server data
+        if (hasEditDraft && editDraftDate) {
+          const dateStr = editDraftDate.toLocaleString('ar-SA');
+          const shouldRestore = window.confirm(`لديك مسودة محفوظة من ${dateStr}. هل تريد استعادتها؟`);
+          if (shouldRestore) {
+            const draft = restoreEditDraft();
+            if (draft) {
+              if (draft.courseForm) setCourseForm(draft.courseForm);
+              if (draft.videos) setVideos(draft.videos);
+              if (draft.exams) setExams(draft.exams);
+              toast({ title: 'تم استعادة المسودة', description: 'تم استعادة تعديلاتك السابقة' });
+              return; // Don't show the "loaded" toast
+            }
+          } else {
+            discardEditDraft();
+          }
+        }
+
         toast({
           title: 'تم تحميل بيانات الدورة',
           description: `تم تحميل ${videosData.length} فيديو و ${examsData.length} امتحان`,
@@ -388,58 +247,20 @@ const EditCourse = () => {
     }
   };
 
-  // Validate exam questions
-  const validateExamQuestions = (questions) => {
-    if (!questions || questions.length === 0) {
-      return { valid: false, message: 'يرجى إضافة سؤال واحد على الأقل للامتحان الداخلي' };
+  // Exam validation now uses shared validateExamForSubmit from examNormalization.js
+  // For server-format exams (already have options + correctAnswer), do a basic check
+  const validateServerExam = (exam) => {
+    if (!exam.questions || exam.questions.length === 0) {
+      return { valid: false, errors: ['يجب إضافة سؤال واحد على الأقل'] };
     }
-
-    for (let i = 0; i < questions.length; i++) {
-      const question = questions[i];
-      
-      const questionText = question.questionText ? String(question.questionText).trim() : '';
-      if (!questionText) {
-        return { valid: false, message: `يرجى إدخال نص السؤال ${i + 1}` };
+    const errors = [];
+    exam.questions.forEach((q, i) => {
+      if (!q.questionText?.trim()) errors.push(`السؤال ${i + 1}: نص السؤال مطلوب`);
+      if ((q.type === 'mcq' || q.type === 'multiple_choice') && !q.correctAnswer) {
+        errors.push(`السؤال ${i + 1}: لم يتم تحديد الإجابة الصحيحة`);
       }
-
-      if (question.type === 'multiple_choice' || question.type === 'mcq') {
-        const opts = question.options ?? question.choices?.map(c => c?.text ?? c) ?? [];
-        if (opts.length < 2) {
-          return { valid: false, message: `السؤال ${i + 1} يجب أن يحتوي على خيارين على الأقل` };
-        }
-        
-        // Validate all options are filled (support both options and choices)
-        const optTexts = opts.map(opt => (typeof opt === 'object' && opt?.text !== undefined ? opt.text : opt));
-        const emptyOptions = optTexts.filter(opt => !opt || !String(opt).trim());
-        if (emptyOptions.length > 0) {
-          return { valid: false, message: `السؤال ${i + 1}: يرجى ملء جميع الخيارات` };
-        }
-
-        // Check for correct answer: correctAnswer (single), correctAnswers (array), or choices with isCorrect
-        const hasCorrectAnswer = (question.correctAnswer !== undefined && question.correctAnswer !== null);
-        const hasCorrectAnswersArray = Array.isArray(question.correctAnswers) && question.correctAnswers.length > 0;
-        const hasCorrectInChoices = question.choices && Array.isArray(question.choices) && question.choices.some(c => c?.isCorrect);
-        const hasCorrect = hasCorrectAnswer || hasCorrectAnswersArray || hasCorrectInChoices;
-        
-        if (!hasCorrect) {
-          return { valid: false, message: `يرجى اختيار الإجابة الصحيحة للسؤال ${i + 1}` };
-        }
-      }
-
-      if (question.type === 'true_false') {
-        if (question.correctAnswer === undefined || question.correctAnswer === null) {
-          return { valid: false, message: `يرجى اختيار الإجابة الصحيحة للسؤال ${i + 1}` };
-        }
-      }
-
-      const points = question.points ?? question.marks ?? 1;
-      const pointsNum = typeof points === 'number' ? points : parseInt(points, 10);
-      if (isNaN(pointsNum) || pointsNum < 1) {
-        return { valid: false, message: `السؤال ${i + 1}: عدد النقاط يجب أن يكون على الأقل 1` };
-      }
-    }
-
-    return { valid: true };
+    });
+    return { valid: errors.length === 0, errors };
   };
 
   // Save changes
@@ -489,15 +310,15 @@ const EditCourse = () => {
         return;
       }
 
-      // Validate exams before saving
+      // Validate exams before saving using shared validation
       for (let i = 0; i < exams.length; i++) {
         const exam = exams[i];
-        if (exam.type === 'internal_exam') {
-          const validation = validateExamQuestions(exam.questions);
+        if (exam.type === 'internal_exam' || !exam.type) {
+          const validation = validateServerExam(exam);
           if (!validation.valid) {
             toast({
               title: 'خطأ في التحقق من البيانات',
-              description: `الامتحان "${exam.title}": ${validation.message}`,
+              description: `الامتحان "${exam.title}": ${validation.errors[0]}`,
               variant: 'destructive',
               duration: 8000
             });
@@ -507,29 +328,24 @@ const EditCourse = () => {
         }
       }
 
-      // Prepare update data with proper structure
-      // Normalize and clean exam data before sending
+      // Exams are already in server format from IntegratedExamBuilder (via uiToServer)
+      // Just ensure consistent structure for the API
       const normalizedExams = exams.map((exam, index) => {
-        // Normalize exam data using the cleaning function
-        const normalizedExam = normalizeExamData(exam);
-        
-        const totalMarks = normalizedExam.type === 'internal_exam' 
-          ? (normalizedExam.questions?.reduce((total, question) => total + (question.points || 1), 0) || 0)
+        const totalMarks = (exam.type === 'internal_exam' || !exam.type)
+          ? (exam.questions?.reduce((total, q) => total + (q.points || 1), 0) || 0)
           : 0;
-
         return {
-          id: normalizedExam.id || `exam_${Date.now()}_${index}`,
-          title: (normalizedExam.title || `Exam ${index + 1}`).trim(),
-          type: normalizedExam.type || 'internal_exam',
-          url: normalizedExam.url?.trim() || '',
+          id: exam.id || `exam_${Date.now()}_${index}`,
+          title: (exam.title || `Exam ${index + 1}`).trim(),
+          type: exam.type || 'internal_exam',
+          url: exam.url?.trim() || '',
           totalMarks,
-          duration: parseInt(normalizedExam.duration) || 30,
-          passingScore: parseInt(normalizedExam.passingScore) || 60,
-          questions: normalizedExam.type === 'internal_exam' && normalizedExam.questions 
-            ? normalizedExam.questions
-            : [],
-          migratedFromGoogleForm: normalizedExam.migratedFromGoogleForm || false,
-          migrationNote: normalizedExam.migrationNote || ''
+          totalPoints: totalMarks,
+          duration: parseInt(exam.duration) || 30,
+          passingScore: parseInt(exam.passingScore) || 60,
+          questions: (exam.type === 'internal_exam' || !exam.type) ? (exam.questions || []) : [],
+          migratedFromGoogleForm: exam.migratedFromGoogleForm || false,
+          migrationNote: exam.migrationNote || ''
         };
       });
 
@@ -555,6 +371,7 @@ const EditCourse = () => {
       console.log('📥 Save response:', response.data);
 
       if (response.data.success) {
+        clearEditDraft(); // Clear draft on successful save
         toast({
           title: 'تم حفظ التغييرات',
           description: `تم تحديث الدورة بنجاح مع ${videos.length} فيديو و ${exams.length} امتحان`,

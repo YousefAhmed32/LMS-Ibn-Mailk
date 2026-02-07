@@ -646,21 +646,22 @@ const CourseContent = () => {
     <div style={{ 
       minHeight: '100vh', 
       background: colors.gradient,
-      padding: spacing.lg
+      padding: `${spacing.md} ${spacing.lg} ${spacing.xl}`
     }}>
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[1600px] mx-auto">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
           style={{
-            background: `linear-gradient(135deg, ${colors.surfaceCard}, ${colors.surfaceCard}dd)`,
-            borderRadius: borderRadius.xl,
-            padding: spacing.xl,
-            marginBottom: spacing.lg,
-            boxShadow: `0 20px 40px ${colors.shadow}20, 0 8px 16px ${colors.shadow}10`,
+            background: `linear-gradient(135deg, ${colors.surfaceCard}, ${colors.surfaceElevated})`,
+            borderRadius: borderRadius['2xl'],
+            padding: `${spacing.xl} ${spacing['2xl']}`,
+            marginBottom: spacing.xl,
+            boxShadow: `0 25px 60px ${colors.shadow}30, 0 10px 20px ${colors.shadow}15`,
             backdropFilter: 'blur(20px)',
-            border: `1px solid ${colors.border}40`,
+            border: `2px solid ${colors.border}`,
             position: 'relative',
             overflow: 'hidden'
           }}
@@ -668,138 +669,192 @@ const CourseContent = () => {
           {/* Luxury Background Pattern */}
           <div style={{
             position: 'absolute',
-            top: 0,
-            right: 0,
-            width: '200px',
-            height: '200px',
-            background: `radial-gradient(circle, ${colors.accent}10 0%, transparent 70%)`,
+            top: '-100px',
+            right: '-100px',
+            width: '300px',
+            height: '300px',
+            background: `radial-gradient(circle, ${colors.accent}15 0%, transparent 70%)`,
             borderRadius: '50%',
-            transform: 'translate(50%, -50%)'
+            filter: 'blur(40px)'
           }} />
           <div style={{
             position: 'absolute',
-            bottom: 0,
-            left: 0,
-            width: '150px',
-            height: '150px',
-            background: `radial-gradient(circle, ${colors.accent}08 0%, transparent 70%)`,
+            bottom: '-80px',
+            left: '-80px',
+            width: '250px',
+            height: '250px',
+            background: `radial-gradient(circle, ${colors.success}12 0%, transparent 70%)`,
             borderRadius: '50%',
-            transform: 'translate(-50%, 50%)'
+            filter: 'blur(40px)'
           }} />
           {/* Desktop Header Layout */}
           <div className="hidden lg:block">
-            <div className="flex items-center justify-between mb-6">
-              <button
+            <div className="flex items-center justify-between mb-8">
+              <motion.button
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
                 onClick={() => navigate('/courses')}
+                whileHover={{ x: -4 }}
+                whileTap={{ scale: 0.95 }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: spacing.sm,
-                  color: colors.textMuted,
-                  background: 'transparent',
-                  border: 'none',
+                  color: colors.text,
+                  background: `linear-gradient(135deg, ${colors.surface}80, ${colors.surfaceCard}80)`,
+                  border: `2px solid ${colors.border}`,
+                  borderRadius: borderRadius.xl,
+                  padding: `${spacing.sm} ${spacing.lg}`,
                   cursor: 'pointer',
                   fontSize: typography.fontSize.md,
-                  transition: 'all 0.3s ease'
+                  fontWeight: '600',
+                  transition: 'all 0.3s ease',
+                  boxShadow: `0 4px 12px ${colors.shadow}10`
                 }}
-                className="hover:opacity-80"
+                className="hover:shadow-lg"
               >
                 <ArrowLeft size={20} />
                 العودة للدورات
-              </button>
+              </motion.button>
               
               <div className="flex items-center gap-4">
                 {/* Advanced Search Bar */}
-                <div style={{
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  background: `linear-gradient(135deg, ${colors.surfaceCard}80, ${colors.surfaceCard}40)`,
-                  borderRadius: borderRadius.full,
-                  padding: `${spacing.xs} ${spacing.md}`,
-                  border: `1px solid ${colors.border}40`,
-                  minWidth: '300px'
-                }}>
-                  <Search size={18} style={{ color: colors.textMuted, marginRight: spacing.sm }} />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="relative group/search"
+                  style={{
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    background: `linear-gradient(135deg, ${colors.surface}90, ${colors.surfaceCard}90)`,
+                    borderRadius: borderRadius.xl,
+                    padding: `${spacing.sm} ${spacing.lg}`,
+                    border: `2px solid ${colors.border}`,
+                    minWidth: '350px',
+                    transition: 'all 0.3s ease',
+                    boxShadow: `0 4px 12px ${colors.shadow}10`
+                  }}
+                >
+                  <div className="absolute inset-0 rounded-xl opacity-0 group-focus-within/search:opacity-100 transition-opacity duration-300"
+                    style={{
+                      background: `linear-gradient(135deg, ${colors.accent}10, ${colors.accent}05)`,
+                      boxShadow: `0 0 0 2px ${colors.accent}30`
+                    }}
+                  />
+                  <Search size={20} className="relative z-10" style={{ color: colors.textMuted, marginRight: spacing.sm }} />
                   <input
                     type="text"
                     placeholder="البحث في الفيديوهات..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    className="relative z-10"
                     style={{
                       background: 'transparent',
                       border: 'none',
                       outline: 'none',
                       color: colors.text,
-                      fontSize: typography.fontSize.sm,
+                      fontSize: typography.fontSize.base,
                       flex: 1,
-                      padding: `${spacing.xs} 0`
+                      padding: `${spacing.xs} 0`,
+                      fontWeight: '500'
                     }}
                   />
                   {searchQuery && (
-                    <button
+                    <motion.button
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
                       onClick={() => setSearchQuery('')}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      className="relative z-10"
                       style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: colors.textMuted,
+                        background: `linear-gradient(135deg, ${colors.error}20, ${colors.error}10)`,
+                        border: `1px solid ${colors.error}30`,
+                        borderRadius: borderRadius.full,
+                        color: colors.error,
                         cursor: 'pointer',
-                        padding: spacing.xs
+                        padding: spacing.xs,
+                        width: '24px',
+                        height: '24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
                       }}
                     >
                       ×
-                    </button>
+                    </motion.button>
                   )}
-                </div>
+                </motion.div>
 
                 {/* Filter Dropdown */}
-                <div style={{ position: 'relative' }}>
-                  <button
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.3 }}
+                  style={{ position: 'relative' }}
+                >
+                  <motion.button
                     onClick={() => setShowAdvancedControls(!showAdvancedControls)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     style={{
-                      background: `linear-gradient(135deg, ${colors.accent}20, ${colors.accent}10)`,
-                      borderRadius: borderRadius.full,
-                      padding: `${spacing.sm} ${spacing.md}`,
+                      background: showAdvancedControls 
+                        ? `linear-gradient(135deg, ${colors.accent}, ${colors.accent}DD)`
+                        : `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`,
+                      borderRadius: borderRadius.xl,
+                      padding: `${spacing.sm} ${spacing.lg}`,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: spacing.xs,
-                      border: `1px solid ${colors.accent}30`,
+                      gap: spacing.sm,
+                      border: `2px solid ${colors.accent}40`,
                       cursor: 'pointer',
-                      transition: 'all 0.3s ease'
+                      transition: 'all 0.3s ease',
+                      color: showAdvancedControls ? colors.background : colors.accent,
+                      fontWeight: '600',
+                      boxShadow: `0 4px 12px ${colors.accent}30`
                     }}
-                    className="hover:scale-105"
                   >
-                    <Filter size={16} style={{ color: colors.accent }} />
-                    <span style={{ 
-                      color: colors.accent, 
-                      fontSize: typography.fontSize.sm,
-                      fontWeight: '600'
-                    }}>
+                    <Filter size={18} />
+                    <span style={{ fontSize: typography.fontSize.sm }}>
                       فلترة
                     </span>
-                    <ChevronDown size={14} style={{ color: colors.accent }} />
-                  </button>
-                </div>
+                    <motion.div
+                      animate={{ rotate: showAdvancedControls ? 180 : 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <ChevronDown size={16} />
+                    </motion.div>
+                  </motion.button>
+                </motion.div>
 
                 {/* Premium Badge */}
-                <div style={{
-                  background: `linear-gradient(135deg, ${colors.accent}20, ${colors.accent}10)`,
-                  borderRadius: borderRadius.full,
-                  padding: `${spacing.sm} ${spacing.md}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: spacing.xs,
-                  border: `1px solid ${colors.accent}30`
-                }}>
-                  <Crown size={16} style={{ color: colors.accent }} />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.4 }}
+                  style={{
+                    background: `linear-gradient(135deg, ${colors.accent}30, ${colors.accent}20)`,
+                    borderRadius: borderRadius.xl,
+                    padding: `${spacing.sm} ${spacing.lg}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing.sm,
+                    border: `2px solid ${colors.accent}40`,
+                    boxShadow: `0 4px 12px ${colors.accent}30`
+                  }}
+                >
+                  <Crown size={18} style={{ color: colors.accent }} />
                   <span style={{ 
                     color: colors.accent, 
                     fontSize: typography.fontSize.sm,
-                    fontWeight: '600'
+                    fontWeight: '700'
                   }}>
                     دورة مميزة
                   </span>
-                </div>
+                </motion.div>
               </div>
             </div>
           </div>
@@ -807,38 +862,48 @@ const CourseContent = () => {
           {/* Tablet Header Layout */}
           <div className="hidden md:block lg:hidden">
             <div className="flex items-center justify-between mb-6">
-              <button
+              <motion.button
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
                 onClick={() => navigate('/courses')}
+                whileHover={{ x: -4 }}
+                whileTap={{ scale: 0.95 }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: spacing.sm,
-                  color: colors.textMuted,
-                  background: 'transparent',
-                  border: 'none',
+                  color: colors.text,
+                  background: `linear-gradient(135deg, ${colors.surface}80, ${colors.surfaceCard}80)`,
+                  border: `2px solid ${colors.border}`,
+                  borderRadius: borderRadius.lg,
+                  padding: `${spacing.sm} ${spacing.md}`,
                   cursor: 'pointer',
                   fontSize: typography.fontSize.sm,
-                  transition: 'all 0.3s ease'
+                  fontWeight: '600',
+                  transition: 'all 0.3s ease',
+                  boxShadow: `0 4px 12px ${colors.shadow}10`
                 }}
-                className="hover:opacity-80"
               >
                 <ArrowLeft size={18} />
                 العودة
-              </button>
+              </motion.button>
               
               <div className="flex items-center gap-3">
                 {/* Compact Search Bar */}
-                <div style={{
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  background: `linear-gradient(135deg, ${colors.surfaceCard}80, ${colors.surfaceCard}40)`,
-                  borderRadius: borderRadius.full,
-                  padding: `${spacing.xs} ${spacing.sm}`,
-                  border: `1px solid ${colors.border}40`,
-                  minWidth: '200px'
-                }}>
-                  <Search size={16} style={{ color: colors.textMuted, marginRight: spacing.xs }} />
+                <div className="relative group/search"
+                  style={{
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    background: `linear-gradient(135deg, ${colors.surface}90, ${colors.surfaceCard}90)`,
+                    borderRadius: borderRadius.lg,
+                    padding: `${spacing.sm} ${spacing.md}`,
+                    border: `2px solid ${colors.border}`,
+                    minWidth: '220px',
+                    boxShadow: `0 4px 12px ${colors.shadow}10`
+                  }}
+                >
+                  <Search size={18} style={{ color: colors.textMuted, marginRight: spacing.xs }} />
                   <input
                     type="text"
                     placeholder="بحث..."
@@ -849,62 +914,84 @@ const CourseContent = () => {
                       border: 'none',
                       outline: 'none',
                       color: colors.text,
-                      fontSize: typography.fontSize.xs,
+                      fontSize: typography.fontSize.sm,
                       flex: 1,
-                      padding: `${spacing.xs} 0`
+                      padding: `${spacing.xs} 0`,
+                      fontWeight: '500'
                     }}
                   />
                   {searchQuery && (
-                    <button
+                    <motion.button
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
                       onClick={() => setSearchQuery('')}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
                       style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: colors.textMuted,
+                        background: `linear-gradient(135deg, ${colors.error}20, ${colors.error}10)`,
+                        border: `1px solid ${colors.error}30`,
+                        borderRadius: borderRadius.full,
+                        color: colors.error,
                         cursor: 'pointer',
-                        padding: spacing.xs
+                        padding: spacing.xs,
+                        width: '20px',
+                        height: '20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
                       }}
                     >
                       ×
-                    </button>
+                    </motion.button>
                   )}
                 </div>
 
                 {/* Compact Filter Button */}
-                <button
+                <motion.button
                   onClick={() => setShowAdvancedControls(!showAdvancedControls)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   style={{
-                    background: `linear-gradient(135deg, ${colors.accent}20, ${colors.accent}10)`,
-                    borderRadius: borderRadius.full,
-                    padding: `${spacing.sm} ${spacing.sm}`,
+                    background: showAdvancedControls 
+                      ? `linear-gradient(135deg, ${colors.accent}, ${colors.accent}DD)`
+                      : `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`,
+                    borderRadius: borderRadius.lg,
+                    padding: spacing.sm,
                     display: 'flex',
                     alignItems: 'center',
                     gap: spacing.xs,
-                    border: `1px solid ${colors.accent}30`,
+                    border: `2px solid ${colors.accent}40`,
                     cursor: 'pointer',
-                    transition: 'all 0.3s ease'
+                    transition: 'all 0.3s ease',
+                    color: showAdvancedControls ? colors.background : colors.accent,
+                    boxShadow: `0 4px 12px ${colors.accent}30`
                   }}
-                  className="hover:scale-105"
                 >
-                  <Filter size={14} style={{ color: colors.accent }} />
-                  <ChevronDown size={12} style={{ color: colors.accent }} />
-                </button>
+                  <Filter size={16} />
+                  <motion.div
+                    animate={{ rotate: showAdvancedControls ? 180 : 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <ChevronDown size={14} />
+                  </motion.div>
+                </motion.button>
 
                 {/* Compact Premium Badge */}
                 <div style={{
-                  background: `linear-gradient(135deg, ${colors.accent}20, ${colors.accent}10)`,
-                  borderRadius: borderRadius.full,
-                  padding: `${spacing.sm} ${spacing.sm}`,
+                  background: `linear-gradient(135deg, ${colors.accent}30, ${colors.accent}20)`,
+                  borderRadius: borderRadius.lg,
+                  padding: `${spacing.sm} ${spacing.md}`,
                   display: 'flex',
                   alignItems: 'center',
                   gap: spacing.xs,
-                  border: `1px solid ${colors.accent}30`
+                  border: `2px solid ${colors.accent}40`,
+                  boxShadow: `0 4px 12px ${colors.accent}30`
                 }}>
-                  <Crown size={14} style={{ color: colors.accent }} />
+                  <Crown size={16} style={{ color: colors.accent }} />
                   <span style={{ 
                     color: colors.accent, 
                     fontSize: typography.fontSize.xs,
-                    fontWeight: '600'
+                    fontWeight: '700'
                   }}>
                     مميزة
                   </span>
@@ -917,79 +1004,95 @@ const CourseContent = () => {
           <div className="block md:hidden">
             {/* Mobile Top Row */}
             <div className="flex items-center justify-between mb-4">
-              <button
+              <motion.button
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
                 onClick={() => navigate('/courses')}
+                whileHover={{ x: -4 }}
+                whileTap={{ scale: 0.95 }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: spacing.xs,
-                  color: colors.textMuted,
-                  background: 'transparent',
-                  border: 'none',
+                  color: colors.text,
+                  background: `linear-gradient(135deg, ${colors.surface}80, ${colors.surfaceCard}80)`,
+                  border: `2px solid ${colors.border}`,
+                  borderRadius: borderRadius.lg,
+                  padding: spacing.sm,
                   cursor: 'pointer',
                   fontSize: typography.fontSize.sm,
-                  transition: 'all 0.3s ease'
+                  fontWeight: '600',
+                  transition: 'all 0.3s ease',
+                  boxShadow: `0 4px 12px ${colors.shadow}10`
                 }}
-                className="hover:opacity-80"
               >
-                <ArrowLeft size={16} />
+                <ArrowLeft size={18} />
                 <span className="hidden sm:inline">العودة</span>
-              </button>
+              </motion.button>
               
               <div className="flex items-center gap-2">
                 {/* Mobile Premium Badge */}
                 <div style={{
-                  background: `linear-gradient(135deg, ${colors.accent}20, ${colors.accent}10)`,
-                  borderRadius: borderRadius.full,
+                  background: `linear-gradient(135deg, ${colors.accent}30, ${colors.accent}20)`,
+                  borderRadius: borderRadius.lg,
                   padding: `${spacing.xs} ${spacing.sm}`,
                   display: 'flex',
                   alignItems: 'center',
                   gap: spacing.xs,
-                  border: `1px solid ${colors.accent}30`
+                  border: `2px solid ${colors.accent}40`,
+                  boxShadow: `0 4px 12px ${colors.accent}30`
                 }}>
-                  <Crown size={12} style={{ color: colors.accent }} />
+                  <Crown size={14} style={{ color: colors.accent }} />
                   <span style={{ 
                     color: colors.accent, 
                     fontSize: typography.fontSize.xs,
-                    fontWeight: '600'
+                    fontWeight: '700'
                   }}>
                     مميزة
                   </span>
                 </div>
 
                 {/* Mobile Filter Button */}
-                <button
+                <motion.button
                   onClick={() => setShowAdvancedControls(!showAdvancedControls)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   style={{
-                    background: `linear-gradient(135deg, ${colors.accent}20, ${colors.accent}10)`,
-                    borderRadius: borderRadius.full,
+                    background: showAdvancedControls 
+                      ? `linear-gradient(135deg, ${colors.accent}, ${colors.accent}DD)`
+                      : `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`,
+                    borderRadius: borderRadius.lg,
                     padding: spacing.sm,
                     display: 'flex',
                     alignItems: 'center',
                     gap: spacing.xs,
-                    border: `1px solid ${colors.accent}30`,
+                    border: `2px solid ${colors.accent}40`,
                     cursor: 'pointer',
-                    transition: 'all 0.3s ease'
+                    transition: 'all 0.3s ease',
+                    color: showAdvancedControls ? colors.background : colors.accent,
+                    boxShadow: `0 4px 12px ${colors.accent}30`
                   }}
-                  className="hover:scale-105"
                 >
-                  <Filter size={14} style={{ color: colors.accent }} />
-                </button>
+                  <Filter size={16} />
+                </motion.button>
               </div>
             </div>
 
             {/* Mobile Search Bar */}
-            <div style={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              background: `linear-gradient(135deg, ${colors.surfaceCard}80, ${colors.surfaceCard}40)`,
-              borderRadius: borderRadius.full,
-              padding: `${spacing.sm} ${spacing.md}`,
-              border: `1px solid ${colors.border}40`,
-              marginBottom: spacing.sm
-            }}>
-              <Search size={16} style={{ color: colors.textMuted, marginRight: spacing.sm }} />
+            <div className="relative group/search"
+              style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                background: `linear-gradient(135deg, ${colors.surface}90, ${colors.surfaceCard}90)`,
+                borderRadius: borderRadius.lg,
+                padding: `${spacing.sm} ${spacing.md}`,
+                border: `2px solid ${colors.border}`,
+                marginBottom: spacing.sm,
+                boxShadow: `0 4px 12px ${colors.shadow}10`
+              }}
+            >
+              <Search size={18} style={{ color: colors.textMuted, marginRight: spacing.sm }} />
               <input
                 type="text"
                 placeholder="البحث في الفيديوهات..."
@@ -1002,180 +1105,247 @@ const CourseContent = () => {
                   color: colors.text,
                   fontSize: typography.fontSize.sm,
                   flex: 1,
-                  padding: `${spacing.xs} 0`
+                  padding: `${spacing.xs} 0`,
+                  fontWeight: '500'
                 }}
               />
               {searchQuery && (
-                <button
+                <motion.button
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
                   onClick={() => setSearchQuery('')}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
                   style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: colors.textMuted,
+                    background: `linear-gradient(135deg, ${colors.error}20, ${colors.error}10)`,
+                    border: `1px solid ${colors.error}30`,
+                    borderRadius: borderRadius.full,
+                    color: colors.error,
                     cursor: 'pointer',
-                    padding: spacing.xs
+                    padding: spacing.xs,
+                    width: '20px',
+                    height: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}
                 >
                   ×
-                </button>
+                </motion.button>
               )}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
             {/* Course Info */}
-            <div className="lg:col-span-2">
-              <h1 style={{ 
-                color: colors.text, 
-                fontSize: typography.fontSize['3xl'],
-                fontWeight: '800',
-                marginBottom: spacing.md,
-                background: `linear-gradient(135deg, ${colors.text}, ${colors.accent})`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                position: 'relative',
-                zIndex: 1
-              }}>
+            <div className="lg:col-span-2 relative z-10">
+              <motion.h1
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                style={{ 
+                  color: colors.text, 
+                  fontSize: `${typography.fontSize['3xl']}px`,
+                  fontWeight: '900',
+                  marginBottom: spacing.md,
+                  background: `linear-gradient(135deg, ${colors.text}, ${colors.accent})`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  position: 'relative',
+                  lineHeight: 1.2
+                }}
+                className="text-3xl sm:text-4xl lg:text-5xl"
+              >
                 {course.title}
-              </h1>
+              </motion.h1>
               
-              <p style={{ 
-                color: colors.textMuted, 
-                fontSize: typography.fontSize.lg,
-                lineHeight: 1.7,
-                marginBottom: spacing.lg,
-                position: 'relative',
-                zIndex: 1,
-                fontWeight: '400'
-              }}>
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                style={{ 
+                  color: colors.textMuted, 
+                  fontSize: `${typography.fontSize.lg}px`,
+                  lineHeight: 1.8,
+                  marginBottom: spacing.xl,
+                  position: 'relative',
+                  fontWeight: '400'
+                }}
+                className="text-base sm:text-lg"
+              >
                 {course.description}
-              </p>
+              </motion.p>
 
               {/* Enhanced Course Progress Bar */}
               {courseProgress && (
-                <div className="mb-6">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="mb-6"
+                >
                   <EnhancedProgressBar 
                     progress={courseProgress}
                     variant="large"
                     showDetails={true}
                     onProgressUpdate={handleProgressUpdate}
                   />
-                </div>
+                </motion.div>
               )}
 
               {/* Exam Buttons */}
-              <div className="mb-6">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="mb-6"
+              >
                 <ExamButton 
                   exams={course.exams} 
                   courseTitle={course.title}
                   courseId={id}
                 />
-              </div>
+              </motion.div>
 
-              <div className="flex flex-wrap gap-3 mb-6" style={{ position: 'relative', zIndex: 1 }}>
-                <div style={{
-                  background: `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`,
-                  color: colors.accent,
-                  padding: `${spacing.sm} ${spacing.lg}`,
-                  borderRadius: borderRadius.full,
-                  fontSize: typography.fontSize.sm,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: spacing.sm,
-                  border: `1px solid ${colors.accent}30`,
-                  fontWeight: '600',
-                  boxShadow: `0 4px 12px ${colors.accent}20`
-                }}>
-                  <Gem size={16} />
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="flex flex-wrap gap-3 mb-6"
+                style={{ position: 'relative', zIndex: 1 }}
+              >
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  style={{
+                    background: `linear-gradient(135deg, ${colors.accent}30, ${colors.accent}20)`,
+                    color: colors.accent,
+                    padding: `${spacing.sm} ${spacing.lg}`,
+                    borderRadius: borderRadius.xl,
+                    fontSize: typography.fontSize.sm,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing.sm,
+                    border: `2px solid ${colors.accent}40`,
+                    fontWeight: '700',
+                    boxShadow: `0 4px 16px ${colors.accent}30`,
+                    cursor: 'default'
+                  }}
+                >
+                  <Gem size={18} />
                   الصف {course.grade}
-                </div>
+                </motion.div>
                 
-                <div style={{
-                  background: `linear-gradient(135deg, ${colors.success}25, ${colors.success}15)`,
-                  color: colors.success,
-                  padding: `${spacing.sm} ${spacing.lg}`,
-                  borderRadius: borderRadius.full,
-                  fontSize: typography.fontSize.sm,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: spacing.sm,
-                  border: `1px solid ${colors.success}30`,
-                  fontWeight: '600',
-                  boxShadow: `0 4px 12px ${colors.success}20`
-                }}>
-                  <Video size={16} />
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  style={{
+                    background: `linear-gradient(135deg, ${colors.success}30, ${colors.success}20)`,
+                    color: colors.success,
+                    padding: `${spacing.sm} ${spacing.lg}`,
+                    borderRadius: borderRadius.xl,
+                    fontSize: typography.fontSize.sm,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing.sm,
+                    border: `2px solid ${colors.success}40`,
+                    fontWeight: '700',
+                    boxShadow: `0 4px 16px ${colors.success}30`,
+                    cursor: 'default'
+                  }}
+                >
+                  <Video size={18} />
                   {videos.length} فيديو
-                </div>
+                </motion.div>
                 
-                <div style={{
-                  background: `linear-gradient(135deg, ${colors.warning}25, ${colors.warning}15)`,
-                  color: colors.warning,
-                  padding: `${spacing.sm} ${spacing.lg}`,
-                  borderRadius: borderRadius.full,
-                  fontSize: typography.fontSize.sm,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: spacing.sm,
-                  border: `1px solid ${colors.warning}30`,
-                  fontWeight: '600',
-                  boxShadow: `0 4px 12px ${colors.warning}20`
-                }}>
-                  <Clock size={16} />
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  style={{
+                    background: `linear-gradient(135deg, ${colors.warning}30, ${colors.warning}20)`,
+                    color: colors.warning,
+                    padding: `${spacing.sm} ${spacing.lg}`,
+                    borderRadius: borderRadius.xl,
+                    fontSize: typography.fontSize.sm,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing.sm,
+                    border: `2px solid ${colors.warning}40`,
+                    fontWeight: '700',
+                    boxShadow: `0 4px 16px ${colors.warning}30`,
+                    cursor: 'default'
+                  }}
+                >
+                  <Clock size={18} />
                   {formatDuration(course.totalDuration)}
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             </div>
-
-            {/* Progress Card */}
-           
           </div>
         </motion.div>
 
         {/* Advanced Controls Panel */}
-        {showAdvancedControls && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            style={{
-              background: `linear-gradient(135deg, ${colors.surfaceCard}, ${colors.surfaceCard}dd)`,
-              borderRadius: borderRadius.xl,
-              padding: spacing.lg,
-              marginBottom: spacing.lg,
-              boxShadow: `0 20px 40px ${colors.shadow}20, 0 8px 16px ${colors.shadow}10`,
-              backdropFilter: 'blur(20px)',
-              border: `1px solid ${colors.border}40`,
-              position: 'relative',
-              overflow: 'hidden'
-            }}
-          >
-            {/* Advanced Controls Background Pattern */}
-            <div style={{
-              position: 'absolute',
-              top: '-30px',
-              right: '-30px',
-              width: '120px',
-              height: '120px',
-              background: `radial-gradient(circle, ${colors.accent}08 0%, transparent 70%)`,
-              borderRadius: '50%'
-            }} />
+        <AnimatePresence>
+          {showAdvancedControls && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: 'auto' }}
+              exit={{ opacity: 0, y: -20, height: 0 }}
+              transition={{ duration: 0.3 }}
+              style={{
+                background: `linear-gradient(135deg, ${colors.surfaceCard}, ${colors.surfaceElevated})`,
+                borderRadius: borderRadius['2xl'],
+                padding: spacing.xl,
+                marginBottom: spacing.xl,
+                boxShadow: `0 25px 60px ${colors.shadow}30, 0 10px 20px ${colors.shadow}15`,
+                backdropFilter: 'blur(20px)',
+                border: `2px solid ${colors.border}`,
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              {/* Advanced Controls Background Pattern */}
+              <div style={{
+                position: 'absolute',
+                top: '-40px',
+                right: '-40px',
+                width: '150px',
+                height: '150px',
+                background: `radial-gradient(circle, ${colors.accent}12 0%, transparent 70%)`,
+                borderRadius: '50%',
+                filter: 'blur(40px)'
+              }} />
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
               {/* Filter Options */}
               <div>
-                <h3 style={{
-                  color: colors.text,
-                  fontSize: typography.fontSize.lg,
-                  fontWeight: '700',
-                  marginBottom: spacing.md,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: spacing.sm
-                }}>
-                  <Filter size={20} style={{ color: colors.accent }} />
+                <motion.h3
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 }}
+                  style={{
+                    color: colors.text,
+                    fontSize: typography.fontSize.xl,
+                    fontWeight: '800',
+                    marginBottom: spacing.lg,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing.sm
+                  }}
+                >
+                  <div style={{
+                    background: `linear-gradient(135deg, ${colors.accent}30, ${colors.accent}20)`,
+                    borderRadius: borderRadius.lg,
+                    padding: spacing.xs,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Filter size={22} style={{ color: colors.accent }} />
+                  </div>
                   فلترة الفيديوهات
-                </h3>
+                </motion.h3>
                 
                 <div className="space-y-3">
                   {[
@@ -1185,49 +1355,72 @@ const CourseContent = () => {
                     { value: 'not-started', label: 'لم تبدأ', icon: Square },
                     { value: 'bookmarked', label: 'محفوظة', icon: BookmarkCheck },
                     { value: 'favorites', label: 'المفضلة', icon: Heart }
-                  ].map((option) => (
-                    <button
+                  ].map((option, idx) => (
+                    <motion.button
                       key={option.value}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 + idx * 0.05 }}
                       onClick={() => setFilterType(option.value)}
+                      whileHover={{ x: 4, scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       style={{
                         width: '100%',
                         background: filterType === option.value 
-                          ? `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`
-                          : `linear-gradient(135deg, ${colors.surfaceCard}50, transparent)`,
-                        border: `1px solid ${filterType === option.value ? colors.accent : colors.border}40`,
-                        borderRadius: borderRadius.md,
-                        padding: `${spacing.sm} ${spacing.md}`,
+                          ? `linear-gradient(135deg, ${colors.accent}30, ${colors.accent}20)`
+                          : `linear-gradient(135deg, ${colors.surface}80, ${colors.surfaceCard}80)`,
+                        border: `2px solid ${filterType === option.value ? colors.accent : colors.border}`,
+                        borderRadius: borderRadius.xl,
+                        padding: `${spacing.md} ${spacing.lg}`,
                         display: 'flex',
                         alignItems: 'center',
                         gap: spacing.sm,
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
-                        color: filterType === option.value ? colors.accent : colors.textMuted
+                        color: filterType === option.value ? colors.accent : colors.text,
+                        fontWeight: filterType === option.value ? '700' : '600',
+                        boxShadow: filterType === option.value 
+                          ? `0 4px 16px ${colors.accent}30`
+                          : `0 2px 8px ${colors.shadow}10`
                       }}
                     >
-                      <option.icon size={16} />
-                      <span style={{ fontSize: typography.fontSize.sm, fontWeight: '500' }}>
+                      <option.icon size={20} />
+                      <span style={{ fontSize: typography.fontSize.base }}>
                         {option.label}
                       </span>
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
               </div>
 
               {/* Sort Options */}
               <div>
-                <h3 style={{
-                  color: colors.text,
-                  fontSize: typography.fontSize.lg,
-                  fontWeight: '700',
-                  marginBottom: spacing.md,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: spacing.sm
-                }}>
-                  <BarChart size={20} style={{ color: colors.accent }} />
+                <motion.h3
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.15 }}
+                  style={{
+                    color: colors.text,
+                    fontSize: typography.fontSize.xl,
+                    fontWeight: '800',
+                    marginBottom: spacing.lg,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing.sm
+                  }}
+                >
+                  <div style={{
+                    background: `linear-gradient(135deg, ${colors.accent}30, ${colors.accent}20)`,
+                    borderRadius: borderRadius.lg,
+                    padding: spacing.xs,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <BarChart size={22} style={{ color: colors.accent }} />
+                  </div>
                   ترتيب الفيديوهات
-                </h3>
+                </motion.h3>
                 
                 <div className="space-y-3">
                   {[
@@ -1236,157 +1429,269 @@ const CourseContent = () => {
                     { value: 'duration', label: 'حسب المدة', icon: Clock },
                     { value: 'progress', label: 'حسب التقدم', icon: TrendingUp },
                     { value: 'recent', label: 'الأحدث', icon: Calendar }
-                  ].map((option) => (
-                    <button
+                  ].map((option, idx) => (
+                    <motion.button
                       key={option.value}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.15 + idx * 0.05 }}
                       onClick={() => setSortBy(option.value)}
+                      whileHover={{ x: 4, scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       style={{
                         width: '100%',
                         background: sortBy === option.value 
-                          ? `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`
-                          : `linear-gradient(135deg, ${colors.surfaceCard}50, transparent)`,
-                        border: `1px solid ${sortBy === option.value ? colors.accent : colors.border}40`,
-                        borderRadius: borderRadius.md,
-                        padding: `${spacing.sm} ${spacing.md}`,
+                          ? `linear-gradient(135deg, ${colors.accent}30, ${colors.accent}20)`
+                          : `linear-gradient(135deg, ${colors.surface}80, ${colors.surfaceCard}80)`,
+                        border: `2px solid ${sortBy === option.value ? colors.accent : colors.border}`,
+                        borderRadius: borderRadius.xl,
+                        padding: `${spacing.md} ${spacing.lg}`,
                         display: 'flex',
                         alignItems: 'center',
                         gap: spacing.sm,
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
-                        color: sortBy === option.value ? colors.accent : colors.textMuted
+                        color: sortBy === option.value ? colors.accent : colors.text,
+                        fontWeight: sortBy === option.value ? '700' : '600',
+                        boxShadow: sortBy === option.value 
+                          ? `0 4px 16px ${colors.accent}30`
+                          : `0 2px 8px ${colors.shadow}10`
                       }}
                     >
-                      <option.icon size={16} />
-                      <span style={{ fontSize: typography.fontSize.sm, fontWeight: '500' }}>
+                      <option.icon size={20} />
+                      <span style={{ fontSize: typography.fontSize.base }}>
                         {option.label}
                       </span>
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
               </div>
 
               {/* Study Analytics */}
               <div>
-                <h3 style={{
-                  color: colors.text,
-                  fontSize: typography.fontSize.lg,
-                  fontWeight: '700',
-                  marginBottom: spacing.md,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: spacing.sm
-                }}>
-                  <Brain size={20} style={{ color: colors.accent }} />
-                  إحصائيات الدراسة
-                </h3>
-                
-                <div className="space-y-3">
+                <motion.h3
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 }}
+                  style={{
+                    color: colors.text,
+                    fontSize: typography.fontSize.xl,
+                    fontWeight: '800',
+                    marginBottom: spacing.lg,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing.sm
+                  }}
+                >
                   <div style={{
-                    background: `linear-gradient(135deg, ${colors.success}20, ${colors.success}10)`,
-                    borderRadius: borderRadius.md,
-                    padding: spacing.md,
-                    border: `1px solid ${colors.success}30`
+                    background: `linear-gradient(135deg, ${colors.accent}30, ${colors.accent}20)`,
+                    borderRadius: borderRadius.lg,
+                    padding: spacing.xs,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
-                      <Trophy size={16} style={{ color: colors.success }} />
-                      <span style={{ color: colors.success, fontSize: typography.fontSize.sm, fontWeight: '600' }}>
+                    <Brain size={22} style={{ color: colors.accent }} />
+                  </div>
+                  إحصائيات الدراسة
+                </motion.h3>
+                
+                <div className="space-y-4">
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25 }}
+                    whileHover={{ scale: 1.02 }}
+                    style={{
+                      background: `linear-gradient(135deg, ${colors.success}30, ${colors.success}20)`,
+                      borderRadius: borderRadius.xl,
+                      padding: spacing.lg,
+                      border: `2px solid ${colors.success}40`,
+                      boxShadow: `0 4px 16px ${colors.success}30`
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
+                      <div style={{
+                        background: `linear-gradient(135deg, ${colors.success}, ${colors.success}DD)`,
+                        borderRadius: borderRadius.lg,
+                        padding: spacing.xs,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Trophy size={20} style={{ color: colors.background }} />
+                      </div>
+                      <span style={{ color: colors.success, fontSize: typography.fontSize.base, fontWeight: '700' }}>
                         معدل الإكمال
                       </span>
                     </div>
-                    <div style={{ color: colors.text, fontSize: typography.fontSize.lg, fontWeight: '700' }}>
+                    <div style={{ color: colors.text, fontSize: `${typography.fontSize['2xl']}px`, fontWeight: '900' }}>
                       {Math.round(studyAnalytics.completionRate)}%
                     </div>
-                  </div>
+                  </motion.div>
                   
-                  <div style={{
-                    background: `linear-gradient(135deg, ${colors.warning}20, ${colors.warning}10)`,
-                    borderRadius: borderRadius.md,
-                    padding: spacing.md,
-                    border: `1px solid ${colors.warning}30`
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
-                      <Flame size={16} style={{ color: colors.warning }} />
-                      <span style={{ color: colors.warning, fontSize: typography.fontSize.sm, fontWeight: '600' }}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    whileHover={{ scale: 1.02 }}
+                    style={{
+                      background: `linear-gradient(135deg, ${colors.warning}30, ${colors.warning}20)`,
+                      borderRadius: borderRadius.xl,
+                      padding: spacing.lg,
+                      border: `2px solid ${colors.warning}40`,
+                      boxShadow: `0 4px 16px ${colors.warning}30`
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
+                      <div style={{
+                        background: `linear-gradient(135deg, ${colors.warning}, ${colors.warning}DD)`,
+                        borderRadius: borderRadius.lg,
+                        padding: spacing.xs,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Flame size={20} style={{ color: colors.background }} />
+                      </div>
+                      <span style={{ color: colors.warning, fontSize: typography.fontSize.base, fontWeight: '700' }}>
                         سلسلة الدراسة
                       </span>
                     </div>
-                    <div style={{ color: colors.text, fontSize: typography.fontSize.lg, fontWeight: '700' }}>
+                    <div style={{ color: colors.text, fontSize: `${typography.fontSize['2xl']}px`, fontWeight: '900' }}>
                       {studyStreak} يوم
                     </div>
-                  </div>
+                  </motion.div>
                   
-                  <div style={{
-                    background: `linear-gradient(135deg, ${colors.accent}20, ${colors.accent}10)`,
-                    borderRadius: borderRadius.md,
-                    padding: spacing.md,
-                    border: `1px solid ${colors.accent}30`
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
-                      <Timer size={16} style={{ color: colors.accent }} />
-                      <span style={{ color: colors.accent, fontSize: typography.fontSize.sm, fontWeight: '600' }}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.35 }}
+                    whileHover={{ scale: 1.02 }}
+                    style={{
+                      background: `linear-gradient(135deg, ${colors.accent}30, ${colors.accent}20)`,
+                      borderRadius: borderRadius.xl,
+                      padding: spacing.lg,
+                      border: `2px solid ${colors.accent}40`,
+                      boxShadow: `0 4px 16px ${colors.accent}30`
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
+                      <div style={{
+                        background: `linear-gradient(135deg, ${colors.accent}, ${colors.accent}DD)`,
+                        borderRadius: borderRadius.lg,
+                        padding: spacing.xs,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Timer size={20} style={{ color: colors.background }} />
+                      </div>
+                      <span style={{ color: colors.accent, fontSize: typography.fontSize.base, fontWeight: '700' }}>
                         وقت الدراسة
                       </span>
                     </div>
-                    <div style={{ color: colors.text, fontSize: typography.fontSize.lg, fontWeight: '700' }}>
+                    <div style={{ color: colors.text, fontSize: `${typography.fontSize['2xl']}px`, fontWeight: '900' }}>
                       {Math.round(totalStudyTime / 60)} دقيقة
                     </div>
-                  </div>
+                  </motion.div>
                 </div>
               </div>
             </div>
           </motion.div>
-        )}
+          )}
+        </AnimatePresence>
 
         {/* Content Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div style={{
-              background: `linear-gradient(135deg, ${colors.surfaceCard}, ${colors.surfaceCard}dd)`,
-              borderRadius: borderRadius.xl,
-              padding: spacing.lg,
-              boxShadow: `0 20px 40px ${colors.shadow}20, 0 8px 16px ${colors.shadow}10`,
-              backdropFilter: 'blur(20px)',
-              border: `1px solid ${colors.border}40`,
-              position: 'sticky',
-              top: spacing.lg,
-              overflow: 'hidden'
-            }}>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+              style={{
+                background: `linear-gradient(135deg, ${colors.surfaceCard}, ${colors.surfaceElevated})`,
+                borderRadius: borderRadius['2xl'],
+                padding: spacing.xl,
+                boxShadow: `0 25px 60px ${colors.shadow}30, 0 10px 20px ${colors.shadow}15`,
+                backdropFilter: 'blur(20px)',
+                border: `2px solid ${colors.border}`,
+                position: 'sticky',
+                top: spacing.lg,
+                overflow: 'hidden',
+                maxHeight: 'calc(100vh - 120px)',
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
               {/* Luxury Sidebar Pattern */}
               <div style={{
                 position: 'absolute',
-                top: '-50px',
-                right: '-50px',
-                width: '100px',
-                height: '100px',
-                background: `radial-gradient(circle, ${colors.accent}08 0%, transparent 70%)`,
-                borderRadius: '50%'
+                top: '-60px',
+                right: '-60px',
+                width: '150px',
+                height: '150px',
+                background: `radial-gradient(circle, ${colors.accent}12 0%, transparent 70%)`,
+                borderRadius: '50%',
+                filter: 'blur(40px)'
               }} />
               {/* Videos Section */}
-              <div className="mb-6">
-                <button
+              <div className="mb-6 flex-shrink-0">
+                <motion.button
                   onClick={() => toggleSection('videos')}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   style={{
                     width: '100%',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    background: 'transparent',
-                    border: 'none',
+                    background: expandedSections.videos 
+                      ? `linear-gradient(135deg, ${colors.accent}20, ${colors.accent}10)`
+                      : 'transparent',
+                    border: `2px solid ${expandedSections.videos ? colors.accent : colors.border}`,
                     color: colors.text,
                     fontSize: typography.fontSize.lg,
-                    fontWeight: 'bold',
+                    fontWeight: '800',
                     cursor: 'pointer',
-                    padding: spacing.sm,
-                    borderRadius: borderRadius.md
+                    padding: spacing.md,
+                    borderRadius: borderRadius.xl,
+                    transition: 'all 0.3s ease',
+                    boxShadow: expandedSections.videos ? `0 4px 16px ${colors.accent}30` : 'none'
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
-                    <Video size={20} />
-                    الفيديوهات ({videos.length})
+                    <div style={{
+                      background: `linear-gradient(135deg, ${colors.accent}, ${colors.accent}DD)`,
+                      borderRadius: borderRadius.lg,
+                      padding: spacing.xs,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <Video size={22} style={{ color: colors.background }} />
+                    </div>
+                    <span>الفيديوهات</span>
+                    <span style={{
+                      background: `linear-gradient(135deg, ${colors.accent}30, ${colors.accent}20)`,
+                      color: colors.accent,
+                      padding: `${spacing.xs} ${spacing.sm}`,
+                      borderRadius: borderRadius.full,
+                      fontSize: typography.fontSize.sm,
+                      fontWeight: '700',
+                      border: `1px solid ${colors.accent}40`
+                    }}>
+                      {videos.length}
+                    </span>
                   </div>
-                  {expandedSections.videos ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-                </button>
+                  <motion.div
+                    animate={{ rotate: expandedSections.videos ? 180 : 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <ChevronDown size={22} style={{ color: colors.accent }} />
+                  </motion.div>
+                </motion.button>
 
                 <AnimatePresence>
                   {expandedSections.videos && (
@@ -1394,45 +1699,51 @@ const CourseContent = () => {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="mt-4 space-y-2"
+                      transition={{ duration: 0.3 }}
+                      className="mt-4 space-y-2 overflow-y-auto flex-1"
+                      style={{ maxHeight: 'calc(100vh - 300px)' }}
                     >
                       {filteredVideos.map((video, index) => (
                         <motion.div
                           key={video._id}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.1 }}
+                          transition={{ delay: index * 0.05 }}
                           onClick={() => handleVideoSelect(video)}
+                          whileHover={{ x: 4, scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
                           style={{
                             background: selectedVideo?._id === video._id 
-                              ? `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)` 
-                              : `linear-gradient(135deg, ${colors.surfaceCard}50, transparent)`,
-                            border: `1px solid ${selectedVideo?._id === video._id ? colors.accent : colors.border}40`,
-                            borderRadius: borderRadius.lg,
+                              ? `linear-gradient(135deg, ${colors.accent}30, ${colors.accent}20)` 
+                              : `linear-gradient(135deg, ${colors.surface}80, ${colors.surfaceCard}80)`,
+                            border: `2px solid ${selectedVideo?._id === video._id ? colors.accent : colors.border}`,
+                            borderRadius: borderRadius.xl,
                             padding: spacing.md,
                             cursor: 'pointer',
                             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                             boxShadow: selectedVideo?._id === video._id 
-                              ? `0 8px 25px ${colors.accent}20` 
-                              : `0 4px 12px ${colors.shadow}10`
+                              ? `0 8px 30px ${colors.accent}40` 
+                              : `0 4px 16px ${colors.shadow}15`
                           }}
-                          className="hover:shadow-md"
                         >
                           <div className="flex items-start gap-3">
                             <div style={{
-                              background: `linear-gradient(135deg, ${colors.accent}, ${colors.accent}dd)`,
-                              color: colors.background,
-                              borderRadius: borderRadius.full,
-                              width: '36px',
-                              height: '36px',
+                              background: selectedVideo?._id === video._id
+                                ? `linear-gradient(135deg, ${colors.accent}, ${colors.accent}DD)`
+                                : `linear-gradient(135deg, ${colors.accent}30, ${colors.accent}20)`,
+                              color: selectedVideo?._id === video._id ? colors.background : colors.accent,
+                              borderRadius: borderRadius.lg,
+                              width: '42px',
+                              height: '42px',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              fontSize: typography.fontSize.sm,
-                              fontWeight: 'bold',
+                              fontSize: typography.fontSize.base,
+                              fontWeight: '800',
                               flexShrink: 0,
-                              boxShadow: `0 4px 12px ${colors.accent}30`,
-                              border: `2px solid ${colors.accent}20`
+                              boxShadow: `0 4px 16px ${colors.accent}30`,
+                              border: `2px solid ${colors.accent}40`,
+                              transition: 'all 0.3s ease'
                             }}>
                               {index + 1}
                             </div>
@@ -1440,24 +1751,28 @@ const CourseContent = () => {
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <h4 style={{ 
                                 color: colors.text, 
-                                fontSize: typography.fontSize.sm,
-                                fontWeight: 'bold',
+                                fontSize: typography.fontSize.base,
+                                fontWeight: selectedVideo?._id === video._id ? '800' : '700',
                                 marginBottom: spacing.xs,
-                                lineHeight: 1.4
+                                lineHeight: 1.5
                               }}>
                                 {video.title}
                               </h4>
                               
-                              <div className="flex items-center gap-2 text-xs" style={{ color: colors.textMuted }}>
-                                <Clock size={12} />
-                                {formatDuration(video.duration)}
+                              <div className="flex items-center gap-2 flex-wrap" style={{ color: colors.textMuted }}>
+                                <div className="flex items-center gap-1" style={{ fontSize: typography.fontSize.xs }}>
+                                  <Clock size={14} />
+                                  {formatDuration(video.duration)}
+                                </div>
                                 
                                 {video.progress && (
-                                  <>
+                                  <div className="flex items-center gap-1" style={{ fontSize: typography.fontSize.xs }}>
                                     <span>•</span>
-                                    <CheckCircle size={12} style={{ color: colors.success }} />
-                                    {getProgressPercentage(video)}%
-                                  </>
+                                    <CheckCircle size={14} style={{ color: colors.success }} />
+                                    <span style={{ color: colors.success, fontWeight: '600' }}>
+                                      {getProgressPercentage(video)}%
+                                    </span>
+                                  </div>
                                 )}
                               </div>
                             </div>
@@ -1468,7 +1783,6 @@ const CourseContent = () => {
                                 isCompleted={isVideoCompleted(video._id)}
                                 onToggle={() => {
                                   if (isVideoCompleted(video._id)) {
-                                    // Unmark as completed (if needed)
                                     console.log('Unmarking video as completed:', video._id);
                                   } else {
                                     markVideoCompleted(video._id);
@@ -1487,22 +1801,28 @@ const CourseContent = () => {
                           </div>
                           
                           {/* Advanced Video Controls */}
-                          <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: spacing.xs,
-                            marginTop: spacing.sm,
-                            paddingTop: spacing.sm,
-                            borderTop: `1px solid ${colors.border}20`
-                          }}>
-                            <button
-                              onClick={() => handleVideoAction('bookmark', video._id)}
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: spacing.xs,
+                              marginTop: spacing.sm,
+                              paddingTop: spacing.sm,
+                              borderTop: `2px solid ${colors.border}`
+                            }}
+                          >
+                            <motion.button
+                              onClick={(e) => { e.stopPropagation(); handleVideoAction('bookmark', video._id); }}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
                               style={{
                                 background: bookmarkedVideos.has(video._id) 
-                                  ? `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`
-                                  : 'transparent',
-                                border: `1px solid ${bookmarkedVideos.has(video._id) ? colors.accent : colors.border}40`,
-                                borderRadius: borderRadius.sm,
+                                  ? `linear-gradient(135deg, ${colors.accent}30, ${colors.accent}20)`
+                                  : `linear-gradient(135deg, ${colors.surface}80, transparent)`,
+                                border: `2px solid ${bookmarkedVideos.has(video._id) ? colors.accent : colors.border}`,
+                                borderRadius: borderRadius.lg,
                                 padding: spacing.xs,
                                 cursor: 'pointer',
                                 transition: 'all 0.3s ease',
@@ -1510,17 +1830,19 @@ const CourseContent = () => {
                               }}
                               title="حفظ للاحقاً"
                             >
-                              <BookmarkPlus size={14} />
-                            </button>
+                              <BookmarkPlus size={16} />
+                            </motion.button>
                             
-                            <button
-                              onClick={() => handleVideoAction('favorite', video._id)}
+                            <motion.button
+                              onClick={(e) => { e.stopPropagation(); handleVideoAction('favorite', video._id); }}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
                               style={{
                                 background: favoriteVideos.has(video._id) 
-                                  ? `linear-gradient(135deg, ${colors.warning}25, ${colors.warning}15)`
-                                  : 'transparent',
-                                border: `1px solid ${favoriteVideos.has(video._id) ? colors.warning : colors.border}40`,
-                                borderRadius: borderRadius.sm,
+                                  ? `linear-gradient(135deg, ${colors.warning}30, ${colors.warning}20)`
+                                  : `linear-gradient(135deg, ${colors.surface}80, transparent)`,
+                                border: `2px solid ${favoriteVideos.has(video._id) ? colors.warning : colors.border}`,
+                                borderRadius: borderRadius.lg,
                                 padding: spacing.xs,
                                 cursor: 'pointer',
                                 transition: 'all 0.3s ease',
@@ -1528,15 +1850,17 @@ const CourseContent = () => {
                               }}
                               title="إضافة للمفضلة"
                             >
-                              <Heart size={14} />
-                            </button>
+                              <Heart size={16} />
+                            </motion.button>
                             
-                            <button
-                              onClick={() => handleVideoAction('download', video._id)}
+                            <motion.button
+                              onClick={(e) => { e.stopPropagation(); handleVideoAction('download', video._id); }}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
                               style={{
-                                background: 'transparent',
-                                border: `1px solid ${colors.border}40`,
-                                borderRadius: borderRadius.sm,
+                                background: `linear-gradient(135deg, ${colors.surface}80, transparent)`,
+                                border: `2px solid ${colors.border}`,
+                                borderRadius: borderRadius.lg,
                                 padding: spacing.xs,
                                 cursor: 'pointer',
                                 transition: 'all 0.3s ease',
@@ -1544,15 +1868,17 @@ const CourseContent = () => {
                               }}
                               title="تحميل الفيديو"
                             >
-                              <Download size={14} />
-                            </button>
+                              <Download size={16} />
+                            </motion.button>
                             
-                            <button
-                              onClick={() => handleVideoAction('share', video._id)}
+                            <motion.button
+                              onClick={(e) => { e.stopPropagation(); handleVideoAction('share', video._id); }}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
                               style={{
-                                background: 'transparent',
-                                border: `1px solid ${colors.border}40`,
-                                borderRadius: borderRadius.sm,
+                                background: `linear-gradient(135deg, ${colors.surface}80, transparent)`,
+                                border: `2px solid ${colors.border}`,
+                                borderRadius: borderRadius.lg,
                                 padding: spacing.xs,
                                 cursor: 'pointer',
                                 transition: 'all 0.3s ease',
@@ -1560,15 +1886,17 @@ const CourseContent = () => {
                               }}
                               title="مشاركة الفيديو"
                             >
-                              <Share2 size={14} />
-                            </button>
+                              <Share2 size={16} />
+                            </motion.button>
                             
-                            <button
-                              onClick={() => handleVideoAction('note', video._id)}
+                            <motion.button
+                              onClick={(e) => { e.stopPropagation(); handleVideoAction('note', video._id); }}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
                               style={{
-                                background: 'transparent',
-                                border: `1px solid ${colors.border}40`,
-                                borderRadius: borderRadius.sm,
+                                background: `linear-gradient(135deg, ${colors.surface}80, transparent)`,
+                                border: `2px solid ${colors.border}`,
+                                borderRadius: borderRadius.lg,
                                 padding: spacing.xs,
                                 cursor: 'pointer',
                                 transition: 'all 0.3s ease',
@@ -1576,18 +1904,16 @@ const CourseContent = () => {
                               }}
                               title="إضافة ملاحظة"
                             >
-                              <FileText size={14} />
-                            </button>
-                          </div>
+                              <FileText size={16} />
+                            </motion.button>
+                          </motion.div>
                         </motion.div>
                       ))}
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
-
-             
-            </div>
+            </motion.div>
           </div>
 
           {/* Main Content - Card Grid */}
@@ -1596,142 +1922,199 @@ const CourseContent = () => {
           
 
             {/* Video Cards Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 lg:gap-10">
               {filteredVideos.map((video, index) => (
-                <VideoCard
+                <motion.div
                   key={video._id}
-                  video={video}
-                  index={index}
-                  onVideoSelect={handleVideoSelect}
-                  onQuizStart={(video) => {
-                    // Handle quiz start
-                    console.log('Starting quiz for video:', video);
-                  }}
-                  isSelected={selectedVideo?._id === video._id}
-                  progress={video.progress}
-                  quizResult={video.quizResult}
-                />
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  whileHover={{ y: -8 }}
+                >
+                  <VideoCard
+                    video={video}
+                    index={index}
+                    onVideoSelect={handleVideoSelect}
+                    onQuizStart={(video) => {
+                      console.log('Starting quiz for video:', video);
+                    }}
+                    isSelected={selectedVideo?._id === video._id}
+                    progress={video.progress}
+                    quizResult={video.quizResult}
+                  />
+                </motion.div>
               ))}
             </div>
 
             {/* Empty State */}
             {filteredVideos.length === 0 && courseContent?.videos && courseContent.videos.length > 0 ? (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4 }}
                 style={{
-                  background: `linear-gradient(135deg, ${colors.surfaceCard}, ${colors.surfaceCard}dd)`,
-                  borderRadius: borderRadius.xl,
+                  background: `linear-gradient(135deg, ${colors.surfaceCard}, ${colors.surfaceElevated})`,
+                  borderRadius: borderRadius['2xl'],
                   padding: spacing['2xl'],
-                  boxShadow: `0 20px 40px ${colors.shadow}20, 0 8px 16px ${colors.shadow}10`,
+                  boxShadow: `0 25px 60px ${colors.shadow}30, 0 10px 20px ${colors.shadow}15`,
                   backdropFilter: 'blur(20px)',
-                  border: `1px solid ${colors.border}40`,
+                  border: `2px solid ${colors.border}`,
                   textAlign: 'center',
                   position: 'relative',
                   overflow: 'hidden'
                 }}
               >
                 <div style={{
-                  position: 'relative',
-                  display: 'inline-block',
-                  marginBottom: spacing.lg
-                }}>
-                  <Search size={64} style={{ color: colors.textMuted }} />
+                  position: 'absolute',
+                  top: '-100px',
+                  right: '-100px',
+                  width: '200px',
+                  height: '200px',
+                  background: `radial-gradient(circle, ${colors.accent}15 0%, transparent 70%)`,
+                  borderRadius: '50%',
+                  filter: 'blur(40px)'
+                }} />
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: 'spring' }}
+                  style={{
+                    position: 'relative',
+                    display: 'inline-block',
+                    marginBottom: spacing.xl
+                  }}
+                >
                   <div style={{
-                    position: 'absolute',
-                    top: '-10px',
-                    right: '-10px',
-                    background: `linear-gradient(135deg, ${colors.accent}, ${colors.accent}dd)`,
-                    borderRadius: '50%',
-                    width: '24px',
-                    height: '24px',
-                    display: 'flex',
+                    background: `linear-gradient(135deg, ${colors.accent}30, ${colors.accent}20)`,
+                    borderRadius: borderRadius['2xl'],
+                    padding: spacing.xl,
+                    display: 'inline-flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    border: `2px solid ${colors.accent}40`,
+                    boxShadow: `0 8px 30px ${colors.accent}30`
                   }}>
-                    <Filter size={12} style={{ color: colors.background }} />
+                    <Search size={72} style={{ color: colors.accent }} />
                   </div>
-                </div>
-                <h3 style={{ 
-                  color: colors.text, 
-                  fontSize: typography.fontSize.xl,
-                  fontWeight: 'bold',
-                  marginBottom: spacing.md
-                }}>
+                </motion.div>
+                <motion.h3
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  style={{ 
+                    color: colors.text, 
+                    fontSize: `${typography.fontSize['2xl']}px`,
+                    fontWeight: '800',
+                    marginBottom: spacing.md
+                  }}
+                >
                   لا توجد نتائج للبحث
-                </h3>
-                <p style={{ color: colors.textMuted, marginBottom: spacing.lg }}>
+                </motion.h3>
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  style={{ color: colors.textMuted, marginBottom: spacing.xl, fontSize: typography.fontSize.lg }}
+                >
                   لم يتم العثور على فيديوهات تطابق معايير البحث والفلترة
-                </p>
-                <button
+                </motion.p>
+                <motion.button
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
                   onClick={() => {
                     setSearchQuery('');
                     setFilterType('all');
                     setSortBy('order');
                   }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   style={{
-                    background: `linear-gradient(135deg, ${colors.accent}, ${colors.accent}dd)`,
+                    background: `linear-gradient(135deg, ${colors.accent}, ${colors.accent}DD)`,
                     color: colors.background,
-                    padding: `${spacing.md} ${spacing.lg}`,
-                    borderRadius: borderRadius.lg,
+                    padding: `${spacing.lg} ${spacing.xl}`,
+                    borderRadius: borderRadius.xl,
                     border: 'none',
                     cursor: 'pointer',
-                    fontSize: typography.fontSize.md,
-                    fontWeight: '600',
-                    boxShadow: `0 4px 12px ${colors.accent}30`
+                    fontSize: typography.fontSize.base,
+                    fontWeight: '700',
+                    boxShadow: `0 8px 24px ${colors.accent}40`
                   }}
                 >
                   إعادة تعيين الفلاتر
-                </button>
+                </motion.button>
               </motion.div>
             ) : (!courseContent?.videos || courseContent.videos.length === 0) && (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4 }}
                 style={{
-                  background: `linear-gradient(135deg, ${colors.surfaceCard}, ${colors.surfaceCard}dd)`,
-                  borderRadius: borderRadius.xl,
+                  background: `linear-gradient(135deg, ${colors.surfaceCard}, ${colors.surfaceElevated})`,
+                  borderRadius: borderRadius['2xl'],
                   padding: spacing['2xl'],
-                  boxShadow: `0 20px 40px ${colors.shadow}20, 0 8px 16px ${colors.shadow}10`,
+                  boxShadow: `0 25px 60px ${colors.shadow}30, 0 10px 20px ${colors.shadow}15`,
                   backdropFilter: 'blur(20px)',
-                  border: `1px solid ${colors.border}40`,
+                  border: `2px solid ${colors.border}`,
                   textAlign: 'center',
                   position: 'relative',
                   overflow: 'hidden'
                 }}
               >
                 <div style={{
-                  position: 'relative',
-                  display: 'inline-block',
-                  marginBottom: spacing.lg
-                }}>
-                  <Video size={64} style={{ color: colors.textMuted }} />
+                  position: 'absolute',
+                  top: '-100px',
+                  right: '-100px',
+                  width: '200px',
+                  height: '200px',
+                  background: `radial-gradient(circle, ${colors.accent}15 0%, transparent 70%)`,
+                  borderRadius: '50%',
+                  filter: 'blur(40px)'
+                }} />
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: 'spring' }}
+                  style={{
+                    position: 'relative',
+                    display: 'inline-block',
+                    marginBottom: spacing.xl
+                  }}
+                >
                   <div style={{
-                    position: 'absolute',
-                    top: '-10px',
-                    right: '-10px',
-                    background: `linear-gradient(135deg, ${colors.accent}, ${colors.accent}dd)`,
-                    borderRadius: '50%',
-                    width: '24px',
-                    height: '24px',
-                    display: 'flex',
+                    background: `linear-gradient(135deg, ${colors.accent}30, ${colors.accent}20)`,
+                    borderRadius: borderRadius['2xl'],
+                    padding: spacing.xl,
+                    display: 'inline-flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    border: `2px solid ${colors.accent}40`,
+                    boxShadow: `0 8px 30px ${colors.accent}30`
                   }}>
-                    <Sparkles size={12} style={{ color: colors.background }} />
+                    <Video size={72} style={{ color: colors.accent }} />
                   </div>
-                </div>
-                <h3 style={{ 
-                  color: colors.text, 
-                  fontSize: typography.fontSize.xl,
-                  fontWeight: 'bold',
-                  marginBottom: spacing.md
-                }}>
+                </motion.div>
+                <motion.h3
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  style={{ 
+                    color: colors.text, 
+                    fontSize: `${typography.fontSize['2xl']}px`,
+                    fontWeight: '800',
+                    marginBottom: spacing.md
+                  }}
+                >
                   لا توجد دروس متاحة
-                </h3>
-                <p style={{ color: colors.textMuted }}>
+                </motion.h3>
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  style={{ color: colors.textMuted, fontSize: typography.fontSize.lg }}
+                >
                   لم يتم إضافة أي دروس لهذه الدورة بعد
-                </p>
+                </motion.p>
               </motion.div>
             )}
 

@@ -42,8 +42,10 @@ const InternalExamInterface = ({
   const [showResults, setShowResults] = useState(false);
   const [examResult, setExamResult] = useState(null);
   const [error, setError] = useState(null);
+  const [previousSubmission, setPreviousSubmission] = useState(null);
+  const [isEditable, setIsEditable] = useState(false);
 
-  // Load exam data
+  // Load exam data and previous submission
   useEffect(() => {
     loadExam();
   }, [courseId, examId]);
@@ -53,18 +55,93 @@ const InternalExamInterface = ({
       setIsLoading(true);
       setError(null);
       
-      const response = await internalExamService.getExamForTaking(courseId, examId);
+      // Load exam data
+      const examResponse = await internalExamService.getExamForTaking(courseId, examId);
       
-      if (response.success) {
-        setExam(response.exam);
-        // Initialize answers: array for allowMultiple MCQ, single value otherwise
-        const initialAnswers = {};
-        response.exam.questions.forEach(question => {
-          initialAnswers[question.id] = question.allowMultiple ? [] : '';
-        });
-        setAnswers(initialAnswers);
+      if (examResponse.success) {
+        setExam(examResponse.exam);
+        
+        // ✅ Check if exam is in review mode (already completed)
+        const isReviewMode = examResponse.isReviewMode || examResponse.exam?.isCompleted;
+        
+        // ✅ Try to load previous submission
+        try {
+          const submissionResponse = await internalExamService.getExamSubmission(courseId, examId);
+          
+          if (submissionResponse.success && submissionResponse.submission) {
+            const submission = submissionResponse.submission;
+            setPreviousSubmission(submission);
+            setIsEditable(submission.isEditable || false);
+            
+            // ✅ Pre-fill answers from previous submission
+            const prefilledAnswers = {};
+            if (submission.answers) {
+              Object.keys(submission.answers).forEach(questionId => {
+                const answerData = submission.answers[questionId];
+                prefilledAnswers[questionId] = answerData.answer || '';
+              });
+            }
+            setAnswers(prefilledAnswers);
+            
+            // If exam was already submitted and not editable, show results
+            if (!submission.isEditable && submission.submittedAt) {
+              setShowResults(true);
+              setExamResult({
+                score: submission.score,
+                maxScore: submission.maxScore,
+                percentage: submission.percentage,
+                grade: submission.grade,
+                level: submission.level,
+                passed: submission.passed,
+                submittedAt: submission.submittedAt,
+                answers: submission.answersArray || submission.answers
+              });
+            }
+          } else if (isReviewMode && examResponse.exam?.previousResult) {
+            // If in review mode but no submission found, use previousResult from exam data
+            const prevResult = examResponse.exam.previousResult;
+            setShowResults(true);
+            setExamResult({
+              score: prevResult.score,
+              maxScore: prevResult.maxScore,
+              percentage: prevResult.percentage,
+              grade: prevResult.grade,
+              submittedAt: prevResult.submittedAt
+            });
+            setIsEditable(false);
+          } else {
+            // No previous submission - initialize empty answers
+            const initialAnswers = {};
+            examResponse.exam.questions.forEach(question => {
+              initialAnswers[question.id] = '';
+            });
+            setAnswers(initialAnswers);
+          }
+        } catch (submissionError) {
+          // If in review mode but submission fetch failed, try to use previousResult from exam
+          if (isReviewMode && examResponse.exam?.previousResult) {
+            const prevResult = examResponse.exam.previousResult;
+            setShowResults(true);
+            setExamResult({
+              score: prevResult.score,
+              maxScore: prevResult.maxScore,
+              percentage: prevResult.percentage,
+              grade: prevResult.grade,
+              submittedAt: prevResult.submittedAt
+            });
+            setIsEditable(false);
+          } else {
+            // No submission found - initialize empty answers
+            console.log('No previous submission found, starting fresh');
+            const initialAnswers = {};
+            examResponse.exam.questions.forEach(question => {
+              initialAnswers[question.id] = '';
+            });
+            setAnswers(initialAnswers);
+          }
+        }
       } else {
-        setError(response.message || 'Failed to load exam');
+        setError(examResponse.message || 'Failed to load exam');
       }
     } catch (err) {
       console.error('Error loading exam:', err);
@@ -74,19 +151,35 @@ const InternalExamInterface = ({
     }
   };
 
-  // Handle answer selection (single value or toggle in array for allowMultiple)
-  const handleAnswerSelect = (questionId, answer, allowMultiple = false) => {
-    setAnswers(prev => {
-      const current = prev[questionId];
-      if (allowMultiple) {
-        const arr = Array.isArray(current) ? [...current] : [];
-        const idx = arr.indexOf(answer);
-        if (idx >= 0) arr.splice(idx, 1);
-        else arr.push(answer);
-        return { ...prev, [questionId]: arr };
+  // ✅ SINGLE-CHOICE ONLY: Handle answer selection with type safety
+  const handleAnswerSelect = (questionId, answer) => {
+    // Find question to enforce type-safe answer
+    const question = exam?.questions?.find(q => q.id === questionId);
+    let safeAnswer = answer;
+
+    if (question) {
+      if (question.type === 'mcq' || question.type === 'multiple_choice') {
+        // MCQ: answer must be option.id (string), never option text
+        safeAnswer = typeof answer === 'string' ? answer : String(answer);
+        // Assert: answer should match an option ID
+        if (question.options && !question.options.some(o => o.id === safeAnswer)) {
+          console.warn(`Answer "${safeAnswer}" is not a valid option.id for question ${questionId}. Available IDs:`, question.options.map(o => o.id));
+        }
+      } else if (question.type === 'true_false') {
+        // True/False: normalize to boolean
+        if (typeof answer === 'string') {
+          safeAnswer = answer === 'true' || answer === 'صحيح';
+        } else {
+          safeAnswer = Boolean(answer);
+        }
       }
-      return { ...prev, [questionId]: answer };
-    });
+      // Essay: keep as-is (string)
+    }
+
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: safeAnswer
+    }));
   };
 
   // Navigation functions
@@ -106,40 +199,67 @@ const InternalExamInterface = ({
     setCurrentQuestionIndex(index);
   };
 
-  // Submit exam
+  // Submit exam (handles both new submission and resubmission)
   const handleSubmitExam = async () => {
     try {
       setIsSubmitting(true);
       
-      // Validate that all questions are answered (array length for allowMultiple, non-empty for single)
+      // Check for unanswered questions -- warn but allow submission (they'll be marked as skipped)
       const unansweredQuestions = exam.questions.filter(question => {
         const a = answers[question.id];
-        if (question.allowMultiple) return !Array.isArray(a) || a.length === 0;
-        return a == null || a === '';
+        return a == null || a === '' || (Array.isArray(a) && a.length === 0);
       });
       
       if (unansweredQuestions.length > 0) {
-        toast({
-          title: 'أسئلة غير مجابة',
-          description: `يرجى الإجابة على جميع الأسئلة (${unansweredQuestions.length} سؤال غير مجاب)`,
-          variant: 'destructive'
-        });
-        return;
+        const confirmSubmit = window.confirm(
+          `لديك ${unansweredQuestions.length} سؤال غير مجاب من أصل ${exam.questions.length}.\n\n` +
+          `الأسئلة غير المجابة: ${unansweredQuestions.map((q, i) => `${exam.questions.indexOf(q) + 1}`).join(', ')}\n\n` +
+          `هل تريد إرسال الامتحان على أي حال؟ الأسئلة غير المجابة ستحسب كتخطي.`
+        );
+        if (!confirmSubmit) {
+          setIsSubmitting(false);
+          // Navigate to first unanswered question
+          const firstUnansweredIdx = exam.questions.findIndex(q => {
+            const a = answers[q.id];
+            return a == null || a === '' || (Array.isArray(a) && a.length === 0);
+          });
+          if (firstUnansweredIdx >= 0) setCurrentQuestionIndex(firstUnansweredIdx);
+          return;
+        }
       }
 
-      const response = await internalExamService.submitExam(courseId, examId, answers);
+      // Convert answers to array format for backend
+      const answersArray = exam.questions.map(question => ({
+        questionId: question.id,
+        answer: answers[question.id] ?? '' // Empty string for skipped
+      }));
+
+      const response = await internalExamService.submitExam(courseId, examId, answersArray);
       
       if (response.success) {
-        setExamResult(response.result);
+        // Extract result from response.data.result (backend returns { success, data: { result } })
+        const result = response.data?.result || response.result || {};
+        setExamResult(result);
         setShowResults(true);
         
+        // Reload submission to get full data with answers
+        try {
+          const submissionResponse = await internalExamService.getExamSubmission(courseId, examId);
+          if (submissionResponse.success && submissionResponse.submission) {
+            setPreviousSubmission(submissionResponse.submission);
+            setIsEditable(submissionResponse.submission.isEditable || false);
+          }
+        } catch (err) {
+          console.log('Could not reload submission:', err);
+        }
+        
         toast({
-          title: 'تم إرسال الامتحان بنجاح',
-          description: `درجتك: ${response.result.score}/${response.result.maxScore} (${response.result.percentage}%)`
+          title: previousSubmission ? 'تم تحديث الإجابات بنجاح' : 'تم إرسال الامتحان بنجاح',
+          description: `درجتك: ${result.score}/${result.maxScore} (${result.percentage}%) - ${result.grade}`
         });
         
         if (onExamComplete) {
-          onExamComplete(response.result);
+          onExamComplete(result);
         }
       } else {
         toast({
@@ -221,26 +341,39 @@ const InternalExamInterface = ({
     );
   }
 
-  // Results view — فخم جداً + تفصيل لكل سؤال + شريط تقدم
+  // ═══════════════════════════════════════════════════════════════
+  // RESULTS DASHBOARD — Animated, luxury design with per-question review
+  // ═══════════════════════════════════════════════════════════════
   if (showResults && examResult) {
     const passingThreshold = examResult.passingScore ?? exam?.passingScore ?? 60;
-    const isPassed = examResult.isPassed ?? (examResult.percentage != null && examResult.percentage >= passingThreshold);
+    const isPassed = examResult.isPassed ?? examResult.passed ?? (examResult.percentage != null && examResult.percentage >= passingThreshold);
     const isExcellent = (examResult.percentage || 0) >= 90;
-    const questionResults = examResult.questionResults || [];
-    const correctCount = questionResults.filter(q => q.isCorrect).length;
-    const totalQuestions = questionResults.length || 1;
-    const scoreProgressPercent = totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0;
+    // Use answers from submission or from examResult
+    const answersList = examResult.answers || previousSubmission?.answersArray || [];
+    const correctCount = examResult.correctAnswers ?? answersList.filter(q => q.isCorrect).length;
+    const skippedCount = examResult.skippedAnswers ?? answersList.filter(q => q.skipped).length;
+    const incorrectCount = (examResult.totalQuestions || answersList.length) - correctCount - skippedCount;
+    const totalQ = examResult.totalQuestions || answersList.length || 1;
+    const pct = examResult.percentage || 0;
+
+    // Animated circular progress
+    const circleSize = 180;
+    const strokeWidth = 12;
+    const radius = (circleSize - strokeWidth) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const strokeDashoffset = circumference - (pct / 100) * circumference;
+    const circleColor = isExcellent ? '#10b981' : isPassed ? '#3b82f6' : '#ef4444';
 
     return (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="max-w-2xl mx-auto p-4 sm:p-8"
+        className="max-w-3xl mx-auto p-4 sm:p-8"
         role="region"
         aria-label="نتيجة الامتحان"
       >
-        {/* Hero result card */}
+        {/* Hero section with animated circle */}
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -250,126 +383,213 @@ const InternalExamInterface = ({
             background: isExcellent
               ? 'linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%)'
               : isPassed
-                ? 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%)'
+                ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%)'
                 : 'linear-gradient(135deg, #64748b 0%, #475569 50%, #334155 100%)',
-            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.1)'
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
           }}
         >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(255,255,255,0.15),transparent)]" aria-hidden="true" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(255,255,255,0.15),transparent)]" />
           <div className="relative">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
-              className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-6 rounded-2xl flex items-center justify-center bg-white/20 backdrop-blur-sm"
-              aria-hidden="true"
+              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+              className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-white/20 backdrop-blur-sm"
             >
               <Trophy className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
             </motion.div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-              {isExcellent ? 'أحسنت! تميز في الامتحان' : isPassed ? 'مبروك! نجحت في الامتحان' : 'تم إكمال الامتحان'}
+            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">
+              {isExcellent ? 'ممتاز! أداء متميز' : isPassed ? 'مبروك! نجحت في الامتحان' : 'تم إكمال الامتحان'}
             </h1>
-            <p className="text-white/90 text-sm sm:text-base mb-8">{exam?.title}</p>
+            <p className="text-white/80 text-sm mb-6">{exam?.title}</p>
+
+            {/* Animated circular progress */}
+            <div className="flex justify-center mb-4">
+              <div className="relative" style={{ width: circleSize, height: circleSize }}>
+                <svg width={circleSize} height={circleSize} className="transform -rotate-90">
+                  <circle
+                    cx={circleSize / 2} cy={circleSize / 2} r={radius}
+                    fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth={strokeWidth}
+                  />
+                  <motion.circle
+                    cx={circleSize / 2} cy={circleSize / 2} r={radius}
+                    fill="none" stroke="rgba(255,255,255,0.95)" strokeWidth={strokeWidth}
+                    strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    initial={{ strokeDashoffset: circumference }}
+                    animate={{ strokeDashoffset }}
+                    transition={{ delay: 0.5, duration: 1.2, ease: 'easeOut' }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <motion.span
+                    className="text-4xl sm:text-5xl font-black text-white"
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.8, type: 'spring' }}
+                  >
+                    {pct}%
+                  </motion.span>
+                  <span className="text-white/80 text-sm font-medium">
+                    {examResult.score}/{examResult.maxScore}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Grade badge */}
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="inline-flex flex-col items-center"
+              transition={{ delay: 0.6 }}
+              className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-white/20 backdrop-blur-sm"
             >
-              <span className="text-5xl sm:text-7xl font-black text-white tracking-tight" aria-label={`النسبة ${examResult.percentage} بالمئة`}>
-                {examResult.percentage}%
-              </span>
-              <span className="text-white/90 text-lg sm:text-xl font-semibold mt-1">
-                {examResult.score} / {examResult.maxScore}
-              </span>
-              <div className="mt-4 px-6 py-2 rounded-full bg-white/20 backdrop-blur-sm">
-                <span className="text-xl font-bold text-white">{examResult.grade}</span>
-                {examResult.level && (
-                  <span className="text-white/90 text-sm mr-2"> — {examResult.level}</span>
-                )}
-              </div>
-              <p className="text-white/80 text-sm mt-2">
-                درجة النجاح {passingThreshold}% — {isPassed ? 'ناجح' : 'غير ناجح'}
-              </p>
+              <Award className="w-6 h-6 text-white" />
+              <span className="text-2xl font-black text-white">{examResult.grade}</span>
+              {examResult.level && (
+                <span className="text-white/90 text-sm font-medium">{examResult.level}</span>
+              )}
             </motion.div>
+            <p className="text-white/70 text-xs mt-3">
+              درجة النجاح: {passingThreshold}% — {isPassed ? 'ناجح' : 'غير ناجح'}
+            </p>
           </div>
         </motion.div>
 
-        {/* Progress bar: correct vs total questions */}
-        {questionResults.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45 }}
-            className="rounded-2xl border p-5 mb-6"
-            style={{ backgroundColor: colors.surfaceCard, borderColor: colors.border }}
-            role="progressbar"
-            aria-valuenow={correctCount}
-            aria-valuemin={0}
-            aria-valuemax={totalQuestions}
-            aria-label={`${correctCount} إجابة صحيحة من ${totalQuestions}`}
-          >
-            <div className="flex justify-between text-sm mb-2">
-              <span style={{ color: colors.textMuted }}>الإجابات الصحيحة</span>
-              <span className="font-semibold" style={{ color: colors.text }}>
-                {correctCount} / {totalQuestions}
-              </span>
-            </div>
-            <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: colors.border }}>
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${scoreProgressPercent}%` }}
-                transition={{ delay: 0.5, duration: 0.6 }}
-                className="h-full rounded-full"
-                style={{ backgroundColor: isPassed ? colors.accent : '#ef4444' }}
-              />
-            </div>
-          </motion.div>
-        )}
+        {/* Score breakdown cards */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="grid grid-cols-3 gap-3 sm:gap-4 mb-6"
+        >
+          {[
+            { label: 'صحيح', count: correctCount, color: '#10b981', bg: 'rgba(16,185,129,0.1)', icon: '✓' },
+            { label: 'خاطئ', count: incorrectCount, color: '#ef4444', bg: 'rgba(239,68,68,0.1)', icon: '✗' },
+            { label: 'تخطي', count: skippedCount, color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', icon: '—' }
+          ].map((item, i) => (
+            <motion.div
+              key={item.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 + i * 0.1 }}
+              className="rounded-2xl border p-4 sm:p-5 text-center"
+              style={{ backgroundColor: item.bg, borderColor: item.color + '30' }}
+            >
+              <div className="text-3xl sm:text-4xl font-black mb-1" style={{ color: item.color }}>
+                {item.count}
+              </div>
+              <div className="text-xs sm:text-sm font-medium" style={{ color: item.color }}>
+                {item.label}
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
 
-        {/* Per-question breakdown: correct/incorrect visualization */}
-        {questionResults.length > 0 && (
+        {/* Per-question review */}
+        {answersList.length > 0 && (
           <motion.section
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.55 }}
-            className="rounded-2xl border p-6 mb-8"
+            transition={{ delay: 0.6 }}
+            className="rounded-2xl border p-5 sm:p-6 mb-8"
             style={{ backgroundColor: colors.surfaceCard, borderColor: colors.border }}
-            aria-label="تفاصيل الأسئلة"
           >
-            <h2 className="text-lg font-semibold mb-4" style={{ color: colors.text }}>
-              تفاصيل الأسئلة
+            <h2 className="text-lg font-bold mb-5 flex items-center gap-2" style={{ color: colors.text }}>
+              <Eye className="w-5 h-5" />
+              مراجعة تفصيلية
             </h2>
-            <ul className="space-y-4">
-              {questionResults.map((q, idx) => (
-                <li
-                  key={q.questionId || idx}
-                  className={`flex items-start gap-3 p-4 rounded-xl border-2 transition-colors ${
-                    q.isCorrect ? 'border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-900/10' : 'border-red-500/30 bg-red-50/30 dark:bg-red-900/10'
-                  }`}
-                >
-                  <span
-                    className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
-                    style={{
-                      backgroundColor: q.isCorrect ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                      color: q.isCorrect ? '#059669' : '#dc2626'
-                    }}
-                    aria-hidden="true"
+            <div className="space-y-4">
+              {answersList.map((q, idx) => {
+                const isCorrect = q.isCorrect === true;
+                const isSkipped = q.skipped === true || (!q.answer && q.answer !== false);
+                const borderColor = isSkipped ? '#f59e0b' : isCorrect ? '#10b981' : '#ef4444';
+                const bgColor = isSkipped ? 'rgba(245,158,11,0.05)' : isCorrect ? 'rgba(16,185,129,0.05)' : 'rgba(239,68,68,0.05)';
+
+                // Find option text for MCQ answers
+                const getOptionText = (optionId) => {
+                  const question = exam?.questions?.find(eq => eq.id === q.questionId);
+                  if (question?.options) {
+                    const opt = question.options.find(o => o.id === optionId);
+                    return opt?.text || opt?.optionText || optionId;
+                  }
+                  return optionId;
+                };
+
+                const isMCQ = q.questionType === 'mcq' || q.questionType === 'multiple_choice';
+
+                return (
+                  <motion.div
+                    key={q.questionId || idx}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.7 + idx * 0.05 }}
+                    className="rounded-xl border-2 p-4 sm:p-5"
+                    style={{ borderColor: borderColor + '40', backgroundColor: bgColor }}
                   >
-                    {q.isCorrect ? '✓' : '✗'}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm line-clamp-2" style={{ color: colors.text }}>
-                      {q.questionText || `سؤال ${idx + 1}`}
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: colors.textMuted }}>
-                      {q.earnedMarks} / {q.maxMarks} نقطة
-                      {q.percentagePerQuestion != null && ` — ${q.percentagePerQuestion}%`}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
+                    <div className="flex items-start gap-3 mb-3">
+                      <span
+                        className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
+                        style={{ backgroundColor: borderColor + '20', color: borderColor }}
+                      >
+                        {isSkipped ? '—' : isCorrect ? '✓' : '✗'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm leading-relaxed" style={{ color: colors.text }}>
+                          {q.questionText || `سؤال ${idx + 1}`}
+                        </p>
+                        <div className="flex items-center gap-3 mt-1 text-xs" style={{ color: colors.textMuted }}>
+                          <span>{q.earnedMarks || 0} / {q.maxMarks || 0} نقطة</span>
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: borderColor + '15', color: borderColor }}>
+                            {isSkipped ? 'تم التخطي' : isCorrect ? 'إجابة صحيحة' : 'إجابة خاطئة'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Student answer vs correct answer */}
+                    {!isSkipped && (
+                      <div className="mr-11 space-y-2">
+                        {/* Student's answer */}
+                        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                          isCorrect ? 'bg-emerald-100/50' : 'bg-red-100/50'
+                        }`}>
+                          <span className="font-medium" style={{ color: colors.textMuted }}>إجابتك:</span>
+                          <span className="font-semibold" style={{ color: isCorrect ? '#059669' : '#dc2626' }}>
+                            {q.questionType === 'true_false'
+                              ? (q.answer === true || q.answer === 'true' ? 'صحيح' : 'خطأ')
+                              : isMCQ
+                                ? getOptionText(q.answer)
+                                : (String(q.answer || '').slice(0, 100) + (String(q.answer || '').length > 100 ? '...' : ''))
+                            }
+                          </span>
+                        </div>
+
+                        {/* Correct answer (only show if wrong) */}
+                        {!isCorrect && q.correctAnswer != null && (
+                          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-100/50 text-sm">
+                            <span className="font-medium" style={{ color: colors.textMuted }}>الإجابة الصحيحة:</span>
+                            <span className="font-semibold text-emerald-600">
+                              {q.questionType === 'true_false'
+                                ? (q.correctAnswer === true || q.correctAnswer === 'true' ? 'صحيح' : 'خطأ')
+                                : isMCQ
+                                  ? getOptionText(q.correctAnswer)
+                                  : String(q.correctAnswer)
+                              }
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {isSkipped && (
+                      <p className="mr-11 text-xs italic" style={{ color: '#f59e0b' }}>
+                        لم يتم الإجابة على هذا السؤال
+                      </p>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
           </motion.section>
         )}
 
@@ -377,8 +597,8 @@ const InternalExamInterface = ({
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="rounded-2xl border p-6 mb-8"
+          transition={{ delay: 0.7 }}
+          className="rounded-2xl border p-5 mb-8"
           style={{ backgroundColor: colors.surfaceCard, borderColor: colors.border }}
         >
           <div className="flex items-center justify-between text-sm" style={{ color: colors.textMuted }}>
@@ -390,19 +610,27 @@ const InternalExamInterface = ({
                 : '—'}
             </span>
           </div>
+          {examResult.timeSpent > 0 && (
+            <div className="flex items-center justify-between text-sm mt-2" style={{ color: colors.textMuted }}>
+              <span>الوقت المستغرق</span>
+              <span className="font-medium" style={{ color: colors.text }}>
+                {Math.floor(examResult.timeSpent / 60)} دقيقة {examResult.timeSpent % 60} ثانية
+              </span>
+            </div>
+          )}
         </motion.div>
 
+        {/* Back button */}
         <motion.div
           initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.65 }}
+          transition={{ delay: 0.75 }}
           className="flex justify-center"
         >
           <button
             onClick={() => onBack && onBack()}
-            className="flex items-center gap-2 px-8 py-4 rounded-2xl font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2"
+            className="flex items-center gap-2 px-8 py-4 rounded-2xl font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
             style={{ backgroundColor: colors.accent }}
-            aria-label="العودة للدورة"
           >
             <ArrowLeft className="w-5 h-5" />
             العودة للدورة
@@ -509,10 +737,10 @@ const InternalExamInterface = ({
   const currentQuestion = exam.questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === exam.questions.length - 1;
   const isFirstQuestion = currentQuestionIndex === 0;
+  // ✅ SINGLE-CHOICE ONLY: Count answered questions (single value only)
   const answeredCount = exam.questions.filter(q => {
     const a = answers[q.id];
-    if (q.allowMultiple) return Array.isArray(a) && a.length > 0;
-    return a != null && a !== '';
+    return a != null && a !== '' && !(Array.isArray(a) && a.length === 0);
   }).length;
   const progressPercent = (answeredCount / exam.questions.length) * 100;
 
@@ -556,7 +784,7 @@ const InternalExamInterface = ({
             className={`w-10 h-10 rounded-xl text-sm font-bold transition-all duration-200 ${
               index === currentQuestionIndex
                 ? 'text-white shadow-md scale-105'
-                : (question.allowMultiple ? (Array.isArray(answers[question.id]) && answers[question.id].length > 0) : (answers[question.id] != null && answers[question.id] !== ''))
+                : (answers[question.id] != null && answers[question.id] !== '' && !(Array.isArray(answers[question.id]) && answers[question.id].length === 0))
                 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-2 border-emerald-300 dark:border-emerald-700'
                 : 'border-2'
             }`}
@@ -595,41 +823,76 @@ const InternalExamInterface = ({
               <span>{currentQuestion.marks ?? currentQuestion.points ?? 10} نقطة</span>
             </p>
 
-            {currentQuestion.type === 'mcq' && (
-              <div className="space-y-3">
-                {currentQuestion.allowMultiple && (
-                  <p className="text-sm mb-2" style={{ color: colors.textMuted }}>
-                    يمكن اختيار أكثر من إجابة
-                  </p>
-                )}
-                {(currentQuestion.options || []).map((option, index) => {
-                  const optId = typeof option === 'object' ? option.id : index;
-                  const optText = typeof option === 'object' ? (option.text ?? option.optionText) : option;
-                  const multi = Boolean(currentQuestion.allowMultiple);
-                  const selected = multi
-                    ? (Array.isArray(answers[currentQuestion.id]) && answers[currentQuestion.id].includes(optId))
-                    : (answers[currentQuestion.id] === optId || answers[currentQuestion.id] === index);
-                  return (
-                    <label
-                      key={optId ?? index}
-                      className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
-                        selected ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
-                      }`}
-                    >
-                      <input
-                        type={multi ? 'checkbox' : 'radio'}
-                        name={multi ? undefined : `question_${currentQuestion.id}`}
-                        value={optId}
-                        checked={selected}
-                        onChange={() => handleAnswerSelect(currentQuestion.id, optId, multi)}
-                        className="w-5 h-5 text-emerald-600"
-                      />
-                      <span className="font-medium" style={{ color: colors.text }}>{optText}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            )}
+            {currentQuestion.type === 'mcq' && (() => {
+              // ✅ Show correctness if previous submission exists
+              const answerData = previousSubmission?.answers?.[currentQuestion.id];
+              const showCorrectness = previousSubmission && !isEditable && answerData;
+              
+              return (
+                <div className="space-y-3">
+                  {/* ✅ SINGLE-CHOICE ONLY: Radio buttons with correctness indicators */}
+                  {(currentQuestion.options || []).map((option, index) => {
+                    const optId = typeof option === 'object' ? option.id : index;
+                    const optText = typeof option === 'object' ? (option.text ?? option.optionText) : option;
+                    const selected = answers[currentQuestion.id] === optId || answers[currentQuestion.id] === index;
+                    const isCorrectAnswer = answerData?.correctAnswer === optId;
+                    const isStudentAnswer = selected && answerData;
+                    
+                    return (
+                      <label
+                        key={optId ?? index}
+                        className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                          showCorrectness && isCorrectAnswer
+                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                            : showCorrectness && isStudentAnswer && !answerData.isCorrect
+                            ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                            : selected
+                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name={`question_${currentQuestion.id}`}
+                          value={optId}
+                          checked={selected}
+                          onChange={() => handleAnswerSelect(currentQuestion.id, optId)}
+                          disabled={showCorrectness && !isEditable}
+                          className="w-5 h-5 text-emerald-600"
+                        />
+                        <span className="font-medium flex-1" style={{ color: colors.text }}>{optText}</span>
+                        {showCorrectness && isCorrectAnswer && (
+                          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                        )}
+                        {showCorrectness && isStudentAnswer && !answerData.isCorrect && (
+                          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                        )}
+                      </label>
+                    );
+                  })}
+                  {/* Show correctness feedback */}
+                  {showCorrectness && answerData && (
+                    <div className={`mt-3 p-3 rounded-lg text-sm ${
+                      answerData.isCorrect 
+                        ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300'
+                        : 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300'
+                    }`}>
+                      {answerData.isCorrect ? (
+                        <span className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4" />
+                          إجابة صحيحة ({answerData.earnedMarks}/{answerData.maxMarks} نقطة)
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4" />
+                          إجابة خاطئة (0/{answerData.maxMarks} نقطة)
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {currentQuestion.type === 'true_false' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -12,8 +12,8 @@ const validateCourseCreation = [
   body('description')
     .optional()
     .trim()
-    .isLength({ max: 500 })
-    .withMessage('Course description cannot exceed 500 characters'),
+    // ✅ No character limit - users can write as much as they want
+,
 
   body('subject')
     .trim()

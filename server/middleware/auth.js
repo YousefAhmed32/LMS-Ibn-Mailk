@@ -1,37 +1,38 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// Rate limiting store (in production, use Redis)
+// Rate limiting store (in production, use Redis). Cleanup runs periodically, not on every request.
 const rateLimitStore = new Map();
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+
+// Periodic cleanup so we don't iterate all IPs on every request (O(n) -> O(1) per request)
+setInterval(() => {
+  const now = Date.now();
+  const windowStart = now - RATE_LIMIT_WINDOW_MS;
+  for (const [ip, requests] of rateLimitStore.entries()) {
+    const valid = requests.filter(time => time > windowStart);
+    if (valid.length === 0) rateLimitStore.delete(ip);
+    else rateLimitStore.set(ip, valid);
+  }
+}, 60 * 1000);
 
 // Rate limiting middleware
-const rateLimit = (windowMs = 15 * 60 * 1000, max = 100) => {
+const rateLimit = (windowMs = RATE_LIMIT_WINDOW_MS, max = 100) => {
   return (req, res, next) => {
     const key = req.ip || req.connection.remoteAddress;
     const now = Date.now();
     const windowStart = now - windowMs;
-    
-    // Clean old entries
-    for (const [ip, requests] of rateLimitStore.entries()) {
-      const validRequests = requests.filter(time => time > windowStart);
-      if (validRequests.length === 0) {
-        rateLimitStore.delete(ip);
-      } else {
-        rateLimitStore.set(ip, validRequests);
-      }
-    }
-    
-    // Check current IP
+
     const requests = rateLimitStore.get(key) || [];
     const validRequests = requests.filter(time => time > windowStart);
-    
+
     if (validRequests.length >= max) {
       return res.status(429).json({
         success: false,
         error: 'Too many requests, please try again later'
       });
     }
-    
+
     validRequests.push(now);
     rateLimitStore.set(key, validRequests);
     next();

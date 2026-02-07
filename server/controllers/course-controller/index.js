@@ -115,7 +115,8 @@ const getAllCourses = async (req, res) => {
       .populate('createdBy', 'firstName secondName thirdName fourthName')
       .sort(sort)
       .limit(limit * 1)
-      .skip((page - 1) * limit);
+      .skip((page - 1) * limit)
+      .lean();
 
     const total = await Course.countDocuments(filter);
 
@@ -153,7 +154,8 @@ const getCourseById = async (req, res) => {
 
     const course = await Course.findById(id)
       .populate('createdBy', 'firstName secondName thirdName fourthName userEmail')
-      .populate('enrolledStudents', 'firstName secondName thirdName fourthName userEmail');
+      .populate('enrolledStudents', 'firstName secondName thirdName fourthName userEmail')
+      .lean();
 
     if (!course) {
       return res.status(404).json({

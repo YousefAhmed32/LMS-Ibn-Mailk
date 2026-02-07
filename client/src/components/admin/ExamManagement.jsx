@@ -80,18 +80,46 @@ const ExamManagement = ({ courseId, exams = [], onExamsChange, isEditing = false
         alert('يرجى إدخال خيارين على الأقل');
         return;
       }
+      // ✅ SINGLE-CHOICE ONLY: Check for exactly one correct answer
       const correctOptions = validOptions.filter(opt => opt.isCorrect);
       if (correctOptions.length === 0) {
-        alert('يرجى تحديد إجابة صحيحة واحدة على الأقل');
+        alert('يرجى تحديد إجابة صحيحة واحدة');
+        return;
+      }
+      if (correctOptions.length > 1) {
+        alert('يرجى تحديد إجابة صحيحة واحدة فقط (نظام الاختيار الواحد)');
         return;
       }
     }
 
+    // ✅ SINGLE-CHOICE ONLY: Generate stable IDs and set correctAnswer
+    const questionId = `q_${Date.now()}_${examForm.questions.length}`;
+    let correctAnswerId = null;
+    
+    const processedOptions = currentQuestion.questionType === 'multiple_choice' 
+      ? currentQuestion.options
+          .filter(opt => opt.optionText.trim())
+          .map((opt, optIdx) => {
+            const optId = opt.id || `opt_${questionId}_${optIdx}`;
+            // ✅ SINGLE-CHOICE ONLY: Find correct answer ID
+            if (opt.isCorrect) {
+              correctAnswerId = optId;
+            }
+            return {
+              id: optId,
+              text: opt.optionText || opt.text || '',
+              optionText: opt.optionText || opt.text || ''
+              // ✅ REMOVED: isCorrect - not sent to backend
+            };
+          })
+      : [];
+
     const newQuestion = {
       ...currentQuestion,
-      options: currentQuestion.questionType === 'multiple_choice' 
-        ? currentQuestion.options.filter(opt => opt.optionText.trim())
-        : []
+      id: currentQuestion.id || questionId,
+      correctAnswer: correctAnswerId, // ✅ SINGLE-CHOICE ONLY: Set correctAnswer as option.id
+      options: processedOptions
+      // ✅ REMOVED: correctAnswers, isCorrect
     };
 
     setExamForm({
@@ -119,9 +147,16 @@ const ExamManagement = ({ courseId, exams = [], onExamsChange, isEditing = false
   };
 
   const handleAddOption = () => {
+    // ✅ Generate ID for new option
+    const optIdx = currentQuestion.options.length;
+    const questionId = currentQuestion.id || `q_temp_${Date.now()}`;
     setCurrentQuestion({
       ...currentQuestion,
-      options: [...currentQuestion.options, { optionText: '', isCorrect: false }]
+      options: [...currentQuestion.options, { 
+        id: `opt_${questionId}_${optIdx}`,
+        optionText: '', 
+        isCorrect: false 
+      }]
     });
   };
 
@@ -434,9 +469,20 @@ const ExamManagement = ({ courseId, exams = [], onExamsChange, isEditing = false
                             />
                             <label className="flex items-center gap-1">
                               <input
-                                type="checkbox"
+                                type="radio"
+                                name={`correct_${currentQuestion.questionType}_${examForm.questions.length}`}
                                 checked={option.isCorrect}
-                                onChange={(e) => handleOptionChange(index, 'isCorrect', e.target.checked)}
+                                onChange={() => {
+                                  // ✅ SINGLE-CHOICE ONLY: Uncheck all others, check this one
+                                  const updatedOptions = currentQuestion.options.map((opt, i) => ({
+                                    ...opt,
+                                    isCorrect: i === index
+                                  }));
+                                  setCurrentQuestion({
+                                    ...currentQuestion,
+                                    options: updatedOptions
+                                  });
+                                }}
                               />
                               <span className="text-sm">صحيح</span>
                             </label>

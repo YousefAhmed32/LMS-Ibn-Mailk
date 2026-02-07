@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from '../../hooks/use-toast';
 import { isValidExternalUrl, validateYouTubeUrl } from '../../utils/urlValidation';
 import IntegratedExamBuilder from './IntegratedExamBuilder';
+import useFormDraft from '../../hooks/useFormDraft';
 import {
   Plus,
   X,
@@ -17,24 +18,11 @@ import {
   FileImage,
   ExternalLink,
   Trash2,
-  HelpCircle,
-  Info,
-  Crown,
-  Sparkles,
-  Star,
-  Zap,
-  Shield,
   CheckCircle,
   AlertCircle,
-  Clock,
-  DollarSign,
-  GraduationCap,
-  Users,
-  Award,
-  Target,
+  Shield,
   TrendingUp,
-  Lightbulb,
-  Rocket
+  ArrowLeft
 } from 'lucide-react';
 import LuxuryButton from '../ui/LuxuryButton';
 
@@ -57,10 +45,33 @@ const EnhancedCreateCourseModal = ({
   const [newVideoUrl, setNewVideoUrl] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
 
-  // Helper functions
+  // Draft persistence
+  const draftData = { courseForm, courseVideos, courseExams };
+  const { hasDraft, draftDate, restoreDraft, discardDraft, clearDraft } = useFormDraft(
+    'create-course-draft', draftData, { enabled: showModal }
+  );
+
+  useEffect(() => {
+    if (showModal && hasDraft && draftDate) {
+      const dateStr = draftDate.toLocaleString('ar-SA');
+      const shouldRestore = window.confirm(`لديك مسودة محفوظة من ${dateStr}. هل تريد استعادتها؟`);
+      if (shouldRestore) {
+        const data = restoreDraft();
+        if (data) {
+          if (data.courseForm) setCourseForm(data.courseForm);
+          if (data.courseVideos) setCourseVideos(data.courseVideos);
+          if (data.courseExams) setCourseExams(data.courseExams);
+          toast({ title: 'تم استعادة المسودة', description: 'تم استعادة بيانات النموذج السابقة' });
+        }
+      } else {
+        discardDraft();
+      }
+    }
+  }, [showModal]);
+
   const validateImageFile = (file) => {
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 5 * 1024 * 1024;
     
     if (!allowedTypes.includes(file.type)) {
       toast({
@@ -116,7 +127,6 @@ const EnhancedCreateCourseModal = ({
     }
   };
 
-
   const addVideo = () => {
     if (!newVideoUrl.trim()) {
       toast({
@@ -171,11 +181,9 @@ const EnhancedCreateCourseModal = ({
     });
   };
 
-  // Handle exam changes from IntegratedExamBuilder
   const handleExamsChange = (updatedExams) => {
     setCourseExams(updatedExams);
   };
-
 
   const resetForm = () => {
     setCourseForm({
@@ -198,8 +206,7 @@ const EnhancedCreateCourseModal = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Update courseForm with videos and exams data
+
     const enhancedCourseForm = {
       ...courseForm,
       videos: courseVideos.map(video => ({
@@ -207,15 +214,74 @@ const EnhancedCreateCourseModal = ({
         videoUrl: video.url,
         thumbnail: video.thumbnail
       })),
-      exams: courseExams // Use the new exam structure directly
+      exams: courseExams
     };
-    
-    // Call the parent's handleCreateCourse with enhanced data
-    await handleCreateCourse(e, enhancedCourseForm);
-    
-    // Reset form after successful creation
-    if (!isCreating) {
+
+    console.log('📦 FULL COURSE DATA:', enhancedCourseForm);
+
+    // Validation
+    if (enhancedCourseForm.exams?.length > 0) {
+      for (let examIndex = 0; examIndex < enhancedCourseForm.exams.length; examIndex++) {
+        const exam = enhancedCourseForm.exams[examIndex];
+        if (!exam.questions?.length) continue;
+        
+        for (let qIndex = 0; qIndex < exam.questions.length; qIndex++) {
+          const q = exam.questions[qIndex];
+          
+          if (q.type === 'mcq' || q.type === 'multiple_choice') {
+            if (!q.options || !Array.isArray(q.options) || q.options.length === 0) {
+              toast({
+                title: 'خطأ في الامتحان',
+                description: `السؤال ${qIndex + 1} في الامتحان "${exam.title}": لا يحتوي على خيارات`,
+                variant: 'destructive',
+                duration: 6000
+              });
+              return;
+            }
+            
+            if (!q.correctAnswer) {
+              toast({
+                title: 'خطأ في الامتحان',
+                description: `السؤال ${qIndex + 1} في الامتحان "${exam.title}": لا يحتوي على إجابة صحيحة محددة`,
+                variant: 'destructive',
+                duration: 6000
+              });
+              return;
+            }
+            
+            const optionIds = q.options.map(opt => opt.id || opt._id).filter(Boolean);
+            if (!optionIds.includes(q.correctAnswer)) {
+              toast({
+                title: 'خطأ في الامتحان',
+                description: `السؤال ${qIndex + 1} في الامتحان "${exam.title}": الإجابة الصحيحة غير موجودة في الخيارات`,
+                variant: 'destructive',
+                duration: 8000
+              });
+              return;
+            }
+          }
+          
+          if (q.type === 'true_false') {
+            if (q.correctAnswer !== true && q.correctAnswer !== false) {
+              toast({
+                title: 'خطأ في الامتحان',
+                description: `السؤال ${qIndex + 1} (صح/خطأ) في الامتحان "${exam.title}": لا يحتوي على إجابة صحيحة`,
+                variant: 'destructive',
+                duration: 6000
+              });
+              return;
+            }
+          }
+        }
+      }
+    }
+
+    try {
+      await handleCreateCourse(e, enhancedCourseForm);
+      clearDraft();
       resetForm();
+    } catch (err) {
+      console.error('Create course failed:', err);
     }
   };
 
@@ -226,80 +292,115 @@ const EnhancedCreateCourseModal = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowModal(false);
-              resetForm();
-            }
+          className="fixed inset-0 z-[9999] flex flex-col"
+          style={{
+            background: theme.isDarkMode 
+              ? 'linear-gradient(135deg, #0f0f14 0%, #1a1a24 100%)'
+              : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)'
           }}
         >
+          {/* ✅ FULL-SCREEN HEADER */}
           <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="w-full max-w-4xl h-[85vh] overflow-hidden rounded-lg shadow-xl mx-4 flex flex-col"
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.1, type: 'spring', stiffness: 300 }}
+            className="flex-shrink-0 border-b backdrop-blur-xl"
             style={{
-              backgroundColor: colors.surface,
-              border: `1px solid ${colors.border}`
+              borderColor: colors.border,
+              background: theme.isDarkMode ? 'rgba(15, 15, 20, 0.95)' : 'rgba(255, 255, 255, 0.95)'
             }}
           >
-            {/* Clean Header */}
-            <div className="p-4 border-b flex items-center justify-between" style={{ 
-              borderColor: colors.border,
-              backgroundColor: colors.surface
-            }}>
-              
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg" style={{
-                  backgroundColor: colors.accent + '20',
-                  color: colors.accent
-                }}>
-                  <Plus size={20} />
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowModal(false);
+                      resetForm();
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl transition-all hover:scale-105 active:scale-95"
+                    style={{ background: colors.background, color: colors.textSoft }}
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                    <span className="font-medium">رجوع</span>
+                  </button>
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center"
+                    style={{
+                      background: `linear-gradient(135deg, ${colors.accent} 0%, #059669 100%)`,
+                      boxShadow: `0 0 24px ${colors.accent}35`
+                    }}
+                  >
+                    <Plus className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl sm:text-3xl font-black" style={{ color: colors.text }}>
+                      إنشاء دورة جديدة
+                    </h1>
+                    <p className="text-sm mt-0.5" style={{ color: colors.textSoft }}>
+                      قم بإنشاء دورة تعليمية احترافية شاملة
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-lg font-semibold" style={{ color: colors.text }}>
-                    إنشاء دورة جديدة
-                  </h2>
-                  <p className="text-sm" style={{ color: colors.textMuted }}>
-                    أضف دورة تعليمية جديدة
-                  </p>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowModal(false);
+                    resetForm();
+                  }}
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-all hover:scale-110 active:scale-90"
+                  style={{ background: colors.error + '25', color: colors.error }}
+                >
+                  <X className="w-6 h-6" />
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  setShowModal(false);
-                  resetForm();
-                }}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                style={{ color: colors.textMuted }}
-              >
-                <X size={20} />
-              </button>
             </div>
+          </motion.div>
 
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto hide-scrollbar clean-ui no-ghost-scroll" style={{ maxHeight: 'calc(85vh - 140px)' }}>
-              <form onSubmit={handleSubmit} className="p-4 space-y-6">
-                {/* Basic Information Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 rounded-lg" style={{
-                      backgroundColor: colors.accent + '20',
-                      color: colors.accent
+          {/* ✅ FULL-SCREEN CONTENT */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+            className="flex-1 overflow-y-auto"
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <form onSubmit={handleSubmit} className="space-y-8">
+                {/* Basic Information */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="rounded-3xl border p-8"
+                  style={{
+                    background: colors.surfaceCard,
+                    borderColor: colors.border,
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.08)'
+                  }}
+                >
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="p-3 rounded-xl" style={{
+                      background: `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`,
+                      border: `2px solid ${colors.accent}40`
                     }}>
-                      <BookOpen size={18} />
+                      <BookOpen size={24} color={colors.accent} />
                     </div>
-                    <h3 className="text-lg font-semibold" style={{ color: colors.text }}>
-                      المعلومات الأساسية
-                    </h3>
+                    <div>
+                      <h3 className="text-2xl font-bold" style={{ color: colors.text }}>
+                        المعلومات الأساسية
+                      </h3>
+                      <p className="text-sm" style={{ color: colors.textMuted }}>
+                        أدخل بيانات الدورة الأساسية
+                      </p>
+                    </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="lg:col-span-2">
+                      <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                         عنوان الدورة *
                       </label>
                       <input
@@ -307,46 +408,49 @@ const EnhancedCreateCourseModal = ({
                         required
                         value={courseForm.title}
                         onChange={(e) => setCourseForm({ ...courseForm, title: e.target.value })}
-                        className="w-full px-3 py-2 rounded-lg border transition-colors focus:outline-none focus:ring-2"
+                        className="w-full px-4 py-3 rounded-xl border-2 transition-all focus:outline-none focus:ring-4"
                         style={{
                           borderColor: colors.border,
                           backgroundColor: colors.background,
                           color: colors.text,
                           '--tw-ring-color': colors.accent + '30'
                         }}
-                        placeholder="أدخل عنوان الدورة"
+                        placeholder="مثال: دورة اللغة العربية الشاملة"
                       />
                     </div>
                     
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
+                    <div className="lg:col-span-2">
+                      <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                         وصف الدورة *
                       </label>
                       <textarea
                         required
-                        rows={4}
+                        rows={6}
                         value={courseForm.description}
                         onChange={(e) => setCourseForm({ ...courseForm, description: e.target.value })}
-                        className="w-full px-3 py-2 rounded-lg border transition-colors focus:outline-none focus:ring-2 resize-none"
+                        className="w-full px-4 py-3 rounded-xl border-2 transition-all focus:outline-none focus:ring-4 resize-y min-h-[150px]"
                         style={{
                           borderColor: colors.border,
                           backgroundColor: colors.background,
                           color: colors.text,
                           '--tw-ring-color': colors.accent + '30'
                         }}
-                        placeholder="أدخل وصف الدورة"
+                        placeholder="وصف تفصيلي للدورة التعليمية... (يمكنك الكتابة بحرية بدون قيود)"
                       />
+                      <p className="text-xs mt-2" style={{ color: colors.textMuted }}>
+                        💡 يمكنك كتابة وصف طويل ومفصل للدورة بدون أي قيود على عدد الأحرف
+                      </p>
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
+                      <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                         المادة *
                       </label>
                       <select
                         required
                         value={courseForm.subject}
                         onChange={(e) => setCourseForm({ ...courseForm, subject: e.target.value })}
-                        className="w-full px-3 py-2 rounded-lg border transition-colors focus:outline-none focus:ring-2"
+                        className="w-full px-4 py-3 rounded-xl border-2 transition-all focus:outline-none focus:ring-4"
                         style={{
                           borderColor: colors.border,
                           backgroundColor: colors.background,
@@ -360,14 +464,14 @@ const EnhancedCreateCourseModal = ({
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
+                      <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
                         الصف الدراسي *
                       </label>
                       <select
                         required
                         value={courseForm.grade}
                         onChange={(e) => setCourseForm({ ...courseForm, grade: e.target.value })}
-                        className="w-full px-3 py-2 rounded-lg border transition-colors focus:outline-none focus:ring-2"
+                        className="w-full px-4 py-3 rounded-xl border-2 transition-all focus:outline-none focus:ring-4"
                         style={{
                           borderColor: colors.border,
                           backgroundColor: colors.background,
@@ -385,9 +489,9 @@ const EnhancedCreateCourseModal = ({
                       </select>
                     </div>
                     
-                    <div>
-                      <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
-                        السعر *
+                    <div className="lg:col-span-2">
+                      <label className="block text-sm font-semibold mb-2" style={{ color: colors.text }}>
+                        السعر (جنيه) *
                       </label>
                       <input
                         type="number"
@@ -396,72 +500,68 @@ const EnhancedCreateCourseModal = ({
                         step="0.01"
                         value={courseForm.price}
                         onChange={(e) => setCourseForm({ ...courseForm, price: e.target.value })}
-                        className="w-full px-3 py-2 rounded-lg border transition-colors focus:outline-none focus:ring-2"
+                        className="w-full px-4 py-3 rounded-xl border-2 transition-all focus:outline-none focus:ring-4"
                         style={{
                           borderColor: colors.border,
                           backgroundColor: colors.background,
                           color: colors.text,
                           '--tw-ring-color': colors.accent + '30'
                         }}
-                        placeholder="أدخل سعر الدورة"
+                        placeholder="0.00"
                       />
                     </div>
-                    
-           
                   </div>
-                </div>
-                {/* Enhanced Course Image Section */}
+                </motion.div>
+
+                {/* Course Image */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                  className="relative"
+                  transition={{ delay: 0.2 }}
+                  className="rounded-3xl border p-8"
+                  style={{
+                    background: colors.surfaceCard,
+                    borderColor: colors.border,
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.08)'
+                  }}
                 >
-                  <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-3 sm:mb-4 md:mb-6">
-                    <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl" style={{
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="p-3 rounded-xl" style={{
                       background: `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`,
-                      border: `2px solid ${colors.accent}40`,
-                      boxShadow: `0 4px 16px ${colors.accent}20`
+                      border: `2px solid ${colors.accent}40`
                     }}>
-                      <Image size={16} className="sm:w-5 sm:h-5 md:w-6 md:h-6" color={colors.accent} />
+                      <Image size={24} color={colors.accent} />
                     </div>
                     <div>
-                      <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold" style={{ color: colors.text }}>
+                      <h3 className="text-2xl font-bold" style={{ color: colors.text }}>
                         صورة الدورة
                       </h3>
-                      <p className="text-xs sm:text-sm font-medium" style={{ color: colors.textMuted }}>
-                        أضف صورة جذابة تمثل الدورة التعليمية
+                      <p className="text-sm" style={{ color: colors.textMuted }}>
+                        أضف صورة جذابة تمثل الدورة
                       </p>
                     </div>
                   </div>
                   
                   <div
-                    className={`relative border-2 border-dashed rounded-xl sm:rounded-2xl md:rounded-3xl p-4 sm:p-6 md:p-8 lg:p-12 text-center transition-all duration-300 ${
+                    className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all ${
                       isDragOver ? 'scale-105' : ''
                     }`}
                     style={{
                       borderColor: isDragOver ? colors.accent : colors.border,
-                      backgroundColor: isDragOver ? colors.accent + '15' : colors.background + '50',
-                      boxShadow: `0 8px 32px ${colors.shadow}15`
+                      backgroundColor: isDragOver ? colors.accent + '15' : colors.background
                     }}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                   >
                     {courseImagePreview ? (
-                      <motion.div 
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="space-y-4 sm:space-y-6"
-                      >
+                      <div className="space-y-6">
                         <div className="relative inline-block">
                           <img
                             src={courseImagePreview}
-                            alt="Course preview"
-                            className="w-48 h-32 sm:w-56 sm:h-36 lg:w-64 lg:h-40 object-cover rounded-xl sm:rounded-2xl shadow-2xl"
-                            style={{
-                              border: `3px solid ${colors.accent}30`
-                            }}
+                            alt="Preview"
+                            className="w-64 h-40 object-cover rounded-2xl shadow-2xl"
+                            style={{ border: `3px solid ${colors.accent}30` }}
                           />
                           <button
                             type="button"
@@ -470,40 +570,35 @@ const EnhancedCreateCourseModal = ({
                               setCourseImagePreview(null);
                               setCourseForm({ ...courseForm, thumbnail: '' });
                             }}
-                            className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 p-1 sm:p-2 rounded-full hover:scale-110 transition-transform"
-                            style={{
-                              backgroundColor: colors.error,
-                              color: 'white',
-                              boxShadow: `0 4px 16px ${colors.error}40`
-                            }}
+                            className="absolute -top-3 -right-3 p-2 rounded-full hover:scale-110 transition-transform"
+                            style={{ backgroundColor: colors.error, color: 'white' }}
                           >
-                            <X size={14} className="sm:w-4 sm:h-4 lg:w-5 lg:h-5" />
+                            <X size={20} />
                           </button>
                         </div>
-                        <div className="flex items-center justify-center gap-2 px-3 sm:px-4 py-1 sm:py-2 rounded-full" style={{
+                        <div className="flex items-center justify-center gap-2 px-4 py-2 rounded-full" style={{
                           backgroundColor: colors.success + '20',
                           border: `1px solid ${colors.success}30`
                         }}>
-                          <CheckCircle size={14} className="sm:w-4 sm:h-4" color={colors.success} />
-                          <span className="text-xs sm:text-sm font-semibold" style={{ color: colors.success }}>
+                          <CheckCircle size={18} color={colors.success} />
+                          <span className="text-sm font-semibold" style={{ color: colors.success }}>
                             تم رفع الصورة بنجاح
                           </span>
                         </div>
-                      </motion.div>
+                      </div>
                     ) : (
-                      <div className="space-y-4 sm:space-y-6">
-                        <div className="mx-auto w-16 h-16 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl flex items-center justify-center" style={{
+                      <div className="space-y-6">
+                        <div className="mx-auto w-20 h-20 rounded-2xl flex items-center justify-center" style={{
                           backgroundColor: colors.accent + '25',
-                          border: `3px solid ${colors.accent}40`,
-                          boxShadow: `0 8px 32px ${colors.accent}20`
+                          border: `3px solid ${colors.accent}40`
                         }}>
-                          <FileImage size={32} className="sm:w-10 sm:h-10" color={colors.accent} />
+                          <FileImage size={40} color={colors.accent} />
                         </div>
                         <div>
-                          <p className="text-lg sm:text-xl font-bold mb-1 sm:mb-2" style={{ color: colors.text }}>
+                          <p className="text-xl font-bold mb-2" style={{ color: colors.text }}>
                             اسحب وأفلت الصورة هنا
                           </p>
-                          <p className="text-sm sm:text-base font-medium" style={{ color: colors.textMuted }}>
+                          <p className="text-base" style={{ color: colors.textMuted }}>
                             أو انقر لاختيار ملف (JPG, PNG, WebP - حد أقصى 5MB)
                           </p>
                         </div>
@@ -520,287 +615,245 @@ const EnhancedCreateCourseModal = ({
                         />
                         <label
                           htmlFor="course-image-upload"
-                          className="inline-flex items-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl cursor-pointer transition-all duration-300 hover:scale-105"
+                          className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl cursor-pointer transition-all hover:scale-105"
                           style={{
                             backgroundColor: colors.accent + '25',
                             border: `2px solid ${colors.accent}40`,
-                            color: colors.accent,
-                            boxShadow: `0 8px 32px ${colors.accent}20`
+                            color: colors.accent
                           }}
                         >
-                          <Upload size={16} className="sm:w-5 sm:h-5" />
-                          <span className="font-semibold text-sm sm:text-base">اختيار صورة</span>
+                          <Upload size={20} />
+                          <span className="font-semibold">اختيار صورة</span>
                         </label>
                       </div>
                     )}
                   </div>
                 </motion.div>
-                {/* Enhanced Videos Section */}
+
+                {/* Videos */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                  className="relative"
+                  transition={{ delay: 0.3 }}
+                  className="rounded-3xl border p-8"
+                  style={{
+                    background: colors.surfaceCard,
+                    borderColor: colors.border,
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.08)'
+                  }}
                 >
-                  <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-3 sm:mb-4 md:mb-6">
-                    <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl" style={{
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="p-3 rounded-xl" style={{
                       background: `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`,
-                      border: `2px solid ${colors.accent}40`,
-                      boxShadow: `0 4px 16px ${colors.accent}20`
+                      border: `2px solid ${colors.accent}40`
                     }}>
-                      <Youtube size={16} className="sm:w-5 sm:h-5 md:w-6 md:h-6" color={colors.accent} />
+                      <Youtube size={24} color={colors.accent} />
                     </div>
                     <div>
-                      <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold" style={{ color: colors.text }}>
+                      <h3 className="text-2xl font-bold" style={{ color: colors.text }}>
                         فيديوهات الدورة
                       </h3>
-                      <p className="text-xs sm:text-sm font-medium" style={{ color: colors.textMuted }}>
-                        أضف فيديوهات YouTube التعليمية للدورة
+                      <p className="text-sm" style={{ color: colors.textMuted }}>
+                        أضف فيديوهات YouTube التعليمية
                       </p>
                     </div>
                   </div>
                   
-                  <div className="space-y-4 sm:space-y-6">
-                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                  <div className="space-y-6">
+                    <div className="flex gap-4">
                       <input
                         type="url"
                         value={newVideoUrl}
                         onChange={(e) => setNewVideoUrl(e.target.value)}
-                        className="flex-1 px-3 sm:px-4 lg:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl border-2 transition-all duration-300 focus:outline-none focus:ring-2 sm:focus:ring-4 focus:scale-105"
+                        className="flex-1 px-4 py-3 rounded-xl border-2 transition-all focus:outline-none focus:ring-4"
                         style={{
                           borderColor: colors.border,
                           backgroundColor: colors.background,
                           color: colors.text,
-                          '--tw-ring-color': colors.accent + '30',
-                          boxShadow: `0 4px 16px ${colors.shadow}10`
+                          '--tw-ring-color': colors.accent + '30'
                         }}
                         placeholder="أدخل رابط فيديو YouTube"
                       />
-                      <LuxuryButton
+                      <button
                         type="button"
                         onClick={addVideo}
-                        className="flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 hover:scale-105 transition-transform"
+                        className="px-8 py-3 rounded-xl transition-all hover:scale-105"
                         style={{
                           background: `linear-gradient(135deg, ${colors.accent}, ${colors.accent}CC)`,
-                          boxShadow: `0 8px 32px ${colors.accent}30`
+                          color: 'white'
                         }}
                       >
-                        <Plus size={16} className="sm:w-5 sm:h-5" />
-                        <span className="font-semibold text-sm sm:text-base">إضافة</span>
-                      </LuxuryButton>
+                        <Plus size={20} />
+                      </button>
                     </div>
                     
                     {courseVideos.length > 0 && (
                       <div className="space-y-4">
-                        <div className="flex items-center gap-3 px-4 py-2 rounded-xl" style={{
-                          backgroundColor: colors.accent + '15',
-                          border: `1px solid ${colors.accent}30`
-                        }}>
-                          <TrendingUp size={18} color={colors.accent} />
-                          <span className="text-sm font-semibold" style={{ color: colors.accent }}>
-                            {courseVideos.length} فيديو تم إضافتها
-                          </span>
-                        </div>
                         {courseVideos.map((video, index) => (
-                          <motion.div
+                          <div
                             key={video.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
                             className="flex items-center gap-6 p-6 rounded-2xl hover:scale-105 transition-transform"
                             style={{
                               backgroundColor: colors.background,
-                              border: `2px solid ${colors.border}`,
-                              boxShadow: `0 8px 32px ${colors.shadow}15`
+                              border: `2px solid ${colors.border}`
                             }}
                           >
-                            <div className="flex-shrink-0 relative">
+                            <div className="relative">
                               <img
                                 src={video.thumbnail}
-                                alt="Video thumbnail"
+                                alt="Thumbnail"
                                 className="w-20 h-16 object-cover rounded-xl"
-                                style={{
-                                  border: `2px solid ${colors.accent}30`
-                                }}
+                                style={{ border: `2px solid ${colors.accent}30` }}
                               />
                               <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-xl">
                                 <Youtube size={24} color="white" />
                               </div>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="px-3 py-1 rounded-full text-xs font-bold" style={{
-                                  backgroundColor: colors.accent + '20',
-                                  color: colors.accent
-                                }}>
-                                  #{index + 1}
-                                </span>
-                                <p className="font-bold truncate" style={{ color: colors.text }}>
-                                  {video.title}
-                                </p>
-                              </div>
+                            <div className="flex-1">
+                              <p className="font-bold" style={{ color: colors.text }}>
+                                {video.title}
+                              </p>
                               <p className="text-sm truncate" style={{ color: colors.textMuted }}>
                                 {video.url}
                               </p>
                             </div>
-                            <div className="flex items-center gap-3">
-                              <LuxuryButton
-                                variant="outline"
-                                size="sm"
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
                                 onClick={() => window.open(video.url, '_blank')}
-                                className="p-3 hover:scale-110 transition-transform"
+                                className="p-3 rounded-xl hover:scale-110 transition-transform"
                                 style={{
-                                  backgroundColor: colors.surfaceCard + 'CC',
-                                  backdropFilter: 'blur(15px)',
-                                  border: `2px solid ${colors.border}40`,
-                                  borderRadius: borderRadius.lg,
-                                  boxShadow: `0 8px 25px ${colors.shadow}20`
+                                  backgroundColor: colors.background,
+                                  border: `2px solid ${colors.border}`
                                 }}
                               >
                                 <ExternalLink size={18} />
-                              </LuxuryButton>
-                              <LuxuryButton
-                                variant="outline"
-                                size="sm"
+                              </button>
+                              <button
+                                type="button"
                                 onClick={() => removeVideo(video.id)}
-                                className="p-3 hover:scale-110 transition-transform"
+                                className="p-3 rounded-xl hover:scale-110 transition-transform"
                                 style={{
                                   backgroundColor: colors.error + '25',
-                                  backdropFilter: 'blur(15px)',
-                                  border: `2px solid ${colors.error}40`,
-                                  borderRadius: borderRadius.lg,
-                                  boxShadow: `0 8px 25px ${colors.error}20`,
                                   color: colors.error
                                 }}
                               >
                                 <Trash2 size={18} />
-                              </LuxuryButton>
+                              </button>
                             </div>
-                          </motion.div>
+                          </div>
                         ))}
                       </div>
                     )}
                   </div>
                 </motion.div>
 
-                {/* Enhanced Exam Section */}
+                {/* Exams */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                  className="relative"
+                  transition={{ delay: 0.4 }}
+                  className="rounded-3xl border p-8"
+                  style={{
+                    background: colors.surfaceCard,
+                    borderColor: colors.border,
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.08)'
+                  }}
                 >
-                  <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-3 sm:mb-4 md:mb-6">
-                    <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl" style={{
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="p-3 rounded-xl" style={{
                       background: `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`,
-                      border: `2px solid ${colors.accent}40`,
-                      boxShadow: `0 4px 16px ${colors.accent}20`
+                      border: `2px solid ${colors.accent}40`
                     }}>
-                      <FileCheck size={16} className="sm:w-5 sm:h-5 md:w-6 md:h-6" color={colors.accent} />
+                      <FileCheck size={24} color={colors.accent} />
                     </div>
                     <div>
-                      <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold" style={{ color: colors.text }}>
+                      <h3 className="text-2xl font-bold" style={{ color: colors.text }}>
                         امتحانات الدورة
                       </h3>
-                      <p className="text-xs sm:text-sm font-medium" style={{ color: colors.textMuted }}>
-                        أنشئ امتحانات داخلية مع أسئلة متعددة الخيارات
+                      <p className="text-sm" style={{ color: colors.textMuted }}>
+                        أنشئ امتحانات داخلية مع أسئلة متعددة
                       </p>
                     </div>
                   </div>
                   
-                  <div className="space-y-4 sm:space-y-6">
-                    <IntegratedExamBuilder
-                      exams={courseExams}
-                      onExamsChange={handleExamsChange}
-                      isDarkMode={theme.isDarkMode}
-                    />
-                  </div>
+                  <IntegratedExamBuilder
+                    exams={courseExams}
+                    onExamsChange={handleExamsChange}
+                    isDarkMode={theme.isDarkMode}
+                  />
                 </motion.div>
 
-
-
-
-                {/* Enhanced Status Section */}
+                {/* Status */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                  className="relative"
+                  transition={{ delay: 0.5 }}
+                  className="rounded-3xl border p-8"
+                  style={{
+                    background: colors.surfaceCard,
+                    borderColor: colors.border,
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.08)'
+                  }}
                 >
-                  <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-3 sm:mb-4 md:mb-6">
-                    <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl" style={{
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="p-3 rounded-xl" style={{
                       background: `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`,
-                      border: `2px solid ${colors.accent}40`,
-                      boxShadow: `0 4px 16px ${colors.accent}20`
+                      border: `2px solid ${colors.accent}40`
                     }}>
-                      <Settings size={16} className="sm:w-5 sm:h-5 md:w-6 md:h-6" color={colors.accent} />
+                      <Settings size={24} color={colors.accent} />
                     </div>
                     <div>
-                      <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold" style={{ color: colors.text }}>
+                      <h3 className="text-2xl font-bold" style={{ color: colors.text }}>
                         إعدادات الدورة
                       </h3>
-                      <p className="text-xs sm:text-sm font-medium" style={{ color: colors.textMuted }}>
-                        تحكم في حالة ومرئية الدورة
+                      <p className="text-sm" style={{ color: colors.textMuted }}>
+                        تحكم في حالة الدورة
                       </p>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-6 p-6 rounded-2xl" style={{
                     backgroundColor: colors.background,
-                    border: `2px solid ${colors.border}`,
-                    boxShadow: `0 8px 32px ${colors.shadow}15`
+                    border: `2px solid ${colors.border}`
                   }}>
-                    <div className="flex items-center gap-4">
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          id="isActive"
-                          checked={courseForm.isActive}
-                          onChange={(e) => setCourseForm({ ...courseForm, isActive: e.target.checked })}
-                          className="w-6 h-6 rounded-lg"
-                          style={{
-                            accentColor: colors.accent
-                          }}
-                        />
-                        {courseForm.isActive && (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <CheckCircle size={16} color="white" />
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <label htmlFor="isActive" className="text-lg font-bold" style={{ color: colors.text }}>
-                          تفعيل الدورة
-                        </label>
-                        <p className="text-sm font-medium" style={{ color: colors.textMuted }}>
-                          ستكون مرئية ومتاحة للطلاب
-                        </p>
-                      </div>
+                    <input
+                      type="checkbox"
+                      id="isActive"
+                      checked={courseForm.isActive}
+                      onChange={(e) => setCourseForm({ ...courseForm, isActive: e.target.checked })}
+                      className="w-6 h-6 rounded-lg"
+                      style={{ accentColor: colors.accent }}
+                    />
+                    <div>
+                      <label htmlFor="isActive" className="text-lg font-bold" style={{ color: colors.text }}>
+                        تفعيل الدورة
+                      </label>
+                      <p className="text-sm" style={{ color: colors.textMuted }}>
+                        ستكون مرئية ومتاحة للطلاب
+                      </p>
                     </div>
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-full" style={{
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-full ml-auto" style={{
                       backgroundColor: courseForm.isActive ? colors.success + '20' : colors.warning + '20',
                       border: `1px solid ${courseForm.isActive ? colors.success + '30' : colors.warning + '30'}`
                     }}>
                       {courseForm.isActive ? (
                         <>
                           <Shield size={16} color={colors.success} />
-                          <span className="text-sm font-semibold" style={{ color: colors.success }}>
-                            مفعلة
-                          </span>
+                          <span className="text-sm font-semibold" style={{ color: colors.success }}>مفعلة</span>
                         </>
                       ) : (
                         <>
                           <AlertCircle size={16} color={colors.warning} />
-                          <span className="text-sm font-semibold" style={{ color: colors.warning }}>
-                            غير مفعلة
-                          </span>
+                          <span className="text-sm font-semibold" style={{ color: colors.warning }}>غير مفعلة</span>
                         </>
                       )}
                     </div>
                   </div>
                 </motion.div>
-                {/* Footer Buttons */}
-                <div className="flex justify-end gap-3 pt-4 border-t" style={{ borderColor: colors.border }}>
+
+                {/* Submit Buttons */}
+                <div className="flex justify-end gap-4 sticky bottom-0 bg-gradient-to-t from-white dark:from-gray-900 via-white dark:via-gray-900 to-transparent pt-8 pb-4">
                   <button
                     type="button"
                     onClick={() => {
@@ -808,7 +861,7 @@ const EnhancedCreateCourseModal = ({
                       resetForm();
                     }}
                     disabled={isCreating}
-                    className="px-4 py-2 rounded-lg border transition-colors hover:bg-gray-50 disabled:opacity-50"
+                    className="px-8 py-4 rounded-xl border-2 transition-all hover:scale-105 disabled:opacity-50"
                     style={{
                       borderColor: colors.border,
                       backgroundColor: colors.background,
@@ -820,19 +873,20 @@ const EnhancedCreateCourseModal = ({
                   <button
                     type="submit"
                     disabled={isCreating}
-                    className="px-4 py-2 rounded-lg text-white transition-colors hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
+                    className="px-8 py-4 rounded-xl text-white transition-all hover:scale-105 disabled:opacity-50 flex items-center gap-3"
                     style={{
-                      backgroundColor: colors.accent
+                      background: `linear-gradient(135deg, ${colors.accent}, ${colors.accent}CC)`,
+                      boxShadow: `0 8px 32px ${colors.accent}30`
                     }}
                   >
                     {isCreating ? (
                       <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         جاري الإنشاء...
                       </>
                     ) : (
                       <>
-                        <Save size={16} />
+                        <Save size={20} />
                         إنشاء الدورة
                       </>
                     )}

@@ -1,0 +1,61 @@
+{
+  "description": "Sample data for exam system testing. correctAnswer must be option.id (string) for MCQ.",
+  "createCourseWithExam": {
+    "title": "رياضيات - الصف العاشر",
+    "subject": "رياضيات",
+    "grade": "10",
+    "price": 100,
+    "duration": 30,
+    "level": "intermediate",
+    "description": "دورة تجريبية لاختبار نظام الامتحانات",
+    "videos": [],
+    "exams": [
+      {
+        "id": "exam_test_1",
+        "title": "امتحان تجريبي - وحدة 1",
+        "type": "internal_exam",
+        "duration": 30,
+        "passingScore": 60,
+        "questions": [
+          {
+            "id": "q_test_1",
+            "questionText": "ما هي عاصمة مصر؟",
+            "type": "mcq",
+            "points": 2,
+            "options": [
+              { "id": "opt_q_test_1_0", "text": "الإسكندرية" },
+              { "id": "opt_q_test_1_1", "text": "القاهرة" },
+              { "id": "opt_q_test_1_2", "text": "الجيزة" }
+            ],
+            "correctAnswer": "opt_q_test_1_1"
+          },
+          {
+            "id": "q_test_2",
+            "questionText": "2 + 2 = 4",
+            "type": "true_false",
+            "points": 1,
+            "correctAnswer": true
+          }
+        ]
+      }
+    ]
+  },
+  "submitExamAnswers": {
+    "answers": [
+      { "questionId": "q_test_1", "answer": "opt_q_test_1_1" },
+      { "questionId": "q_test_2", "answer": true }
+    ],
+    "timeSpent": 300
+  },
+  "expectedGrading": {
+    "q_test_1": { "correctAnswer": "opt_q_test_1_1", "userAnswer": "opt_q_test_1_1", "isCorrect": true },
+    "q_test_2": { "correctAnswer": true, "userAnswer": true, "isCorrect": true }
+  },
+  "expectedResult": {
+    "score": 3,
+    "maxScore": 3,
+    "percentage": 100,
+    "grade": "A+",
+    "passed": true
+  }
+}

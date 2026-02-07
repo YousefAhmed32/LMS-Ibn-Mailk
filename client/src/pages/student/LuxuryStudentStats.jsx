@@ -272,7 +272,7 @@ const LuxuryStudentStats = () => {
         console.log('🔍 Trying to fetch data from multiple endpoints...');
         
         const cacheBuster = forceRefresh ? `?t=${Date.now()}` : '';
-        const res = await axiosInstance.get(`/api/parent/student/${user._id}/comprehensive${cacheBuster}`, { timeout: 15000 });
+        const res = await axiosInstance.get(`/api/student/me/stats${cacheBuster}`, { timeout: 15000 });
         const data = res?.data?.success ? res.data : null;
         if (!data) throw new Error('No data received from API');
       
@@ -299,6 +299,15 @@ const LuxuryStudentStats = () => {
 
               const coursesData = data.enrolledCourses || data.data?.enrolledCourses || [];
               console.log('📚 Enrolled courses data:', coursesData);
+              console.log('📊 Course progress details:', coursesData.map(c => ({
+                name: c.courseName || c.name,
+                progress: c.progress,
+                completedVideos: c.completedVideos,
+                totalVideos: c.totalVideos,
+                completedExams: c.completedExams,
+                totalExams: c.totalExams,
+                status: c.status
+              })));
               setEnrolledCourses(coursesData);
               
               // Process grades data exactly like ParentDashboard
@@ -351,6 +360,14 @@ const LuxuryStudentStats = () => {
                 
                 setGradesData(finalResults);
                 console.log('✅ Processed grades data like ParentDashboard:', finalResults);
+                console.log('📊 Exam results summary:', finalResults.map(r => ({
+                  exam: r.examTitle,
+                  course: r.courseName,
+                  score: `${r.studentScore}/${r.totalScore}`,
+                  percentage: r.percentage,
+                  grade: r.grade,
+                  rank: r.rank
+                })));
               } else {
                 setGradesData([]);
                 console.log('⚠️ No exam results found in API response');
@@ -472,45 +489,8 @@ const LuxuryStudentStats = () => {
   };
 
   useEffect(() => {
+    // Load data only once on component mount
     fetchStudentStats();
-    
-    // Set up auto-refresh every 30 seconds
-    const autoRefreshInterval = setInterval(() => {
-      console.log('⏰ Auto-refreshing data...');
-      fetchStudentStats(true); // Force refresh
-    }, 30000); // 30 seconds
-    
-    // Refresh data when window regains focus (user comes back to tab)
-    const handleFocus = () => {
-      console.log('👁️ Window focused, refreshing data...');
-      fetchStudentStats(true); // Force refresh
-    };
-    
-    // Handle browser back/forward navigation
-    const handlePopState = () => {
-      console.log('🔄 Browser navigation detected, refreshing data...');
-      fetchStudentStats(true); // Force refresh
-    };
-    
-    // Handle page visibility change
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        console.log('👁️ Page became visible, refreshing data...');
-        fetchStudentStats(true); // Force refresh
-      }
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('popstate', handlePopState);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Cleanup interval and event listeners on unmount
-    return () => {
-      clearInterval(autoRefreshInterval);
-      window.removeEventListener('focus', handleFocus);
-      window.removeEventListener('popstate', handlePopState);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
   }, [fetchStudentStats]);
 
   const handleBack = () => {
@@ -524,9 +504,7 @@ const LuxuryStudentStats = () => {
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
-    // Refresh data when switching tabs to ensure fresh data
-    console.log('🔄 Tab changed, refreshing data...');
-    fetchStudentStats(true);
+    // No auto-refresh when switching tabs - user can manually refresh if needed
   };
 
   const tabs = [
@@ -1339,7 +1317,7 @@ const LuxuryStudentStats = () => {
                       <div className="mb-4">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            التقدم
+                            التقدم الفعلي
                           </span>
                           <span className="text-sm font-bold text-gray-800 dark:text-white">
                             {course.progress || 0}%
@@ -1353,6 +1331,12 @@ const LuxuryStudentStats = () => {
                             transition={{ duration: 1.5, delay: index * 0.2 }}
                           />
                         </div>
+                        {/* Show completed items if available */}
+                        {(course.completedVideos !== undefined || course.completedExams !== undefined) && (
+                          <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                            {course.completedVideos || 0} فيديو / {course.totalVideos || 0} • {course.completedExams || 0} امتحان / {course.totalExams || 0}
+                          </div>
+                        )}
                       </div>
 
                       {/* Course Stats */}
