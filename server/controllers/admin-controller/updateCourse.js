@@ -269,8 +269,19 @@ const updateCourse = async (req, res) => {
               passingScore: parseInt(exam.passingScore) || 60,
               questions: isExternalExam ? [] : exam.questions, // Empty for external exams
               totalQuestions: isExternalExam ? 0 : (exam.questions ? exam.questions.length : 0),
-              createdAt: exam.createdAt || new Date().toISOString()
+              // ✅ احفظ حالة الامتحان وموعد النشر
+              status: exam.status || 'draft',
+              publishedAt: exam.publishedAt || null,
+              createdAt: exam.createdAt || new Date(),
+              updatedAt: exam.updatedAt || new Date(),
+              version: exam.version || 1,
+              isActive: exam.isActive !== undefined ? exam.isActive : true
             };
+            
+            // ✅ إذا كان status = 'published' ولم يكن publishedAt محدداً، حدده الآن
+            if (processedExam.status === 'published' && !processedExam.publishedAt) {
+              processedExam.publishedAt = new Date();
+            }
             
             return processedExam;
           });
@@ -424,7 +435,19 @@ const updateCourse = async (req, res) => {
           });
           return { ...inQ, id: existingQ.id, options: mergedOptions };
         });
-        return { ...incomingExam, id: existing.id, questions: mergedQuestions };
+        // ✅ احفظ status و publishedAt من الامتحان الوارد (أو من الموجود إذا لم يكن محدداً)
+        return { 
+          ...incomingExam, 
+          id: existing.id, 
+          questions: mergedQuestions,
+          // ✅ الحفاظ على status و publishedAt من الامتحان الوارد (من Frontend)
+          status: incomingExam.status !== undefined ? incomingExam.status : (existing.status || 'draft'),
+          publishedAt: incomingExam.publishedAt || existing.publishedAt || null,
+          updatedAt: incomingExam.updatedAt || new Date(),
+          version: incomingExam.version || existing.version || 1,
+          createdAt: incomingExam.createdAt || existing.createdAt || new Date(),
+          isActive: incomingExam.isActive !== undefined ? incomingExam.isActive : (existing.isActive !== undefined ? existing.isActive : true)
+        };
       });
 
       console.log('✅ Atomic exam merge complete:', {

@@ -314,7 +314,7 @@ const createCourse = async (req, res) => {
               }, 0);
             }
             
-            return {
+            const processedExam = {
               id: exam.id || `exam_${Date.now()}_${index}`,
               title: exam.title.trim(),
               type: exam.type || 'internal_exam', // Default to internal_exam
@@ -327,8 +327,21 @@ const createCourse = async (req, res) => {
               passingScore: parseInt(exam.passingScore) || 60,
               questions: isExternalExam ? [] : exam.questions, // Empty for external exams
               totalQuestions: isExternalExam ? 0 : (exam.questions ? exam.questions.length : 0),
-              createdAt: exam.createdAt || new Date().toISOString()
+              // ✅ احفظ حالة الامتحان وموعد النشر
+              status: exam.status || 'draft',
+              publishedAt: exam.publishedAt || null,
+              createdAt: exam.createdAt || new Date(),
+              updatedAt: exam.updatedAt || new Date(),
+              version: exam.version || 1,
+              isActive: exam.isActive !== undefined ? exam.isActive : true
             };
+            
+            // ✅ إذا كان status = 'published' ولم يكن publishedAt محدداً، حدده الآن
+            if (processedExam.status === 'published' && !processedExam.publishedAt) {
+              processedExam.publishedAt = new Date();
+            }
+            
+            return processedExam;
           });
         } else {
           courseData.exams = [];

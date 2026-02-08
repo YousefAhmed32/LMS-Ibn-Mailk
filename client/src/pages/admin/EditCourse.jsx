@@ -346,7 +346,14 @@ const EditCourse = () => {
           passingScore: parseInt(exam.passingScore) || 60,
           questions: (exam.type === 'internal_exam' || !exam.type) ? (exam.questions || []) : [],
           migratedFromGoogleForm: exam.migratedFromGoogleForm || false,
-          migrationNote: exam.migrationNote || ''
+          migrationNote: exam.migrationNote || '',
+          // ✅ احفظ حالة الامتحان وموعد النشر
+          status: exam.status || 'draft',
+          publishedAt: exam.publishedAt || null,
+          createdAt: exam.createdAt || null,
+          updatedAt: exam.updatedAt || new Date().toISOString(),
+          version: exam.version || 1,
+          isActive: exam.isActive !== undefined ? exam.isActive : true
         };
       });
 
