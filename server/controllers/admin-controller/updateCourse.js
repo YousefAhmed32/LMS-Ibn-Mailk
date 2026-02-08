@@ -62,13 +62,81 @@ const updateCourse = async (req, res) => {
             const rawUrl = (video.url || '').trim();
             const embedUrl = getYouTubeEmbedUrl(rawUrl);
             const url = embedUrl || rawUrl;
-            return {
+            
+            // ✅ استخراج Video ID من YouTube URL
+            const extractYouTubeID = (url) => {
+              const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+              const match = url?.match(regex);
+              return match ? match[1] : null;
+            };
+            
+            const videoId = extractYouTubeID(url);
+            
+            // ✅ معالجة publishSettings بشكل صحيح
+            let processedPublishSettings = null;
+            if (video.publishSettings) {
+              if (video.status === 'scheduled' && video.publishSettings.publishDate) {
+                // ✅ تحويل publishDate إلى Date object إذا كان string
+                const publishDate = video.publishSettings.publishDate;
+                const publishDateObj = publishDate instanceof Date 
+                  ? publishDate 
+                  : new Date(publishDate);
+                
+                // ✅ التحقق من صحة التاريخ
+                if (isNaN(publishDateObj.getTime())) {
+                  console.warn(`⚠️ Invalid publishDate for video ${index + 1}:`, publishDate);
+                } else {
+                  processedPublishSettings = {
+                    publishDate: publishDateObj,
+                    autoPublish: video.publishSettings.autoPublish !== undefined 
+                      ? video.publishSettings.autoPublish 
+                      : true,
+                    notifyStudents: video.publishSettings.notifyStudents !== undefined
+                      ? video.publishSettings.notifyStudents
+                      : true
+                  };
+                  console.log(`✅ Processed publishSettings for video ${index + 1}:`, {
+                    publishDate: processedPublishSettings.publishDate,
+                    publishDateISO: processedPublishSettings.publishDate.toISOString(),
+                    autoPublish: processedPublishSettings.autoPublish,
+                    notifyStudents: processedPublishSettings.notifyStudents
+                  });
+                }
+              } else if (video.status !== 'scheduled') {
+                // ✅ إذا ليس مجدول، احذف publishDate
+                processedPublishSettings = {
+                  autoPublish: video.publishSettings.autoPublish !== undefined 
+                    ? video.publishSettings.autoPublish 
+                    : true,
+                  notifyStudents: video.publishSettings.notifyStudents !== undefined
+                    ? video.publishSettings.notifyStudents
+                    : true
+                };
+              }
+            }
+            
+            const formattedVideo = {
+              id: video.id || `video_${Date.now()}_${index}`,
               title: video.title || `Video ${index + 1}`,
               url,
+              videoId: videoId || video.videoId,
+              provider: video.provider || 'youtube',
               order: video.order !== undefined ? parseInt(video.order) : index,
               duration: video.duration ? Math.max(1, parseInt(video.duration)) : 1,
-              thumbnail: video.thumbnail || '',
+              thumbnail: video.thumbnail || (videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : ''),
+              status: video.status || 'visible', // ✅ احفظ الحالة
+              publishSettings: processedPublishSettings, // ✅ احفظ إعدادات الجدولة المعالجة
+              publishedAt: video.publishedAt,
+              createdAt: video.createdAt || new Date(),
+              lastModified: new Date()
             };
+            
+            // ✅ إذا تحول لـ visible ولم يكن منشوراً من قبل
+            if (formattedVideo.status === 'visible' && !formattedVideo.publishedAt) {
+              formattedVideo.publishedAt = new Date();
+            }
+            
+            return formattedVideo;
           });
         } else {
           updateData.videos = [];

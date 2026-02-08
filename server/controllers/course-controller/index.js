@@ -171,6 +171,21 @@ const getCourseById = async (req, res) => {
       });
     }
 
+    // ✅ فلترة الفيديوهات: إخفاء hidden عن الطلاب (غير Admin)
+    const isAdmin = req.user?.role === 'admin';
+    if (!isAdmin && course.videos) {
+      course.videos = course.videos.filter(video => 
+        video.status === 'visible' || video.status === 'scheduled' || !video.status
+      );
+    }
+
+    // ✅ فلترة الامتحانات: إخفاء المسودات
+    if (course.exams) {
+      course.exams = course.exams.filter(exam => 
+        exam.status === 'published' || !exam.status
+      );
+    }
+
     return res.status(200).json({
       success: true,
       course

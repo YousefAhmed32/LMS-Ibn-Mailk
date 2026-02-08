@@ -28,6 +28,7 @@ import axiosInstance from '../../api/axiosInstance';
 import LuxuryCard from '../../components/ui/LuxuryCard';
 import LuxuryButton from '../../components/ui/LuxuryButton';
 import IntegratedExamBuilder from '../../components/admin/IntegratedExamBuilder';
+import VideoManagementSection from '../../components/admin/VideoManagementSection';
 import { validateExamForSubmit } from '../../utils/examNormalization';
 import useFormDraft from '../../hooks/useFormDraft';
 
@@ -112,7 +113,7 @@ const EditCourse = () => {
         // Load videos and exams
         // Exams are stored in server format (options[{id,text}] + correctAnswer as option.id).
         // The ExamBuilderProvider will call serverToUI() to convert to UI format when editing.
-        const videosData = courseData.videos || [];
+        const videosData = (courseData.videos || []).sort((a, b) => (a.order || 0) - (b.order || 0));
         const examsData = courseData.exams || [];
         
         console.log('🎥 Videos loaded:', videosData);
@@ -356,12 +357,29 @@ const EditCourse = () => {
         grade: courseForm.grade.trim(),
         price: parseFloat(courseForm.price),
         videos: videos.map((video, index) => ({
+          id: video.id || video._id || `video_${Date.now()}_${index}`,
           title: video.title || `Video ${index + 1}`,
           url: video.url || '',
+          videoId: video.videoId,
+          provider: video.provider || 'youtube',
           order: video.order !== undefined ? parseInt(video.order) : index,
           duration: video.duration ? Math.max(1, parseInt(video.duration)) : 1,
           thumbnail: video.thumbnail || '',
-          ...video // Include any additional fields
+          status: video.status || 'visible', // ✅ احفظ الحالة
+          
+          // ✅ إرسال publishSettings بشكل صحيح
+          publishSettings: video.publishSettings ? {
+            publishDate: video.publishSettings.publishDate || null,
+            autoPublish: video.publishSettings.autoPublish !== undefined ? video.publishSettings.autoPublish : true,
+            notifyStudents: video.publishSettings.notifyStudents !== undefined ? video.publishSettings.notifyStudents : true
+          } : {
+            autoPublish: true,
+            notifyStudents: true
+          },
+          
+          publishedAt: video.publishedAt,
+          createdAt: video.createdAt,
+          lastModified: video.lastModified || new Date().toISOString()
         })),
         exams: normalizedExams
       };
@@ -651,104 +669,13 @@ const EditCourse = () => {
               </div>
             </LuxuryCard>
 
-            {/* Videos Section */}
-            <LuxuryCard className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg" style={{ backgroundColor: colors.accent + '20' }}>
-                    <Video size={20} color={colors.accent} />
-                  </div>
-                  <h2 className="text-xl font-semibold" style={{ color: colors.text }}>
-                    فيديوهات الدورة
-                  </h2>
-                  <span className="px-2 py-1 rounded-full text-sm" style={{ backgroundColor: colors.accent + '20', color: colors.accent }}>
-                    {videos.length}
-                  </span>
-                </div>
-                
-                <LuxuryButton
-                  onClick={() => setShowVideoModal(true)}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transform  transition-all duration-300 border-0"
-                >
-                  <Plus size={18} className="animate-pulse" />
-                  إضافة فيديو
-                </LuxuryButton>
-              </div>
-
-              <div className="space-y-3">
-                {videos.length === 0 ? (
-                  <div className="text-center py-8" style={{ color: colors.textMuted }}>
-                    <Video size={48} className="mx-auto mb-4 opacity-50" />
-                    <p>لا توجد فيديوهات في هذه الدورة</p>
-                  </div>
-                ) : (
-                  videos.map((video) => (
-                    <motion.div
-                      key={video.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-4 p-4 rounded-lg border-2 transition-colors duration-150
- hover:shadow-md"
-                      style={{
-                        borderColor: colors.border,
-                        backgroundColor: colors.background
-                      }}
-                    >
-                      <div className="flex-shrink-0 p-3 rounded-lg" style={{ backgroundColor: colors.accent + '20' }}>
-                        <Play size={20} color={colors.accent} />
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium truncate" style={{ color: colors.text }}>
-                          {video.title}
-                        </h3>
-                        <p className="text-sm truncate" style={{ color: colors.textMuted }}>
-                          {video.url}
-                        </p>
-                        {video.duration > 0 && (
-                          <div className="flex items-center gap-1 mt-1">
-                            <Clock size={12} style={{ color: colors.textMuted }} />
-                            <span className="text-xs" style={{ color: colors.textMuted }}>
-                              {video.duration} دقيقة
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <LuxuryButton
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => window.open(video.url, '_blank')}
-                          className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-colors duration-150
- "
-                        >
-                          <ExternalLink size={16} />
-                        </LuxuryButton>
-                        <LuxuryButton
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditVideo(video)}
-                          className="p-2 rounded-lg bg-yellow-50 hover:bg-yellow-100 text-yellow-600 hover:text-yellow-700 transition-colors duration-150
- "
-                        >
-                          <Edit size={16} />
-                        </LuxuryButton>
-                        <LuxuryButton
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteVideo(video.id)}
-                          className="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 transition-colors duration-150
- "
-                        >
-                          <Trash2 size={16} />
-                        </LuxuryButton>
-                      </div>
-                    </motion.div>
-                  ))
-                )}
-              </div>
-            </LuxuryCard>
+            {/* Videos Section - Advanced Management */}
+            <VideoManagementSection
+              videos={videos}
+              onVideosChange={setVideos}
+              colors={colors}
+              courseId={id}
+            />
 
             {/* Exams Section - Modern dynamic builder (add/remove options, add question anywhere) */}
             <LuxuryCard className="p-6 bg-red-500">

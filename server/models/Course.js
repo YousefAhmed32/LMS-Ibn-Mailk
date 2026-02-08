@@ -297,6 +297,10 @@ const CourseSchema = new mongoose.Schema({
 
   videos: [{
     // Legacy fields for backward compatibility
+    id: {
+      type: String,
+      required: false
+    },
     title: {
       type: String,
       required: false,
@@ -366,6 +370,42 @@ const CourseSchema = new mongoose.Schema({
     enableJsApi: {
       type: Boolean,
       default: false
+    },
+    
+    // ✨ New fields for video publishing management
+    status: {
+      type: String,
+      enum: ['visible', 'hidden', 'scheduled', 'draft']
+      // ❌ لا يوجد default value - يجب تحديده صراحة
+    },
+    
+    publishSettings: {
+      publishDate: {
+        type: Date,
+        required: false
+      },
+      autoPublish: {
+        type: Boolean,
+        default: true
+      },
+      notifyStudents: {
+        type: Boolean,
+        default: true
+      }
+    },
+    
+    // Metadata
+    createdAt: {
+      type: Date,
+      default: Date.now
+    },
+    publishedAt: {
+      type: Date,
+      required: false
+    },
+    lastModified: {
+      type: Date,
+      default: Date.now
     },
     
     quiz: {
@@ -453,10 +493,30 @@ const CourseSchema = new mongoose.Schema({
   CourseSchema.index({ createdBy: 1 });
   CourseSchema.index({ isActive: 1 });
 
-// Pre-save middleware: ONLY generate missing IDs and calculate totalPoints/totalQuestions.
-// NO normalization or conversion of correctAnswer (no index→id, no text→id).
-// correctAnswer must come from frontend as option.id (string) for MCQ, boolean for true_false.
+// Pre-save middleware: Generate missing video IDs and update timestamps
 CourseSchema.pre('save', function(next) {
+  // Generate video IDs if missing
+  if (this.videos && Array.isArray(this.videos)) {
+    this.videos.forEach((video, index) => {
+      if (!video.id || String(video.id).trim() === '') {
+        video.id = `video_${Date.now()}_${index}`;
+      }
+      // Update lastModified timestamp
+      video.lastModified = new Date();
+      // Set createdAt if missing
+      if (!video.createdAt) {
+        video.createdAt = new Date();
+      }
+      // Auto-generate thumbnail from YouTube if missing
+      if (!video.thumbnail && video.videoId) {
+        video.thumbnail = `https://img.youtube.com/vi/${video.videoId}/maxresdefault.jpg`;
+      }
+    });
+  }
+  
+  // Exam pre-save logic: ONLY generate missing IDs and calculate totalPoints/totalQuestions.
+  // NO normalization or conversion of correctAnswer (no index→id, no text→id).
+  // correctAnswer must come from frontend as option.id (string) for MCQ, boolean for true_false.
   if (this.exams && Array.isArray(this.exams)) {
     this.exams.forEach(exam => {
       if (!exam.questions || !Array.isArray(exam.questions)) {

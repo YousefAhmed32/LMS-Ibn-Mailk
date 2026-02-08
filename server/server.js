@@ -290,6 +290,11 @@ function startServer() {
     app.set('io', io);
     global.io = io;
 
+    // Initialize video publisher cron job with Socket.io
+    const videoPublisher = require('./jobs/videoPublisher');
+    videoPublisher.setIO(io);
+    videoPublisher.startVideoPublisher();
+
     io.on('connection', (socket) => {
         console.log(`🔌 User connected: ${socket.id}`);
         

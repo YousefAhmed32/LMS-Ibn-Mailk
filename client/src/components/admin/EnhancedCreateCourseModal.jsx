@@ -4,6 +4,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { toast } from '../../hooks/use-toast';
 import { isValidExternalUrl, validateYouTubeUrl } from '../../utils/urlValidation';
 import IntegratedExamBuilder from './IntegratedExamBuilder';
+import VideoManagementSection from './VideoManagementSection';
 import useFormDraft from '../../hooks/useFormDraft';
 import {
   Plus,
@@ -42,7 +43,6 @@ const EnhancedCreateCourseModal = ({
   const [courseImagePreview, setCourseImagePreview] = useState(null);
   const [courseVideos, setCourseVideos] = useState([]);
   const [courseExams, setCourseExams] = useState([]);
-  const [newVideoUrl, setNewVideoUrl] = useState('');
   const [isDragOver, setIsDragOver] = useState(false);
 
   // Draft persistence
@@ -127,59 +127,7 @@ const EnhancedCreateCourseModal = ({
     }
   };
 
-  const addVideo = () => {
-    if (!newVideoUrl.trim()) {
-      toast({
-        title: 'يرجى إدخال رابط الفيديو',
-        description: 'الرجاء إدخال رابط فيديو YouTube صحيح',
-        variant: 'destructive',
-        duration: 4000
-      });
-      return;
-    }
-
-    if (!validateYouTubeUrl(newVideoUrl)) {
-      toast({
-        title: 'رابط فيديو غير صحيح',
-        description: 'يرجى إدخال رابط فيديو YouTube صحيح',
-        variant: 'destructive',
-        duration: 4000
-      });
-      return;
-    }
-
-    const videoId = newVideoUrl.includes('youtu.be/') 
-      ? newVideoUrl.split('youtu.be/')[1].split('?')[0]
-      : newVideoUrl.split('v=')[1]?.split('&')[0];
-
-    const newVideo = {
-      id: Date.now(),
-      url: newVideoUrl,
-      videoId: videoId,
-      title: `فيديو ${courseVideos.length + 1}`,
-      thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
-    };
-
-    setCourseVideos([...courseVideos, newVideo]);
-    setNewVideoUrl('');
-    
-    toast({
-      title: 'تم إضافة الفيديو بنجاح',
-      description: 'تم إضافة الفيديو إلى قائمة المحتوى',
-      variant: 'success',
-      duration: 3000
-    });
-  };
-
-  const removeVideo = (videoId) => {
-    setCourseVideos(courseVideos.filter(video => video.id !== videoId));
-    toast({
-      title: 'تم حذف الفيديو',
-      description: 'تم حذف الفيديو من قائمة المحتوى',
-      variant: 'success',
-      duration: 3000
-    });
-  };
+  // Video management is now handled by VideoManagementSection component
 
   const handleExamsChange = (updatedExams) => {
     setCourseExams(updatedExams);
@@ -200,7 +148,6 @@ const EnhancedCreateCourseModal = ({
     setCourseImagePreview(null);
     setCourseVideos([]);
     setCourseExams([]);
-    setNewVideoUrl('');
     setIsDragOver(false);
   };
 
@@ -209,10 +156,30 @@ const EnhancedCreateCourseModal = ({
 
     const enhancedCourseForm = {
       ...courseForm,
-      videos: courseVideos.map(video => ({
+      videos: courseVideos.map((video, index) => ({
+        id: video.id || `video_${Date.now()}_${index}`,
         title: video.title,
-        videoUrl: video.url,
-        thumbnail: video.thumbnail
+        url: video.url,
+        videoId: video.videoId,
+        thumbnail: video.thumbnail,
+        duration: video.duration || 0,
+        order: video.order !== undefined ? video.order : index,
+        status: video.status || 'visible', // ✅ احفظ الحالة
+        
+        // ✅ إرسال publishSettings بشكل صحيح
+        publishSettings: video.publishSettings ? {
+          publishDate: video.publishSettings.publishDate || null,
+          autoPublish: video.publishSettings.autoPublish !== undefined ? video.publishSettings.autoPublish : true,
+          notifyStudents: video.publishSettings.notifyStudents !== undefined ? video.publishSettings.notifyStudents : true
+        } : {
+          autoPublish: true,
+          notifyStudents: true
+        },
+        
+        publishedAt: video.publishedAt,
+        createdAt: video.createdAt || new Date().toISOString(),
+        lastModified: video.lastModified || new Date().toISOString(),
+        provider: video.provider || 'youtube'
       })),
       exams: courseExams
     };
@@ -630,122 +597,17 @@ const EnhancedCreateCourseModal = ({
                   </div>
                 </motion.div>
 
-                {/* Videos */}
+                {/* Videos - Advanced Management */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="rounded-3xl border p-8"
-                  style={{
-                    background: colors.surfaceCard,
-                    borderColor: colors.border,
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.08)'
-                  }}
                 >
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="p-3 rounded-xl" style={{
-                      background: `linear-gradient(135deg, ${colors.accent}25, ${colors.accent}15)`,
-                      border: `2px solid ${colors.accent}40`
-                    }}>
-                      <Youtube size={24} color={colors.accent} />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold" style={{ color: colors.text }}>
-                        فيديوهات الدورة
-                      </h3>
-                      <p className="text-sm" style={{ color: colors.textMuted }}>
-                        أضف فيديوهات YouTube التعليمية
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-6">
-                    <div className="flex gap-4">
-                      <input
-                        type="url"
-                        value={newVideoUrl}
-                        onChange={(e) => setNewVideoUrl(e.target.value)}
-                        className="flex-1 px-4 py-3 rounded-xl border-2 transition-all focus:outline-none focus:ring-4"
-                        style={{
-                          borderColor: colors.border,
-                          backgroundColor: colors.background,
-                          color: colors.text,
-                          '--tw-ring-color': colors.accent + '30'
-                        }}
-                        placeholder="أدخل رابط فيديو YouTube"
-                      />
-                      <button
-                        type="button"
-                        onClick={addVideo}
-                        className="px-8 py-3 rounded-xl transition-all hover:scale-105"
-                        style={{
-                          background: `linear-gradient(135deg, ${colors.accent}, ${colors.accent}CC)`,
-                          color: 'white'
-                        }}
-                      >
-                        <Plus size={20} />
-                      </button>
-                    </div>
-                    
-                    {courseVideos.length > 0 && (
-                      <div className="space-y-4">
-                        {courseVideos.map((video, index) => (
-                          <div
-                            key={video.id}
-                            className="flex items-center gap-6 p-6 rounded-2xl hover:scale-105 transition-transform"
-                            style={{
-                              backgroundColor: colors.background,
-                              border: `2px solid ${colors.border}`
-                            }}
-                          >
-                            <div className="relative">
-                              <img
-                                src={video.thumbnail}
-                                alt="Thumbnail"
-                                className="w-20 h-16 object-cover rounded-xl"
-                                style={{ border: `2px solid ${colors.accent}30` }}
-                              />
-                              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-xl">
-                                <Youtube size={24} color="white" />
-                              </div>
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-bold" style={{ color: colors.text }}>
-                                {video.title}
-                              </p>
-                              <p className="text-sm truncate" style={{ color: colors.textMuted }}>
-                                {video.url}
-                              </p>
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => window.open(video.url, '_blank')}
-                                className="p-3 rounded-xl hover:scale-110 transition-transform"
-                                style={{
-                                  backgroundColor: colors.background,
-                                  border: `2px solid ${colors.border}`
-                                }}
-                              >
-                                <ExternalLink size={18} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => removeVideo(video.id)}
-                                className="p-3 rounded-xl hover:scale-110 transition-transform"
-                                style={{
-                                  backgroundColor: colors.error + '25',
-                                  color: colors.error
-                                }}
-                              >
-                                <Trash2 size={18} />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <VideoManagementSection
+                    videos={courseVideos}
+                    onVideosChange={setCourseVideos}
+                    colors={colors}
+                  />
                 </motion.div>
 
                 {/* Exams */}

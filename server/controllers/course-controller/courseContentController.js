@@ -74,6 +74,17 @@ const getCourseContent = async (req, res) => {
       examResultsMap[result.examId] = result;
     });
 
+    // ✅ فلترة الفيديوهات: إخفاء hidden عن الطلاب
+    const isAdmin = req.user?.role === 'admin';
+    const visibleVideos = (course.videos || []).filter(video => {
+      // Admin يمكنه رؤية كل الفيديوهات
+      if (isAdmin) {
+        return true;
+      }
+      // الطلاب: فقط visible + scheduled (إخفاء hidden)
+      return video.status === 'visible' || video.status === 'scheduled' || !video.status;
+    });
+
     // Prepare course content response
     const courseContent = {
       course: {
@@ -88,24 +99,41 @@ const getCourseContent = async (req, res) => {
         isActive: course.isActive !== false,
         createdBy: course.createdBy
       },
-      videos: (course.videos || []).map((video, index) => {
-        const videoId = video._id || `video_${index}`;
-        const isWatched = userProgress?.completedVideos?.some(
-          completed => completed.videoId === videoId
-        ) || false;
+      videos: visibleVideos
+        .sort((a, b) => (a.order || 0) - (b.order || 0))
+        .map((video, index) => {
+          const videoId = video._id || video.id || `video_${index}`;
+          const isWatched = userProgress?.completedVideos?.some(
+            completed => completed.videoId === videoId
+          ) || false;
 
-        return {
-          id: videoId,
-          title: video.title || `Video ${index + 1}`,
-          description: video.description || '',
-          url: video.url || '',
-          thumbnail: video.thumbnail || '',
-          duration: video.duration || 0,
-          order: video.order || index,
-          watched: isWatched,
-          embedUrl: video.url ? convertToEmbedUrl(video.url) : ''
-        };
-      }).sort((a, b) => (a.order || 0) - (b.order || 0)),
+          const videoData = {
+            id: videoId,
+            title: video.title || `Video ${index + 1}`,
+            description: video.description || '',
+            url: video.url || '',
+            thumbnail: video.thumbnail || '',
+            duration: video.duration || 0,
+            order: video.order || index,
+            status: video.status, // ✅ إرسال الحالة للفرونت إند
+            watched: isWatched,
+            embedUrl: video.url ? convertToEmbedUrl(video.url) : '',
+            publishSettings: video.publishSettings // ✅ إرسال إعدادات الجدولة
+          };
+          
+          // Debug: Log scheduled videos
+          if (video.status === 'scheduled') {
+            console.log(`📅 Scheduled Video Data (${videoData.title}):`, {
+              id: videoData.id,
+              status: videoData.status,
+              publishSettings: videoData.publishSettings,
+              publishDate: videoData.publishSettings?.publishDate,
+              publishDateType: typeof videoData.publishSettings?.publishDate
+            });
+          }
+          
+          return videoData;
+        }),
       
       exams: (course.exams || [])
         .filter(exam => exam.status === 'published' || !exam.status)
@@ -144,7 +172,7 @@ const getCourseContent = async (req, res) => {
         progressPercentage: calculateOverallProgress(userProgress, course, examResults),
         watchedVideos: userProgress?.completedVideos?.map(cv => cv.videoId) || [],
         completedExams: examResults.map(er => er.examId) || [],
-        totalVideos: course.videos?.length || 0,
+        totalVideos: visibleVideos.length, // ✅ فقط الفيديوهات المرئية
         totalExams: (course.exams || []).filter(exam => exam.status === 'published' || !exam.status).length || 0,
         totalScore: examResults.reduce((sum, result) => sum + result.score, 0),
         maxPossibleScore: (course.exams || [])
@@ -197,7 +225,11 @@ const calculateOverallProgress = (userProgress, course, examResults) => {
   if (!course) return 0;
   
   const publishedExams = (course.exams || []).filter(exam => exam.status === 'published' || !exam.status);
-  const totalItems = (course.videos?.length || 0) + publishedExams.length;
+  // ✅ حساب فقط الفيديوهات المرئية (للطلاب - Admin سيحصل على كل الفيديوهات من getCourseContent)
+  const visibleVideos = (course.videos || []).filter(video => 
+    video.status === 'visible' || video.status === 'scheduled' || !video.status
+  );
+  const totalItems = visibleVideos.length + publishedExams.length;
   if (totalItems === 0) return 0;
   
   const completedVideos = userProgress?.completedVideos?.length || 0;
@@ -260,7 +292,14 @@ const markVideoCompleted = async (req, res) => {
       // Update overall progress
       const course = await Course.findById(courseId);
       if (course) {
-        const totalItems = (course.videos?.length || 0) + (course.exams?.length || 0);
+        // ✅ حساب فقط الفيديوهات المرئية
+        const visibleVideos = (course.videos || []).filter(video => 
+          video.status === 'visible' || video.status === 'scheduled' || !video.status
+        );
+        const publishedExams = (course.exams || []).filter(exam => 
+          exam.status === 'published' || !exam.status
+        );
+        const totalItems = visibleVideos.length + publishedExams.length;
         const completedItems = userProgress.completedVideos.length + userProgress.completedExams.length;
         userProgress.overallProgress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
       }

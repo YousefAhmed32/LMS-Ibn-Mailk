@@ -4,6 +4,7 @@ const adminController = require('../../controllers/admin-controller');
 const createCourse = require('../../controllers/admin-controller/createCourse');
 const updateCourse = require('../../controllers/admin-controller/updateCourse');
 const adminPaymentController = require('../../controllers/payment-controller/adminPaymentController');
+const videoManagementController = require('../../controllers/admin-controller/videoManagementController');
 const { authenticateToken, requireAdmin } = require('../../middleware/auth');
 const { validateCourseCreation, handleValidationErrors } = require('../../middleware/courseValidation');
 const { uploadSingle } = require('../../utils/unifiedGridfsUpload');
@@ -160,6 +161,26 @@ router.patch('/courses/:courseId/exams/:examId/publish', examDraftController.pub
 router.patch('/courses/:courseId/exams/publish', examDraftController.publishExam);
 
 // ==================== VIDEO MANAGEMENT ROUTES ====================
+
+// Reorder videos (Drag & Drop)
+router.put('/courses/:courseId/videos/reorder', videoManagementController.reorderVideos);
+
+// Schedule video
+router.put('/courses/:courseId/videos/:videoId/schedule', videoManagementController.scheduleVideo);
+
+// Change video status
+router.put('/courses/:courseId/videos/:videoId/status', videoManagementController.changeVideoStatus);
+
+// Bulk actions on videos
+router.put('/courses/:courseId/videos/bulk-action', videoManagementController.bulkActionVideos);
+
+// Publish scheduled video immediately
+router.post('/courses/:courseId/videos/:videoId/publish-now', videoManagementController.publishVideoNow);
+
+// Cancel schedule
+router.delete('/courses/:courseId/videos/:videoId/schedule', videoManagementController.cancelSchedule);
+
+// ==================== LEGACY VIDEO MANAGEMENT ROUTES ====================
 
 // Get course videos
 router.get('/courses/:courseId/videos', adminController.getCourseVideos);

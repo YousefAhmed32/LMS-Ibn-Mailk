@@ -130,6 +130,11 @@ const CoursePreviewPage = () => {
 
   const coverImage = getCourseCoverImage(course);
   const publishedExams = (course.exams || []).filter(exam => exam.status === 'published' || !exam.status);
+  
+  // ✅ فلترة الفيديوهات: عرض visible + scheduled فقط (إخفاء hidden)
+  const visibleVideos = (course.videos || [])
+    .filter(video => video.status === 'visible' || video.status === 'scheduled')
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-cyan-50/90 via-blue-50/90 to-purple-50/90 dark:from-cyan-900/20 dark:via-blue-900/20 dark:to-purple-900/20 pb-24">
@@ -273,7 +278,7 @@ const CoursePreviewPage = () => {
             <div className="flex items-center gap-2">
               <Video className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
               <span className="text-sm text-gray-700 dark:text-gray-300">
-                {course.videos?.length || 0} فيديو
+                {visibleVideos.length} فيديو
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -296,7 +301,7 @@ const CoursePreviewPage = () => {
         </motion.div>
 
         {/* Videos Section */}
-        {course.videos && course.videos.length > 0 && (
+        {visibleVideos.length > 0 && (
           <motion.section
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -308,12 +313,12 @@ const CoursePreviewPage = () => {
                 <Video className="w-6 h-6 text-white" />
               </div>
               <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-gray-100">
-                محتوى الكورس ({course.videos.length} فيديو)
+                محتوى الكورس ({visibleVideos.length} فيديو)
               </h2>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {course.videos.map((video, index) => {
+              {visibleVideos.map((video, index) => {
                 const thumbnailUrl = getVideoThumbnailUrl(video);
                 const hasImageError = imageError[`video-${index}`];
                 
