@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 const LuxuryCard = ({ 
   children, 
   variant = 'default',
-  hover = true,
   className = '',
   onClick,
   ...props 
@@ -47,18 +46,6 @@ const LuxuryCard = ({
     ...props.style
   };
 
-  const hoverEffects = hover ? {
-    whileHover: { 
-      scale: 1.02,
-      boxShadow: shadows.xl,
-      transition: { duration: 0.2 }
-    },
-    whileTap: { 
-      scale: 0.98,
-      transition: { duration: 0.1 }
-    }
-  } : {};
-
   return (
     <motion.div
       style={cardStyle}
@@ -67,7 +54,6 @@ const LuxuryCard = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: animations.easing.easeOut }}
-      {...hoverEffects}
       {...props}
     >
       {children}

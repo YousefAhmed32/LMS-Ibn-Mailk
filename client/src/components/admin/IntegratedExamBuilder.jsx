@@ -11,11 +11,15 @@ import {
   ChevronDown,
   ChevronUp,
   ArrowLeft,
-  Maximize2
+  Maximize2,
+  Save,
+  FileText
 } from 'lucide-react';
 import { toast } from '../../hooks/use-toast';
 import { ExamBuilderProvider } from '../../contexts/ExamBuilderContext';
 import ModernExamBuilder from '../exam-builder/ModernExamBuilder';
+import axiosInstance from '../../api/axiosInstance';
+import { uiToServer } from '../../utils/examNormalization';
 
 // لوحة ألوان فخمة
 const getExamBuilderPalette = (isDark) => (isDark ? {
@@ -59,12 +63,14 @@ const getExamBuilderPalette = (isDark) => (isDark ? {
 const springTransition = { type: 'tween', duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] };
 const modalTransition = { type: 'spring', stiffness: 300, damping: 30 };
 
-const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode }) => {
+const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode, courseId }) => {
   const palette = getExamBuilderPalette(!!isDarkMode);
 
   const [showExamBuilder, setShowExamBuilder] = useState(false);
   const [editingExam, setEditingExam] = useState(null);
   const [expandedExam, setExpandedExam] = useState(null);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   const editExam = (exam) => {
     setEditingExam(exam);
@@ -79,8 +85,161 @@ const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode }) => {
     }
   };
 
-  const handleSaveFromModernBuilder = (formFromContext) => {
-    console.log('📋 RECEIVED FROM BUILDER:', formFromContext);
+  const handleSaveDraft = async (formFromContext) => {
+    if (!courseId) {
+      const totalMarks = formFromContext.questions.reduce((sum, q) => sum + (q.marks || 10), 0);
+      const examData = {
+        id: editingExam?.id || `exam_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        title: formFromContext.title?.trim() || 'امتحان بدون عنوان',
+        type: 'internal_exam',
+        status: 'draft',
+        url: '',
+        migratedFromGoogleForm: false,
+        migrationNote: '',
+        totalMarks: totalMarks,
+        totalPoints: totalMarks,
+        duration: formFromContext.duration || 30,
+        passingScore: formFromContext.passingScore || 60,
+        isActive: true,
+        createdAt: editingExam?.createdAt || new Date().toISOString(),
+        questions: formFromContext.questions.map((q, index) => {
+          const question = {
+            id: q.id || `q_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`,
+            questionText: q.questionText?.trim() || '',
+            type: q.type,
+            points: q.marks || 10,
+            marks: q.marks || 10,
+            order: index + 1
+          };
+
+          if (q.type === 'mcq') {
+            question.options = (q.choices || []).map((choice) => ({
+              id: choice.id || `opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              text: choice.text?.trim() || '',
+              optionText: choice.text?.trim() || ''
+            }));
+
+            const correctChoiceIndex = q.choices.findIndex(c => c.isCorrect === true);
+            if (correctChoiceIndex !== -1 && question.options[correctChoiceIndex]) {
+              question.correctAnswer = question.options[correctChoiceIndex].id;
+            } else {
+              question.correctAnswer = null;
+            }
+          } else if (q.type === 'true_false') {
+            question.options = [];
+            question.correctAnswer = Boolean(q.correctAnswer);
+          } else if (q.type === 'essay') {
+            question.options = [];
+            question.sampleAnswer = q.sampleAnswer || '';
+          }
+
+          return question;
+        })
+      };
+
+      const updatedExams = editingExam
+        ? exams.map((ex) => (ex.id === editingExam.id ? examData : ex))
+        : [...exams, examData];
+
+      onExamsChange(updatedExams);
+      toast({ title: 'تم حفظ المسودة', description: 'سيتم حفظها في الدورة عند الإنشاء' });
+      return;
+    }
+
+    setIsSavingDraft(true);
+    try {
+      const serverFormat = uiToServer(formFromContext, editingExam?.id);
+      serverFormat.status = 'draft';
+
+      const endpoint = editingExam?.id
+        ? `/api/admin/courses/${courseId}/exams/${editingExam.id}/draft`
+        : `/api/admin/courses/${courseId}/exams/draft`;
+
+      const response = await axiosInstance.patch(endpoint, serverFormat);
+
+      if (response.data.success) {
+        const savedExam = response.data.exam;
+        const updatedExams = editingExam
+          ? exams.map((ex) => (ex.id === editingExam.id ? savedExam : ex))
+          : [...exams, savedExam];
+
+        onExamsChange(updatedExams);
+        toast({ title: 'تم حفظ المسودة', description: 'تم حفظ المسودة بنجاح' });
+      }
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      toast({
+        title: 'خطأ',
+        description: error.response?.data?.message || 'فشل حفظ المسودة',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
+
+  const handleSaveFromModernBuilder = async (formFromContext) => {
+    if (!courseId) {
+      const totalMarks = formFromContext.questions.reduce((sum, q) => sum + (q.marks || 10), 0);
+      const examData = {
+        id: editingExam?.id || `exam_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        title: formFromContext.title.trim(),
+        type: 'internal_exam',
+        status: 'published',
+        url: '',
+        migratedFromGoogleForm: false,
+        migrationNote: '',
+        totalMarks: totalMarks,
+        totalPoints: totalMarks,
+        duration: formFromContext.duration || 30,
+        passingScore: formFromContext.passingScore || 60,
+        isActive: true,
+        createdAt: editingExam?.createdAt || new Date().toISOString(),
+        questions: formFromContext.questions.map((q, index) => {
+          const question = {
+            id: q.id || `q_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`,
+            questionText: q.questionText?.trim() || '',
+            type: q.type,
+            points: q.marks || 10,
+            marks: q.marks || 10,
+            order: index + 1
+          };
+
+          if (q.type === 'mcq') {
+            question.options = (q.choices || []).map((choice) => ({
+              id: choice.id || `opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              text: choice.text?.trim() || '',
+              optionText: choice.text?.trim() || ''
+            }));
+
+            const correctChoiceIndex = q.choices.findIndex(c => c.isCorrect === true);
+            if (correctChoiceIndex !== -1 && question.options[correctChoiceIndex]) {
+              question.correctAnswer = question.options[correctChoiceIndex].id;
+            } else {
+              question.correctAnswer = null;
+            }
+          } else if (q.type === 'true_false') {
+            question.options = [];
+            question.correctAnswer = Boolean(q.correctAnswer);
+          } else if (q.type === 'essay') {
+            question.options = [];
+            question.sampleAnswer = q.sampleAnswer || '';
+          }
+
+          return question;
+        })
+      };
+
+      const updatedExams = editingExam
+        ? exams.map((ex) => (ex.id === editingExam.id ? examData : ex))
+        : [...exams, examData];
+
+      onExamsChange(updatedExams);
+      toast({ title: 'تم حفظ الامتحان', description: editingExam ? 'تم التحديث بنجاح' : 'تم الإضافة بنجاح' });
+      setShowExamBuilder(false);
+      setEditingExam(null);
+      return;
+    }
 
     if (!formFromContext.title?.trim()) {
       toast({ title: 'خطأ', description: 'يرجى إدخال عنوان الامتحان', variant: 'destructive' });
@@ -132,64 +291,38 @@ const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode }) => {
       }
     }
 
-    const totalMarks = formFromContext.questions.reduce((sum, q) => sum + (q.marks || 10), 0);
+    setIsPublishing(true);
+    try {
+      const serverFormat = uiToServer(formFromContext, editingExam?.id);
+      serverFormat.status = 'published';
 
-    const examData = {
-      id: editingExam?.id || `exam_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      title: formFromContext.title.trim(),
-      type: 'internal_exam',
-      url: '',
-      migratedFromGoogleForm: false,
-      migrationNote: '',
-      totalMarks: totalMarks,
-      totalPoints: totalMarks,
-      duration: formFromContext.duration || 30,
-      passingScore: formFromContext.passingScore || 60,
-      isActive: true,
-      createdAt: editingExam?.createdAt || new Date().toISOString(),
-      questions: formFromContext.questions.map((q, index) => {
-        const question = {
-          id: q.id || `q_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`,
-          questionText: q.questionText?.trim() || '',
-          type: q.type,
-          points: q.marks || 10,
-          marks: q.marks || 10,
-          order: index + 1
-        };
+      const endpoint = editingExam?.id
+        ? `/api/admin/courses/${courseId}/exams/${editingExam.id}/publish`
+        : `/api/admin/courses/${courseId}/exams/publish`;
 
-        if (q.type === 'mcq') {
-          question.options = (q.choices || []).map((choice) => ({
-            id: choice.id || `opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            text: choice.text?.trim() || '',
-            optionText: choice.text?.trim() || ''
-          }));
+      const response = await axiosInstance.patch(endpoint, serverFormat);
 
-          const correctChoiceIndex = q.choices.findIndex(c => c.isCorrect === true);
-          if (correctChoiceIndex !== -1 && question.options[correctChoiceIndex]) {
-            question.correctAnswer = question.options[correctChoiceIndex].id;
-          } else {
-            question.correctAnswer = null;
-          }
-        } else if (q.type === 'true_false') {
-          question.options = [];
-          question.correctAnswer = Boolean(q.correctAnswer);
-        } else if (q.type === 'essay') {
-          question.options = [];
-          question.sampleAnswer = q.sampleAnswer || '';
-        }
+      if (response.data.success) {
+        const savedExam = response.data.exam;
+        const updatedExams = editingExam
+          ? exams.map((ex) => (ex.id === editingExam.id ? savedExam : ex))
+          : [...exams, savedExam];
 
-        return question;
-      })
-    };
-
-    const updatedExams = editingExam
-      ? exams.map((ex) => (ex.id === editingExam.id ? examData : ex))
-      : [...exams, examData];
-
-    onExamsChange(updatedExams);
-    toast({ title: 'تم حفظ الامتحان', description: editingExam ? 'تم التحديث بنجاح' : 'تم الإضافة بنجاح' });
-    setShowExamBuilder(false);
-    setEditingExam(null);
+        onExamsChange(updatedExams);
+        toast({ title: 'تم نشر الامتحان', description: editingExam ? 'تم التحديث بنجاح' : 'تم الإضافة بنجاح' });
+        setShowExamBuilder(false);
+        setEditingExam(null);
+      }
+    } catch (error) {
+      console.error('Error publishing exam:', error);
+      toast({
+        title: 'خطأ',
+        description: error.response?.data?.message || 'فشل نشر الامتحان',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   const openBuilder = () => {
@@ -211,7 +344,7 @@ const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode }) => {
             style={{
               background: palette.card,
               borderColor: palette.cardBorder,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.06)'
+              boxShadow: '0 4px 20px rgba(255, 0, 0, 0.06)'
             }}
           >
             <div
@@ -230,7 +363,22 @@ const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode }) => {
                   <BookOpen className="w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
                 <div className="min-w-0">
-                  <h4 className="text-lg sm:text-xl font-bold truncate">{exam.title}</h4>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-lg sm:text-xl font-bold truncate">{exam.title}</h4>
+                    {exam.status === 'draft' && (
+                      <span 
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium"
+                        style={{ 
+                          backgroundColor: isDarkMode ? 'rgba(251, 191, 36, 0.15)' : 'rgba(251, 191, 36, 0.1)',
+                          color: isDarkMode ? '#fbbf24' : '#d97706',
+                          border: `1px solid ${isDarkMode ? 'rgba(251, 191, 36, 0.3)' : 'rgba(251, 191, 36, 0.2)'}`
+                        }}
+                      >
+                        <FileText className="w-3 h-3" />
+                        مسودة
+                      </span>
+                    )}
+                  </div>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm" style={{ color: palette.textSoft }}>
                     <span>{exam.questions?.length ?? 0} سؤال</span>
                     <span>{exam.totalPoints ?? exam.totalMarks ?? 0} نقطة</span>
@@ -446,7 +594,10 @@ const IntegratedExamBuilder = ({ exams = [], onExamsChange, isDarkMode }) => {
                       <ModernExamBuilder
                         isDarkMode={!!isDarkMode}
                         onSave={handleSaveFromModernBuilder}
+                        onSaveDraft={handleSaveDraft}
                         onCancel={() => setShowExamBuilder(false)}
+                        isSavingDraft={isSavingDraft}
+                        isPublishing={isPublishing}
                       />
                     </ExamBuilderProvider>
                   </div>

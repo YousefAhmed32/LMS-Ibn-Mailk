@@ -751,11 +751,12 @@ const EditCourse = () => {
             </LuxuryCard>
 
             {/* Exams Section - Modern dynamic builder (add/remove options, add question anywhere) */}
-            <LuxuryCard className="p-6">
+            <LuxuryCard className="p-6 bg-red-500">
               <IntegratedExamBuilder
                 exams={exams}
                 onExamsChange={setExams}
                 isDarkMode={theme.isDarkMode}
+                courseId={id}
               />
             </LuxuryCard>
           </div>

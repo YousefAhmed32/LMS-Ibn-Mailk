@@ -131,7 +131,12 @@ const getCourseExams = async (req, res) => {
     });
 
     // Return exams without correct answers for security
-    const examsData = (course.exams || []).map(exam => ({
+    // Filter out draft exams for students
+    const publishedExams = (course.exams || []).filter(exam => 
+      exam.status === 'published' || !exam.status
+    );
+    
+    const examsData = publishedExams.map(exam => ({
       id: exam.id,
       title: exam.title,
       totalMarks: exam.totalMarks,
@@ -181,10 +186,12 @@ const getExamForTaking = async (req, res) => {
       return res.status(403).json({ success: false, message: 'You are not enrolled or not approved for this course' });
     }
 
-    // Find the specific exam
-    const exam = course.exams.find(e => e.id === examId);
+    // Find the specific exam - only published exams
+    const exam = course.exams.find(e => 
+      e.id === examId && (e.status === 'published' || !e.status)
+    );
     if (!exam) {
-      return res.status(404).json({ success: false, message: 'Exam not found' });
+      return res.status(404).json({ success: false, message: 'Exam not found or not published' });
     }
 
     // Check if already completed - allow review mode
@@ -262,9 +269,11 @@ const submitExam = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Course not found' });
     }
 
-    const exam = course.exams.find(e => e.id === examId);
+    const exam = course.exams.find(e => 
+      e.id === examId && (e.status === 'published' || !e.status)
+    );
     if (!exam) {
-      return res.status(404).json({ success: false, message: 'Exam not found' });
+      return res.status(404).json({ success: false, message: 'Exam not found or not published' });
     }
 
     if (!exam.questions || exam.questions.length === 0) {

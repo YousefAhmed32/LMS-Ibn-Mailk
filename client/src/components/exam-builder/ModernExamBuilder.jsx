@@ -4,7 +4,7 @@ import { useExamBuilder } from '../../contexts/ExamBuilderContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { validateExamForSubmit } from '../../utils/examNormalization';
 import { QuestionCard, AddQuestionButton, FloatingActionButton } from './index';
-import { CheckCircle, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle, AlertCircle, ChevronDown, ChevronUp, Save } from 'lucide-react';
 
 /**
  * Checks if a single question is "complete" (has all required fields)
@@ -47,8 +47,11 @@ const getQuestionStatus = (q) => {
  */
 const ModernExamBuilder = ({
   onSave,
+  onSaveDraft,
   onCancel,
-  isDarkMode = false
+  isDarkMode = false,
+  isSavingDraft = false,
+  isPublishing = false
 }) => {
   const { examForm, setTitle, addQuestion, removeQuestion, updateQuestion, duplicateQuestion, addChoice, removeChoice, updateChoice, setCorrectAnswer, validate } = useExamBuilder();
   const { colors } = useTheme();
@@ -349,22 +352,46 @@ const ModernExamBuilder = ({
                   إلغاء
                 </button>
               )}
+              {onSaveDraft && (
+                <button
+                  type="button"
+                  onClick={() => onSaveDraft(examForm)}
+                  disabled={isSavingDraft || isPublishing}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium border transition-all ${
+                    isDarkMode 
+                      ? 'border-gray-600 text-gray-400 hover:bg-gray-700/50' 
+                      : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                  } disabled:opacity-60 disabled:cursor-wait`}
+                >
+                  {isSavingDraft ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      <span>جاري الحفظ...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>حفظ كمسودة</span>
+                    </>
+                  )}
+                </button>
+              )}
               {onSave && (
                 <button
                   type="button"
                   onClick={() => onSave(examForm)}
-                  disabled={!canSave}
+                  disabled={!canSave || isPublishing || isSavingDraft}
                   className={`px-6 py-3 rounded-xl font-medium transition-all ${
-                    canSave
+                    canSave && !isPublishing
                       ? 'shadow-lg hover:shadow-xl active:scale-[0.98]'
                       : 'opacity-50 cursor-not-allowed'
                   }`}
                   style={{
-                    backgroundColor: canSave ? '#10b981' : isDarkMode ? '#374151' : '#d1d5db',
-                    color: canSave ? '#fff' : isDarkMode ? '#6b7280' : '#9ca3af'
+                    backgroundColor: canSave && !isPublishing ? '#10b981' : isDarkMode ? '#374151' : '#d1d5db',
+                    color: canSave && !isPublishing ? '#fff' : isDarkMode ? '#6b7280' : '#9ca3af'
                   }}
                 >
-                  حفظ الامتحان
+                  {isPublishing ? 'جاري النشر...' : 'نشر الامتحان'}
                 </button>
               )}
             </div>

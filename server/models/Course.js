@@ -272,6 +272,23 @@ const CourseSchema = new mongoose.Schema({
       type: Boolean,
       default: true
     },
+    status: {
+      type: String,
+      enum: ['draft', 'published'],
+      default: 'draft'
+    },
+    publishedAt: {
+      type: Date,
+      required: false
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now
+    },
+    version: {
+      type: Number,
+      default: 1
+    },
     createdAt: {
       type: Date,
       default: Date.now

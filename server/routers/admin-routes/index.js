@@ -143,6 +143,22 @@ router.patch('/courses/:id/status',
 // Delete course
 router.delete('/courses/:id', adminController.deleteCourse);
 
+// ==================== EXAM DRAFT ROUTES ====================
+
+const examDraftController = require('../../controllers/admin-controller/examDraftController');
+
+// Save exam as draft (with examId)
+router.patch('/courses/:courseId/exams/:examId/draft', examDraftController.saveExamDraft);
+
+// Create new exam as draft (no examId)
+router.patch('/courses/:courseId/exams/draft', examDraftController.saveExamDraft);
+
+// Publish exam (with examId)
+router.patch('/courses/:courseId/exams/:examId/publish', examDraftController.publishExam);
+
+// Publish new exam (no examId)
+router.patch('/courses/:courseId/exams/publish', examDraftController.publishExam);
+
 // ==================== VIDEO MANAGEMENT ROUTES ====================
 
 // Get course videos

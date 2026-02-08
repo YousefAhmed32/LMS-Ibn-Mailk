@@ -107,48 +107,52 @@ const getCourseContent = async (req, res) => {
         };
       }).sort((a, b) => (a.order || 0) - (b.order || 0)),
       
-      exams: (course.exams || []).map((exam, index) => {
-        const examId = exam.id || exam._id || `exam_${index}`;
-        const examResult = examResultsMap[examId];
-        
-        // Calculate total marks from questions
-        const totalMarks = exam.questions?.reduce((sum, question) => {
-          return sum + (question.points || 1);
-        }, 0) || exam.totalMarks || 0;
+      exams: (course.exams || [])
+        .filter(exam => exam.status === 'published' || !exam.status)
+        .map((exam, index) => {
+          const examId = exam.id || exam._id || `exam_${index}`;
+          const examResult = examResultsMap[examId];
+          
+          // Calculate total marks from questions
+          const totalMarks = exam.questions?.reduce((sum, question) => {
+            return sum + (question.points || 1);
+          }, 0) || exam.totalMarks || 0;
 
-        return {
-          id: examId,
-          title: exam.title || `Exam ${index + 1}`,
-          description: exam.description || '',
-          questionsCount: exam.questions?.length || exam.totalQuestions || 0,
-          totalMarks: totalMarks,
-          duration: exam.duration || 30,
-          passingScore: exam.passingScore || 60,
-          questions: exam.questions || [],
-          status: examResult ? 'completed' : 'not started',
-          result: examResult ? {
-            score: examResult.score,
-            maxScore: examResult.maxScore,
-            percentage: examResult.percentage,
-            grade: examResult.grade,
-            passed: examResult.passed,
-            submittedAt: examResult.submittedAt
-          } : null,
-          createdAt: exam.createdAt
-        };
-      }),
+          return {
+            id: examId,
+            title: exam.title || `Exam ${index + 1}`,
+            description: exam.description || '',
+            questionsCount: exam.questions?.length || exam.totalQuestions || 0,
+            totalMarks: totalMarks,
+            duration: exam.duration || 30,
+            passingScore: exam.passingScore || 60,
+            questions: exam.questions || [],
+            status: examResult ? 'completed' : 'not started',
+            result: examResult ? {
+              score: examResult.score,
+              maxScore: examResult.maxScore,
+              percentage: examResult.percentage,
+              grade: examResult.grade,
+              passed: examResult.passed,
+              submittedAt: examResult.submittedAt
+            } : null,
+            createdAt: exam.createdAt
+          };
+        }),
       
       progress: {
         progressPercentage: calculateOverallProgress(userProgress, course, examResults),
         watchedVideos: userProgress?.completedVideos?.map(cv => cv.videoId) || [],
         completedExams: examResults.map(er => er.examId) || [],
         totalVideos: course.videos?.length || 0,
-        totalExams: course.exams?.length || 0,
+        totalExams: (course.exams || []).filter(exam => exam.status === 'published' || !exam.status).length || 0,
         totalScore: examResults.reduce((sum, result) => sum + result.score, 0),
-        maxPossibleScore: course.exams?.reduce((sum, exam) => {
-          const examMarks = exam.questions?.reduce((qSum, q) => qSum + (q.points || 1), 0) || exam.totalMarks || 0;
-          return sum + examMarks;
-        }, 0) || 0
+        maxPossibleScore: (course.exams || [])
+          .filter(exam => exam.status === 'published' || !exam.status)
+          .reduce((sum, exam) => {
+            const examMarks = exam.questions?.reduce((qSum, q) => qSum + (q.points || 1), 0) || exam.totalMarks || 0;
+            return sum + examMarks;
+          }, 0) || 0
       }
     };
 
@@ -192,15 +196,18 @@ const convertToEmbedUrl = (url) => {
 const calculateOverallProgress = (userProgress, course, examResults) => {
   if (!course) return 0;
   
-  const totalItems = (course.videos?.length || 0) + (course.exams?.length || 0);
+  const publishedExams = (course.exams || []).filter(exam => exam.status === 'published' || !exam.status);
+  const totalItems = (course.videos?.length || 0) + publishedExams.length;
   if (totalItems === 0) return 0;
   
   const completedVideos = userProgress?.completedVideos?.length || 0;
-  const completedExams = examResults?.length || 0;
-  const completedItems = completedVideos + completedExams;
+  const publishedExamIds = publishedExams.map(e => e.id || e._id?.toString());
+  const completedPublishedExams = examResults?.filter(er => publishedExamIds.includes(er.examId)).length || 0;
+  const completedItems = completedVideos + completedPublishedExams;
   
   return Math.round((completedItems / totalItems) * 100);
 };
+
 
 // Mark video as completed
 const markVideoCompleted = async (req, res) => {

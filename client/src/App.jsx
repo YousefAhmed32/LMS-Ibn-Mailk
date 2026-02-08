@@ -32,6 +32,7 @@ import TermsConditionsPage from "./pages/TermsConditionsPage";
 const LuxuryCoursesPage = lazy(() => import("./pages/courses/LuxuryCoursesPage"));
 const LuxuryCourseDetailsPage = lazy(() => import("./pages/courses/LuxuryCourseDetailsPage"));
 const CourseContentPage = lazy(() => import("./pages/courses/CourseContentPage"));
+const CoursePreviewPage = lazy(() => import("./pages/courses/CoursePreviewPage"));
 const ExamPage = lazy(() => import("./pages/courses/ExamPage"));
 import LuxuryMyAccountPage from "./pages/account/LuxuryMyAccountPage";
 
@@ -142,6 +143,15 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <LuxuryCoursesPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/courses/:id/preview"
+                  element={
+                    <ProtectedRoute>
+                      <CoursePreviewPage />
                     </ProtectedRoute>
                   }
                 />
